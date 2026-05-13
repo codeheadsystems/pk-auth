@@ -16,13 +16,32 @@ errorprone-core = "2.36.0"
 google-java-format = "1.25.2"
 jspecify = "1.0.0"
 
+# Runtime — pk-auth-core
+webauthn4j = "0.31.5.RELEASE"
+jackson = "3.1.3"
+jackson-annotations = "2.21"
+caffeine = "3.2.4"
+micrometer = "1.16.5"
+slf4j = "2.0.17"
+
 # Test (wired in test convention plugin; left ready for Phase 1+)
 junit-jupiter = "5.11.4"
 assertj = "3.27.3"
 mockito = "5.14.2"
+logback = "1.5.32"
 
 [libraries]
 jspecify = { module = "org.jspecify:jspecify", version.ref = "jspecify" }
+
+# pk-auth-core runtime
+webauthn4j-core = { module = "com.webauthn4j:webauthn4j-core", version.ref = "webauthn4j" }
+# Jackson 3 ("tools.jackson") — java.time and JDK 8 datatype support is built into databind 3,
+# so we no longer pull jackson-datatype-jdk8 / jackson-datatype-jsr310 separately.
+jackson-databind = { module = "tools.jackson.core:jackson-databind", version.ref = "jackson" }
+jackson-annotations = { module = "com.fasterxml.jackson.core:jackson-annotations", version.ref = "jackson-annotations" }
+caffeine = { module = "com.github.ben-manes.caffeine:caffeine", version.ref = "caffeine" }
+micrometer-core = { module = "io.micrometer:micrometer-core", version.ref = "micrometer" }
+slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
 
 # Convention-plugin classpath deps (used by build-logic, exposed here for single-source-of-truth).
 build-spotless-plugin = { module = "com.diffplug.spotless:spotless-plugin-gradle", version.ref = "spotless" }
@@ -35,9 +54,11 @@ junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher
 assertj-core = { module = "org.assertj:assertj-core", version.ref = "assertj" }
 mockito-core = { module = "org.mockito:mockito-core", version.ref = "mockito" }
 mockito-junit-jupiter = { module = "org.mockito:mockito-junit-jupiter", version.ref = "mockito" }
+logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
 
 [bundles]
 test = ["junit-jupiter", "assertj-core", "mockito-core", "mockito-junit-jupiter"]
+jackson = ["jackson-databind", "jackson-annotations"]
 
 [plugins]
 spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }

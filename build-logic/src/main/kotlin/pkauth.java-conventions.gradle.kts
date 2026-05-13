@@ -31,7 +31,13 @@ tasks.withType<JavaCompile>().configureEach {
     // we know it is safe.
     options.compilerArgs.addAll(listOf("-Xlint:all", "-parameters"))
     options.errorprone.disableWarningsInGeneratedCode = true
-    // Default Error Prone check set, per Phase 0 plan.
+    // Default Error Prone check set, with one project-wide override:
+    // pk-auth's wire contract is WebAuthn's, which is binary-heavy (challenge bytes, credential
+    // ids, COSE-encoded public keys, signatures, …). Modeling those as `byte[]` record
+    // components is intentional; each affected record overrides equals/hashCode to compare by
+    // content, so the default-record equality pitfall ErrorProne is protecting against doesn't
+    // apply. Suppress the check globally rather than annotating every record.
+    options.errorprone.disable("ArrayRecordComponent")
 }
 
 spotless {
