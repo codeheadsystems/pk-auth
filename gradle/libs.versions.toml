@@ -13,7 +13,7 @@ java = "21"
 # Spotless pinned to the 7.x line: Spotless 8's google-java-format integration intermittently
 # fails class loading on Gradle 9 / JDK 21. Dependabot ignore in .github/dependabot.yml keeps
 # this from getting bumped back. Revisit when Spotless 8 ships a fix.
-spotless = "7.2.1"
+spotless = "8.4.0"
 errorprone-plugin = "4.1.0"
 errorprone-core = "2.49.0"
 google-java-format = "1.25.2"
