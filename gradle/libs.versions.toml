@@ -54,12 +54,12 @@ h2 = "2.4.240"
 # latest 4.x. We avoid Micronaut Security entirely — its `SecurityRule<R extends HttpRequest<?>>`
 # generic surface stalled the original implementation, and we don't need it: a plain
 # `@Filter` validating the JWT against pk-auth-jwt's PkAuthJwtValidator is sufficient.
-micronaut = "4.10.23"
+micronaut = "5.0.0"
 
 # Dropwizard adapter (Phase 9). Brief §6.11 mandates Dropwizard 4.x (Jakarta EE namespace,
 # `jakarta.*` packages). 5.x changes the bundle / configuration surface in ways the Phase 9
 # adapter doesn't yet accommodate. Dependabot ignore keeps this from getting bumped to 5.x.
-dropwizard = "4.0.14"
+dropwizard = "4.0.17"
 
 # Dagger 2 wires the Dropwizard adapter at compile time. Brief §3 mandates Dagger over Guice/HK2;
 # ADR 0004 explains the rationale.
@@ -104,7 +104,7 @@ micronaut-http = { module = "io.micronaut:micronaut-http", version.ref = "micron
 micronaut-http-server-netty = { module = "io.micronaut:micronaut-http-server-netty", version.ref = "micronaut" }
 micronaut-http-client = { module = "io.micronaut:micronaut-http-client", version.ref = "micronaut" }
 micronaut-jackson-databind = { module = "io.micronaut:micronaut-jackson-databind", version.ref = "micronaut" }
-micronaut-test-junit5 = { module = "io.micronaut.test:micronaut-test-junit5", version = "4.10.0" }
+micronaut-test-junit5 = { module = "io.micronaut.test:micronaut-test-junit5", version = "5.0.0" }
 micronaut-runtime = { module = "io.micronaut:micronaut-runtime", version.ref = "micronaut" }
 
 # Dropwizard 4.x (Phase 9 adapter + demo).

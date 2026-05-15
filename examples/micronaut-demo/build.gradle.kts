@@ -30,7 +30,7 @@ dependencies {
     testImplementation(libs.micronaut.test.junit5)
     testImplementation(libs.micronaut.http.client)
     testImplementation(libs.bundles.test)
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher:1.11.4")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher:6.0.3")
     testAnnotationProcessor(libs.micronaut.inject.java)
 }
 
