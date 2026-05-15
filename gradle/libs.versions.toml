@@ -106,7 +106,7 @@ micronaut-http = { module = "io.micronaut:micronaut-http", version.ref = "micron
 micronaut-http-server-netty = { module = "io.micronaut:micronaut-http-server-netty", version.ref = "micronaut" }
 micronaut-http-client = { module = "io.micronaut:micronaut-http-client", version.ref = "micronaut" }
 micronaut-jackson-databind = { module = "io.micronaut:micronaut-jackson-databind", version.ref = "micronaut" }
-micronaut-test-junit5 = { module = "io.micronaut.test:micronaut-test-junit5", version = "4.10.0" }
+micronaut-test-junit5 = { module = "io.micronaut.test:micronaut-test-junit5", version = "4.10.3" }
 micronaut-runtime = { module = "io.micronaut:micronaut-runtime", version.ref = "micronaut" }
 
 # Dropwizard 4.x (Phase 9 adapter + demo).
@@ -162,7 +162,7 @@ junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "jun
 # JUnit Platform 1.x aligns with JUnit Jupiter 5.x (our junit-jupiter pin). Platform 2.x renamed
 # to "6.x" alongside Jupiter 6 — a major surface change that doesn't ship with Jupiter 5, so the
 # Dependabot ignore keeps us on the 1.x line until Jupiter moves.
-junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher", version = "1.11.4" }
+junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher", version = "1.14.4" }
 assertj-core = { module = "org.assertj:assertj-core", version.ref = "assertj" }
 mockito-core = { module = "org.mockito:mockito-core", version.ref = "mockito" }
 mockito-junit-jupiter = { module = "org.mockito:mockito-junit-jupiter", version.ref = "mockito" }
