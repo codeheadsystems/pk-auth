@@ -13,7 +13,7 @@ java = "21"
 # Spotless pinned to the 7.x line: Spotless 8's google-java-format integration intermittently
 # fails class loading on Gradle 9 / JDK 21. Dependabot ignore in .github/dependabot.yml keeps
 # this from getting bumped back. Revisit when Spotless 8 ships a fix.
-spotless = "8.5.0"
+spotless = "8.5.1"
 errorprone-plugin = "4.1.0"
 errorprone-core = "2.49.0"
 google-java-format = "1.25.2"
@@ -36,7 +36,7 @@ jdbi = "3.53.0"
 flyway = "12.6.1"
 postgresql = "42.7.11"
 hikaricp = "7.0.2"
-aws-sdk = "2.44.6"
+aws-sdk = "2.44.7"
 testcontainers = "1.21.4"
 
 # Spring Boot adapter (Phase 8). Spring Boot 4 / Spring Security 7. Spring Boot 4 standardized
