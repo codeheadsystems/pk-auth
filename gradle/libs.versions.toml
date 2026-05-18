@@ -14,7 +14,7 @@ java = "21"
 # fails class loading on Gradle 9 / JDK 21. Dependabot ignore in .github/dependabot.yml keeps
 # this from getting bumped back. Revisit when Spotless 8 ships a fix.
 spotless = "8.5.1"
-errorprone-plugin = "4.1.0"
+errorprone-plugin = "5.1.0"
 errorprone-core = "2.49.0"
 google-java-format = "1.25.2"
 jspecify = "1.0.0"
