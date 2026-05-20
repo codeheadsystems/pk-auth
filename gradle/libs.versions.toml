@@ -36,7 +36,7 @@ jdbi = "3.53.0"
 flyway = "12.6.1"
 postgresql = "42.7.11"
 hikaricp = "7.0.2"
-aws-sdk = "2.44.8"
+aws-sdk = "2.44.9"
 testcontainers = "1.21.4"
 
 # Spring Boot adapter (Phase 8). Spring Boot 4 / Spring Security 7. Spring Boot 4 standardized
@@ -73,7 +73,7 @@ dagger = "2.59.2"
 jakarta-inject = "2.0.1"
 
 # Test (wired in test convention plugin; left ready for Phase 1+)
-junit-jupiter = "6.0.3"
+junit-jupiter = "6.1.0"
 assertj = "3.27.7"
 mockito = "5.23.0"
 logback = "1.5.32"
