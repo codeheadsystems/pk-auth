@@ -36,7 +36,7 @@ jdbi = "3.53.0"
 flyway = "12.6.2"
 postgresql = "42.7.11"
 hikaricp = "7.0.2"
-aws-sdk = "2.44.11"
+aws-sdk = "2.44.12"
 testcontainers = "1.21.4"
 
 # Spring Boot adapter (Phase 8). Spring Boot 4 / Spring Security 7. Spring Boot 4 standardized
