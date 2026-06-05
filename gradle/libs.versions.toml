@@ -33,10 +33,10 @@ argon2-jvm = "2.12"
 
 # Persistence
 jdbi = "3.53.0"
-flyway = "12.7.0"
+flyway = "12.8.0"
 postgresql = "42.7.11"
 hikaricp = "7.0.2"
-aws-sdk = "2.46.3"
+aws-sdk = "2.46.4"
 testcontainers = "1.21.4"
 
 # Spring Boot adapter (Phase 8). Spring Boot 4 / Spring Security 7. Spring Boot 4 standardized
@@ -56,7 +56,7 @@ h2 = "2.4.240"
 # `@Filter` validating the JWT against pk-auth-jwt's PkAuthJwtValidator is sufficient.
 # Micronaut 5.x requires JVM 25; we target Java 21 (brief §3), so 5.x is pinned out via
 # .github/dependabot.yml until the project moves to a newer JDK baseline.
-micronaut = "4.10.24"
+micronaut = "4.10.25"
 
 # Dropwizard adapter (Phase 9). Brief §6.11 tracks the latest Dropwizard release. 5.x adds
 # Jetty 12 / Jersey 4 (EE 10); the adapter rides the parent's `dropwizard-jackson` which is still
