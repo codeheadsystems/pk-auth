@@ -1098,7 +1098,7 @@
         </svg>
         <div class="hero-text">
             <div class="hero-badges">
-              <span class="chip chip--solid">v<span class="pkv">1.3.0</span></span>
+              <span class="chip chip--solid">v<span class="pkv">1.3.1</span></span>
               <span class="chip">JDK 21</span>
               <span class="chip">MIT</span>
               <span class="chip chip--brass">WebAuthn4J</span>
@@ -1146,9 +1146,9 @@
             <div class="code" data-filename="build.gradle.kts" aria-label="Gradle dependency snippet">
 <pre><span class="cm">// One adapter, one persistence module, done.</span>
 <span class="kw">dependencies</span> <span class="pn">{</span>
-  <span class="fn">implementation</span><span class="pn">(</span><span class="str">"com.codeheadsystems:pk-auth-spring-boot-starter:<span class="pkv">1.3.0</span>"</span><span class="pn">)</span>
-  <span class="fn">implementation</span><span class="pn">(</span><span class="str">"com.codeheadsystems:pk-auth-persistence-jdbi:<span class="pkv">1.3.0</span>"</span><span class="pn">)</span>
-  <span class="fn">implementation</span><span class="pn">(</span><span class="str">"com.codeheadsystems:pk-auth-admin-api:<span class="pkv">1.3.0</span>"</span><span class="pn">)</span>
+  <span class="fn">implementation</span><span class="pn">(</span><span class="str">"com.codeheadsystems:pk-auth-spring-boot-starter:<span class="pkv">1.3.1</span>"</span><span class="pn">)</span>
+  <span class="fn">implementation</span><span class="pn">(</span><span class="str">"com.codeheadsystems:pk-auth-persistence-jdbi:<span class="pkv">1.3.1</span>"</span><span class="pn">)</span>
+  <span class="fn">implementation</span><span class="pn">(</span><span class="str">"com.codeheadsystems:pk-auth-admin-api:<span class="pkv">1.3.1</span>"</span><span class="pn">)</span>
 <span class="pn">}</span></pre>
             </div>
             <div class="hero-annot">
@@ -1332,9 +1332,9 @@ cd pk-auth</pre>
                 <div class="panel" data-panel="deps-gradle">
                   <div class="code" data-filename="build.gradle.kts">
 <pre><span class="kw">dependencies</span> <span class="pn">{</span>
-  <span class="fn">implementation</span><span class="pn">(</span><span class="str">"com.codeheadsystems:pk-auth-spring-boot-starter:<span class="pkv">1.3.0</span>"</span><span class="pn">)</span>
-  <span class="fn">implementation</span><span class="pn">(</span><span class="str">"com.codeheadsystems:pk-auth-persistence-jdbi:<span class="pkv">1.3.0</span>"</span><span class="pn">)</span>
-  <span class="fn">implementation</span><span class="pn">(</span><span class="str">"com.codeheadsystems:pk-auth-admin-api:<span class="pkv">1.3.0</span>"</span><span class="pn">)</span>
+  <span class="fn">implementation</span><span class="pn">(</span><span class="str">"com.codeheadsystems:pk-auth-spring-boot-starter:<span class="pkv">1.3.1</span>"</span><span class="pn">)</span>
+  <span class="fn">implementation</span><span class="pn">(</span><span class="str">"com.codeheadsystems:pk-auth-persistence-jdbi:<span class="pkv">1.3.1</span>"</span><span class="pn">)</span>
+  <span class="fn">implementation</span><span class="pn">(</span><span class="str">"com.codeheadsystems:pk-auth-admin-api:<span class="pkv">1.3.1</span>"</span><span class="pn">)</span>
 <span class="pn">}</span></pre>
                   </div>
                 </div>
@@ -1343,7 +1343,7 @@ cd pk-auth</pre>
 <pre><span class="pn">&lt;</span><span class="ty">dependency</span><span class="pn">&gt;</span>
   <span class="pn">&lt;</span><span class="ty">groupId</span><span class="pn">&gt;</span>com.codeheadsystems<span class="pn">&lt;/</span><span class="ty">groupId</span><span class="pn">&gt;</span>
   <span class="pn">&lt;</span><span class="ty">artifactId</span><span class="pn">&gt;</span>pk-auth-spring-boot-starter<span class="pn">&lt;/</span><span class="ty">artifactId</span><span class="pn">&gt;</span>
-  <span class="pn">&lt;</span><span class="ty">version</span><span class="pn">&gt;</span><span class="pkv">1.3.0</span><span class="pn">&lt;/</span><span class="ty">version</span><span class="pn">&gt;</span>
+  <span class="pn">&lt;</span><span class="ty">version</span><span class="pn">&gt;</span><span class="pkv">1.3.1</span><span class="pn">&lt;/</span><span class="ty">version</span><span class="pn">&gt;</span>
 <span class="pn">&lt;/</span><span class="ty">dependency</span><span class="pn">&gt;</span>
 <span class="cm">&lt;!-- + pk-auth-persistence-jdbi, pk-auth-admin-api --&gt;</span></pre>
                   </div>
@@ -1754,7 +1754,7 @@ cd pk-auth</pre>
             A passkey credential layer for the JVM. MIT-licensed.
             Three adapters, one wire contract, your user table.
           </p>
-          <p class="ver">v<span class="pkv">1.3.0</span> &middot; JDK 21 &middot; WebAuthn4J</p>
+          <p class="ver">v<span class="pkv">1.3.1</span> &middot; JDK 21 &middot; WebAuthn4J</p>
         </div>
         <div class="footer-col">
           <h4>Read first</h4>
@@ -1814,7 +1814,7 @@ cd pk-auth</pre>
 
       /* ---- Live latest version (Maven Central via shields, CORS-enabled) ----
          Keeps the page in sync with releases without editing the site; the
-         hardcoded "1.3.0" in the markup is only a fallback if the fetch fails. */
+         hardcoded "1.3.1" in the markup is only a fallback if the fetch fails. */
       var pkv = document.querySelectorAll(".pkv");
       if (pkv.length && window.fetch) {
         fetch("https://img.shields.io/maven-central/v/com.codeheadsystems/pk-auth-core.json")

@@ -9,6 +9,65 @@ The 0.x line is treated as a single pre-stable development series — see
 1.0.0 stabilisation cut; for 0.x history consult `git log` against the relevant
 tags.
 
+## [1.3.1] — 2026-06-06
+
+Patch release: a browser-SDK build fix, a Micronaut admin toggle, and
+supply-chain hardening. No wire-format or API-breaking changes.
+
+### Added
+
+- **Micronaut: the admin endpoints can now be disabled.** A new
+  configuration toggle lets a Micronaut host opt out of mounting
+  `PkAuthAdminController` (passkey list/rename/delete, etc.) while keeping
+  the core auth endpoints, mirroring the disable switch the other framework
+  integrations already expose. See `docs/operator-guide.md`.
+
+### Fixed
+
+- **Browser SDK builds under TypeScript 6.0.** The dev-dependency bump to
+  TypeScript 6.0 broke the `tsup` `.d.ts` pipeline with `TS5101`
+  (the injected `baseUrl` is now a deprecation error). Adding
+  `ignoreDeprecations: "6.0"` to the SDK `tsconfig.json` restores the build;
+  the ESM/CJS/DTS bundle, `tsc --noEmit`, and all vitest tests pass under
+  TS 6.0.
+
+### Security
+
+- **Dependency and CI/CD supply-chain hardening.**
+  - Every GitHub Actions `uses:` is pinned to a full commit SHA (version in a
+    trailing comment) instead of a mutable `@vN` tag — most importantly the
+    third-party `softprops/action-gh-release` in the privileged release job.
+  - The Gradle distribution is pinned via `distributionSha256Sum` in the
+    wrapper, with a `wrapper-validation` step in CI verifying
+    `gradle-wrapper.jar`.
+  - `actions/dependency-review-action` runs as a PR gate
+    (`fail-on-severity: high`) to block newly introduced dependencies with
+    known high-severity advisories.
+  - Dependabot now covers the npm ecosystem (the published browser SDK and
+    each demo's Playwright e2e suite) and gates auto-merge on update type, so
+    only patch/minor bumps are auto-approved and Actions updates never
+    auto-merge.
+  - The build/distribution trust boundary and these mitigations are
+    documented.
+
+### Changed
+
+- **Gradle dependency verification (`verification-metadata.xml`) was not
+  retained.** It was introduced during the supply-chain work and then
+  removed: with Dependabot auto-merging Gradle bumps, the checksum file would
+  have to be regenerated unattended from whatever was just downloaded
+  (notarizing rather than vetting), and it broke the build on every bump
+  because a version-catalog bump cannot update the checksums. Protection
+  against malicious dependency *releases* is provided by
+  `dependency-review-action`'s advisory database instead. The SHA-pinned
+  Actions, pinned Gradle distribution, and dependency-review gate above are
+  retained.
+
+### Dependencies
+
+- Routine Dependabot bumps across the dev/runtime dependency groups (Gradle
+  and npm) and GitHub Actions.
+
 ## [1.3.0]  — 2026-06-03
 
 Security-review follow-ups (hardening; no known exploit in the items below).
@@ -209,7 +268,8 @@ Security-review follow-ups (hardening; no known exploit in the items below).
 First stable release. Captures the surface produced by the 0.x development
 series; see `git log` for the full history.
 
-[Unreleased]: https://github.com/codeheadsystems/pk-auth/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/codeheadsystems/pk-auth/compare/v1.3.1...HEAD
+[1.3.1]: https://github.com/codeheadsystems/pk-auth/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/codeheadsystems/pk-auth/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/codeheadsystems/pk-auth/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/codeheadsystems/pk-auth/compare/v1.0.0...v1.1.0
