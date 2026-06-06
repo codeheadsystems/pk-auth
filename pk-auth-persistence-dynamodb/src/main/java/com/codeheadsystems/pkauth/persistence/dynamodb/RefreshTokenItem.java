@@ -18,9 +18,13 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortK
  *       every member of a family.
  * </ul>
  *
- * <p>The {@code ttl} attribute is set to {@code expiresAt + cleanupRetention}.epochSecond so
- * DynamoDB's native TTL eventually prunes used/revoked/expired rows. Synchronous cleanup via {@code
- * deleteExpiredBefore} stays available for tests and operator-driven retention.
+ * <p>Two epoch-second attributes drive the lifecycle. {@code expiresAtEpoch} is the token's hard
+ * expiry and is what the {@code rotateAtomically} freshness condition compares against — a numeric
+ * compare avoids the variable-precision pitfall of comparing {@code Instant.toString()} ISO strings.
+ * {@code ttl} is {@code expiresAt + cleanupRetention}.epochSecond and is the attribute DynamoDB's
+ * native TTL prunes on, so used / revoked / expired rows survive the forensic-retention window
+ * before being swept. Synchronous cleanup via {@code deleteExpiredBefore} stays available for tests
+ * and operator-driven retention.
  *
  * @since 1.1.0
  */
@@ -42,6 +46,7 @@ public class RefreshTokenItem {
   private String revokedAtIso;
   private String revokedReason;
   private String amr;
+  private Long expiresAtEpoch;
   private Long ttl;
 
   public RefreshTokenItem() {}
@@ -167,6 +172,15 @@ public class RefreshTokenItem {
 
   public void setAmr(String amr) {
     this.amr = amr;
+  }
+
+  /** Hard expiry as an epoch second; drives the numeric freshness check in {@code rotateAtomically}. */
+  public Long getExpiresAtEpoch() {
+    return expiresAtEpoch;
+  }
+
+  public void setExpiresAtEpoch(Long expiresAtEpoch) {
+    this.expiresAtEpoch = expiresAtEpoch;
   }
 
   public Long getTtl() {

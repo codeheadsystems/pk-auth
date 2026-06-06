@@ -66,9 +66,11 @@ variables (`PKAUTH_JWT_SECRET`, `PKAUTH_OTP_PEPPER`). The adapters bind both.
   `OneTimePasscode` items so DynamoDB evicts them after expiry. (Magic-link tokens
   are never persisted, in any backend.)
 - 1.1.0 adds `access_tokens` and `refresh_tokens` items on the same `PkAuthCore`
-  table (ADR 0015, 0013). Both set the DynamoDB-native `ttl` attribute to the row's
-  `expiresAt` epoch second so background pruning is automatic — TTL must be
-  enabled on the table for this to work.
+  table (ADR 0015, 0013), both pruned by the native `ttl` attribute. Access-token
+  rows set `ttl` to their `expiresAt` epoch second; refresh-token rows set it to
+  `expiresAt + cleanupRetention` (default 30 days) so used/revoked rows survive the
+  forensic-retention window before the background sweep removes them — matching the
+  JDBI cleanup semantics. TTL must be enabled on the table for this to work.
 - Capacity-mode: on-demand is recommended for steady reads but bursty registration;
   provisioned only makes sense once you have a stable signing/verification baseline.
 

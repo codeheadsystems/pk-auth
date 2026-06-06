@@ -3,10 +3,12 @@ package com.codeheadsystems.pkauth.persistence.dynamodb;
 
 import com.codeheadsystems.pkauth.api.UserHandle;
 import com.codeheadsystems.pkauth.json.Base64Url;
+import com.codeheadsystems.pkauth.refresh.RefreshTokenConfig;
 import com.codeheadsystems.pkauth.refresh.RefreshTokenRecord;
 import com.codeheadsystems.pkauth.refresh.RevokeReason;
 import com.codeheadsystems.pkauth.refresh.spi.RefreshTokenRepository;
 import com.codeheadsystems.pkauth.spi.PkAuthPersistenceException;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -57,11 +59,28 @@ public final class DynamoDbRefreshTokenRepository implements RefreshTokenReposit
 
   private final DynamoDbEnhancedClient enhanced;
   private final DynamoDbTable<RefreshTokenItem> table;
+  private final Duration cleanupRetention;
 
+  /**
+   * Uses the {@linkplain RefreshTokenConfig#DEFAULT_CLEANUP_RETENTION default 30-day} forensic
+   * retention window for the native-TTL prune timestamp.
+   */
   public DynamoDbRefreshTokenRepository(
       DynamoDbEnhancedClient enhanced, PkAuthDynamoTables tables) {
+    this(enhanced, tables, RefreshTokenConfig.DEFAULT_CLEANUP_RETENTION);
+  }
+
+  /**
+   * @param cleanupRetention how long past {@code expiresAt} the native {@code ttl} attribute keeps a
+   *     row before DynamoDB prunes it — must match the {@link RefreshTokenConfig#cleanupRetention()}
+   *     the host runs the service with, so the background sweep honors the same forensic window the
+   *     JDBI backend does.
+   */
+  public DynamoDbRefreshTokenRepository(
+      DynamoDbEnhancedClient enhanced, PkAuthDynamoTables tables, Duration cleanupRetention) {
     this.enhanced = Objects.requireNonNull(enhanced, "enhanced");
     Objects.requireNonNull(tables, "tables");
+    this.cleanupRetention = Objects.requireNonNull(cleanupRetention, "cleanupRetention");
     this.table = enhanced.table(tables.core(), TableSchema.fromBean(RefreshTokenItem.class));
   }
 
@@ -108,11 +127,12 @@ public final class DynamoDbRefreshTokenRepository implements RefreshTokenReposit
           //
           // The condition is the authoritative freshness check: the parent must exist
           // (attribute_exists(pk) — UpdateItem would otherwise upsert a brand-new row) and be
-          // unused, unrevoked, and unexpired. Expiry compares the numeric epoch-second `ttl`
-          // attribute (== expiresAt.epochSecond), NOT the ISO string: Instant.toString() is
-          // variable-precision (it drops the fractional-seconds field when zero), so a
-          // lexicographic ">" sorts "...:00Z" after "...:00.000001Z" and would treat an expired
-          // token as still fresh.
+          // unused, unrevoked, and unexpired. Expiry compares the numeric epoch-second
+          // `expiresAtEpoch` attribute (== expiresAt.epochSecond), NOT the ISO string:
+          // Instant.toString() is variable-precision (it drops the fractional-seconds field when
+          // zero), so a lexicographic ">" sorts "...:00Z" after "...:00.000001Z" and would treat an
+          // expired token as still fresh. The separate `ttl` attribute carries
+          // expiresAt + cleanupRetention for native pruning and must NOT be used for freshness.
           RefreshTokenItem parentMark = new RefreshTokenItem();
           parentMark.setPk(PRIMARY_PK_PREFIX + parentRefreshId);
           parentMark.setSk(PRIMARY_PK_PREFIX + parentRefreshId);
@@ -122,8 +142,8 @@ public final class DynamoDbRefreshTokenRepository implements RefreshTokenReposit
               Expression.builder()
                   .expression(
                       "attribute_exists(pk) AND attribute_not_exists(usedAtIso)"
-                          + " AND attribute_not_exists(revokedAtIso) AND #ttl > :nowEpoch")
-                  .putExpressionName("#ttl", "ttl")
+                          + " AND attribute_not_exists(revokedAtIso) AND #expEpoch > :nowEpoch")
+                  .putExpressionName("#expEpoch", "expiresAtEpoch")
                   .putExpressionValue(
                       ":nowEpoch", AttributeValue.fromN(Long.toString(now.getEpochSecond())))
                   .build();
@@ -344,11 +364,14 @@ public final class DynamoDbRefreshTokenRepository implements RefreshTokenReposit
           long cutoffEpoch = cutoff.getEpochSecond();
           int[] removed = {0};
           // Scan only primary items (pk and sk both start with RT#) and filter by the
-          // retention predicate that mirrors the JDBI cleanup SQL.
+          // retention predicate that mirrors the JDBI cleanup SQL (expires_at < cutoff). This uses
+          // `expiresAtEpoch`, NOT the retention-extended `ttl` attribute.
           table.scan().items().stream()
               .filter(item -> item.getPk() != null && item.getPk().startsWith(PRIMARY_PK_PREFIX))
               .filter(item -> item.getPk().equals(item.getSk())) // primary only
-              .filter(item -> item.getTtl() != null && item.getTtl() < cutoffEpoch)
+              .filter(
+                  item ->
+                      item.getExpiresAtEpoch() != null && item.getExpiresAtEpoch() < cutoffEpoch)
               .filter(
                   item ->
                       (item.getUsedAtIso() != null
@@ -416,7 +439,7 @@ public final class DynamoDbRefreshTokenRepository implements RefreshTokenReposit
     return Base64Url.encode(r.userHandle().value());
   }
 
-  private static RefreshTokenItem toItem(RefreshTokenRecord r, String pk, String sk) {
+  private RefreshTokenItem toItem(RefreshTokenRecord r, String pk, String sk) {
     RefreshTokenItem item = new RefreshTokenItem();
     item.setPk(pk);
     item.setSk(sk);
@@ -433,7 +456,8 @@ public final class DynamoDbRefreshTokenRepository implements RefreshTokenReposit
     item.setRevokedAtIso(r.revokedAt().map(Instant::toString).orElse(null));
     item.setRevokedReason(r.revokedReason().map(Enum::name).orElse(null));
     item.setAmr(String.join(",", r.amr()));
-    item.setTtl(r.expiresAt().getEpochSecond());
+    item.setExpiresAtEpoch(r.expiresAt().getEpochSecond());
+    item.setTtl(r.expiresAt().plus(cleanupRetention).getEpochSecond());
     return item;
   }
 
