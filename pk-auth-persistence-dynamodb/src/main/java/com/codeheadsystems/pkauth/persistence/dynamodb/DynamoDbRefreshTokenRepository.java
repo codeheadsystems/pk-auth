@@ -71,10 +71,10 @@ public final class DynamoDbRefreshTokenRepository implements RefreshTokenReposit
   }
 
   /**
-   * @param cleanupRetention how long past {@code expiresAt} the native {@code ttl} attribute keeps a
-   *     row before DynamoDB prunes it — must match the {@link RefreshTokenConfig#cleanupRetention()}
-   *     the host runs the service with, so the background sweep honors the same forensic window the
-   *     JDBI backend does.
+   * @param cleanupRetention how long past {@code expiresAt} the native {@code ttl} attribute keeps
+   *     a row before DynamoDB prunes it — must match the {@link
+   *     RefreshTokenConfig#cleanupRetention()} the host runs the service with, so the background
+   *     sweep honors the same forensic window the JDBI backend does.
    */
   public DynamoDbRefreshTokenRepository(
       DynamoDbEnhancedClient enhanced, PkAuthDynamoTables tables, Duration cleanupRetention) {

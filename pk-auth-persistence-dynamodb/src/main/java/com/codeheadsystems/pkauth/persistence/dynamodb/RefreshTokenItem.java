@@ -20,11 +20,11 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortK
  *
  * <p>Two epoch-second attributes drive the lifecycle. {@code expiresAtEpoch} is the token's hard
  * expiry and is what the {@code rotateAtomically} freshness condition compares against — a numeric
- * compare avoids the variable-precision pitfall of comparing {@code Instant.toString()} ISO strings.
- * {@code ttl} is {@code expiresAt + cleanupRetention}.epochSecond and is the attribute DynamoDB's
- * native TTL prunes on, so used / revoked / expired rows survive the forensic-retention window
- * before being swept. Synchronous cleanup via {@code deleteExpiredBefore} stays available for tests
- * and operator-driven retention.
+ * compare avoids the variable-precision pitfall of comparing {@code Instant.toString()} ISO
+ * strings. {@code ttl} is {@code expiresAt + cleanupRetention}.epochSecond and is the attribute
+ * DynamoDB's native TTL prunes on, so used / revoked / expired rows survive the forensic-retention
+ * window before being swept. Synchronous cleanup via {@code deleteExpiredBefore} stays available
+ * for tests and operator-driven retention.
  *
  * @since 1.1.0
  */
@@ -174,7 +174,9 @@ public class RefreshTokenItem {
     this.amr = amr;
   }
 
-  /** Hard expiry as an epoch second; drives the numeric freshness check in {@code rotateAtomically}. */
+  /**
+   * Hard expiry as an epoch second; drives the numeric freshness check in {@code rotateAtomically}.
+   */
   public Long getExpiresAtEpoch() {
     return expiresAtEpoch;
   }
