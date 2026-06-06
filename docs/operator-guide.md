@@ -11,8 +11,10 @@ adapters all consume the same core. A typical production deployment needs:
 - **JDK 21** (records, sealed types, virtual threads). Earlier JDKs will not compile.
 - **Postgres 16+** (when using `pk-auth-persistence-jdbi`) — Flyway migrations run
   at startup, no manual schema work.
-- **DynamoDB** (when using `pk-auth-persistence-dynamodb`) — single table, schema
-  per item type. See ADR 0008 for the table layout.
+- **DynamoDB** (when using `pk-auth-persistence-dynamodb`) — two tables: a
+  single-table `PkAuthCore` carrying every pk-auth auth item plus a separate
+  `PkAuthUsers` table for the host-app user records the `UserLookup` SPI reads.
+  See ADR 0008 for the table layout.
 - **At least one trusted dispatcher** for magic links + OTP if you enable those
   flows. The testkit's `LoggingEmailSender` / `LoggingSmsSender` log secrets to
   stdout; never use them in production.
@@ -24,7 +26,7 @@ adapters all consume the same core. A typical production deployment needs:
 | `pkauth.jwt.secret` (HS256) | 32 bytes | Hard fail at boot if shorter. Rotate by issuing a fresh secret and tolerating a grace window (issue + verify in parallel — pk-auth itself does not rotate; the host shoulds run two issuers behind a load balancer until tokens expire). |
 | `pkauth.relying-party.id` | n/a | The eTLD+1 (e.g. `example.com`, NOT `auth.example.com`). Cross-subdomain passkeys all bind to this. Once a credential is registered against an RP ID, it cannot be re-registered against a different one without a fresh enrollment. |
 | `pkauth.relying-party.origins` | n/a | Strict allow-list of `https://` origins. WebAuthn rejects mismatches; expand the list as you add subdomains. |
-| Argon2id pepper | n/a | Per-deployment pepper for OTP hashes only (backup codes use Argon2id without a pepper). Treat as a long-lived secret; rotating it invalidates every existing OTP hash. |
+| OTP pepper (`pkauth.otp.pepper`) | n/a | Per-deployment pepper for OTP hashes only — OTP codes are hashed with HMAC-SHA256(pepper, code), not Argon2id. (Backup codes use Argon2id with no pepper.) Treat as a long-lived secret; rotating it invalidates every existing OTP hash. |
 
 Recommended: stash secrets in a KMS/Secrets Manager and inject as environment
 variables (`PKAUTH_JWT_SECRET`, `PKAUTH_OTP_PEPPER`). The adapters bind both.
@@ -43,6 +45,10 @@ variables (`PKAUTH_JWT_SECRET`, `PKAUTH_OTP_PEPPER`). The adapters bind both.
   `V7__credentials_hard_delete.sql` drops the `revoked_at` / `revoked_reason`
   columns on `credentials` — credential delete is a hard delete, with the
   audit record captured as a structured log event (`pkauth.credential.deleted`).
+  `V8__create_access_tokens.sql` and `V9__create_refresh_tokens.sql` add the
+  1.1.0 `access_tokens` and `refresh_tokens` tables; `V10__refresh_tokens_amr.sql`
+  adds the `amr` (RFC 8176 authentication-method-reference) column to
+  `refresh_tokens`.
 - Magic-link tokens are not persisted: the JWT is the credential, and the
   consumed-JTI store is in-memory by default (see `ConsumedJtiStore` SPI for a
   multi-replica override).
@@ -51,12 +57,16 @@ variables (`PKAUTH_JWT_SECRET`, `PKAUTH_OTP_PEPPER`). The adapters bind both.
 
 ### DynamoDB
 
-- Single physical table (see ADR 0008). Provision it before the app starts; the
-  adapter does not create it.
-- TTL attribute `expiresAt` is honored on `Challenge` / `OneTimePasscode` /
-  `MagicLink` items — enable it on the table.
-- 1.1.0 adds `access_tokens` and `refresh_tokens` items on the same table (ADR
-  0015, 0013). Both set the DynamoDB-native `ttl` attribute to the row's
+- Two physical tables (see ADR 0008): `PkAuthCore` holds every pk-auth auth item
+  (credentials, challenges, backup codes, OTP codes, and the 1.1.0 token rows),
+  and `PkAuthUsers` holds the host-app user records the `UserLookup` SPI reads.
+  Provision both before the app starts; the adapter does not create them.
+- The DynamoDB-native TTL attribute is `ttl` (epoch seconds) — enable TTL on the
+  `ttl` attribute of the `PkAuthCore` table. It is set on `Challenge` and
+  `OneTimePasscode` items so DynamoDB evicts them after expiry. (Magic-link tokens
+  are never persisted, in any backend.)
+- 1.1.0 adds `access_tokens` and `refresh_tokens` items on the same `PkAuthCore`
+  table (ADR 0015, 0013). Both set the DynamoDB-native `ttl` attribute to the row's
   `expiresAt` epoch second so background pruning is automatic — TTL must be
   enabled on the table for this to work.
 - Capacity-mode: on-demand is recommended for steady reads but bursty registration;

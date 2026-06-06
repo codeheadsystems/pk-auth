@@ -63,14 +63,17 @@ write, and a failure leaves the user in a recoverable (if inconvenient) state.
 ## Where pk-auth *does* require atomicity inside an SPI
 
 The general "no shared transaction across SPI calls" stance does not extend to
-operations that pk-auth declares atomic inside a single SPI call. Two surfaces
-require the implementation to commit a multi-step change atomically; the
-parity-test suite enforces this on every shipped backend.
+operations that pk-auth declares atomic inside a single SPI call. Three surfaces
+require the implementation to commit a multi-step change atomically. The
+parity-test suite exercises this on every shipped backend — directly under
+concurrency for `takeOnce` and `rotateAtomically` (multi-thread / `CountDownLatch`
+races), and via round-trip parity tests for the backup-code and OTP `consume`
+paths.
 
 | SPI method | Atomicity contract |
 |---|---|
 | `ChallengeStore.takeOnce(challengeId)` | Read + delete (or read + mark consumed) commit as one step. A second concurrent caller for the same challenge must receive `Optional.empty()`. |
-| `BackupCodeRepository.consume` / `OtpRepository.consume` | Hash compare + mark-used commit as one step; exactly one of N concurrent callers wins. |
+| `BackupCodeRepository.consume` / `OtpRepository.consume` | The id-keyed mark-used commits as one atomic step, so exactly one of N concurrent callers wins. (The Argon2 / HMAC hash compare runs earlier in the service layer and is deliberately racy; the `consume` return value is the single source of truth for which caller won.) |
 | `RefreshTokenRepository.rotateAtomically` *(1.1.0)* | Mark the parent refresh row used AND insert the successor row in a single atomic operation — JDBI transaction, DynamoDB `TransactWriteItems`, or in-memory `ConcurrentHashMap.compute`. A non-atomic implementation has a window where a concurrent rotator's family-scorch can miss the freshly-inserted successor; the contract forbids this and the `concurrentRotationExactlyOneSucceedsFamilyRevoked` parity test (8 threads + `CountDownLatch`) enforces it against in-memory, real Postgres, and DynamoDB Local. See [ADR 0013](./adr/0013-refresh-tokens-family-rotation.md). |
 
 Cross-SPI atomicity is still **not** required; the `UserDeletionService`
