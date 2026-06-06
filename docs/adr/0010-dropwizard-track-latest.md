@@ -39,7 +39,7 @@ Dropwizard major.
 ## Decision
 
 The `pk-auth-dropwizard` adapter tracks the latest released Dropwizard. The
-catalog pin is the current latest (5.0.1 at this time). The Dependabot
+catalog pin is the current latest (5.0.2 at this time). The Dependabot
 `io.dropwizard:* version-update:semver-major` ignore rule has been removed —
 future majors will surface as PRs the same way every other dependency does.
 

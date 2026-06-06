@@ -23,7 +23,7 @@ The constraints that made (3) the right call:
 
 ## Decision
 
-`pk-auth-core` standardizes on **Jackson 3** (`tools.jackson.databind 3.1.3`). The shared `ObjectMapper` factory uses the Jackson 3 `JsonMapper.builder()` flow, `ValueSerializer` / `ValueDeserializer`, and `changeDefaultPropertyInclusion(...)` for the NON_NULL output policy. We continue to use the classical `com.fasterxml.jackson.core:jackson-annotations 2.21` artifact for annotations.
+`pk-auth-core` standardizes on **Jackson 3** (`tools.jackson.databind 3.1.4`). The shared `ObjectMapper` factory uses the Jackson 3 `JsonMapper.builder()` flow, `ValueSerializer` / `ValueDeserializer`, and `changeDefaultPropertyInclusion(...)` for the NON_NULL output policy. We continue to use the classical `com.fasterxml.jackson.core:jackson-annotations 2.22` artifact for annotations.
 
 Jackson 3's `tools.jackson.databind` bundles `java.time` and `Jdk8` datatype support directly into databind, so the separate `jackson-datatype-jsr310` and `jackson-datatype-jdk8` dependencies are no longer required.
 

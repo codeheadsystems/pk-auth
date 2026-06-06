@@ -61,9 +61,13 @@ every shipped demo, however, is stateless JWT.
 - **Negative — revocation is harder.** A short TTL (default 1 hour) bounds the blast radius
   but doesn't eliminate it. A future denylist SPI on the `ChallengeStore` (or a sibling
   store) can plug this if we need true logout; the brief calls it out as a non-goal for v0.x.
+  *(Shipped in 1.1.0 as the opt-in `AccessTokenStore` SPI — stateful, revocable-before-`exp`
+  access tokens; the default stays the stateless no-op. See ADR 0015.)*
 - **Negative — refresh-token machinery is not provided.** Hosts that need long-lived
   sessions must either accept re-authentication on TTL expiry or layer their own refresh
   flow on top. pk-auth's scope is the credential layer, not session management.
+  *(Shipped in 1.1.0 as the `pk-auth-refresh-tokens` module — rotating refresh tokens with
+  family-based replay defense. See ADR 0013.)*
 - **Neutral — key rotation is a separate concern.** `JwtKeyset` already supports a current
   signing key plus a list of retired verification keys. Rotating the signing key invalidates
   no outstanding tokens; rotating it AND removing the retired key invalidates everything
@@ -71,8 +75,14 @@ every shipped demo, however, is stateless JWT.
 
 ## Open follow-ups
 
-- A token-revocation SPI is deferred. If a downstream consumer needs it, the natural shape
-  is a `RevokedTokenStore` with `revoke(jti, expiresAt)` and `isRevoked(jti)`. The Spring
-  filter would consult it after signature validation. Out of scope for v0.x.
-- Refresh-token issuance is out of scope. Hosts that want it are expected to wrap
-  `PkAuthJwtIssuer` in their own service.
+> **Resolved in 1.1.0.** Both deferred items below have since shipped. The stateless-JWT
+> default in this ADR still stands — the new capabilities are opt-in and leave the default
+> behavior unchanged.
+
+- ~~A token-revocation SPI is deferred.~~ Shipped as `AccessTokenStore` (ADR 0015) — an
+  allow-list (`record` / `exists` / `delete` / `deleteAllForUser` / `deleteExpiredBefore`)
+  rather than the originally-sketched `RevokedTokenStore` deny-list. The validator consults
+  it after signature validation; the default no-op store preserves stateless behavior.
+- ~~Refresh-token issuance is out of scope.~~ Shipped as the `pk-auth-refresh-tokens` module
+  (ADR 0013): rotating refresh tokens with family-based replay defense, exposed via
+  `POST /auth/refresh`.

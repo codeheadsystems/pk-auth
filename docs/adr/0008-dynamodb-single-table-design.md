@@ -63,7 +63,7 @@ The minor size overhead (~33%) is acceptable for pk-auth's data sizes — creden
 
 - **Positive — cheap user-scoped queries.** Listing a user's credentials, backup codes, or OTP codes is a single `Query` on the same partition.
 - **Positive — host-app independence.** A host app that already runs DynamoDB can point `DynamoDbUserLookup` at its own existing users table by reusing the `UserItem` schema (or implementing `UserLookup` against an entirely different schema).
-- **Positive — schema simplicity.** Three attribute definitions for the core table (`pk`, `sk`, `gsi1pk`, `gsi1sk`); no migrations were required when Phase 6 item types were added.
+- **Positive — schema simplicity.** Four attribute definitions for the core table (`pk`, `sk`, `gsi1pk`, `gsi1sk`); no migrations were required when Phase 6 item types were added.
 - **Negative — hot-partition risk on a single user with thousands of credentials.** Not a realistic scenario for consumer passkeys, but worth flagging.
 - **Negative — GSI projection.** `gsi1-credential-by-id` projects ALL attributes; that's twice the storage cost on credential rows. We accept it because the assertion path needs the full credential to verify, and avoiding a second `GetItem` per assertion is the right trade for the latency floor.
 

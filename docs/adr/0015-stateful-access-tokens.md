@@ -46,7 +46,7 @@ public interface AccessTokenStore {
   void record(String jti, UserHandle, String audience, Optional<String> deviceId,
               Instant issuedAt, Instant expiresAt);
   boolean exists(String jti);
-  boolean delete(String jti);
+  boolean delete(UserHandle userHandle, String jti);
   int deleteAllForUser(UserHandle userHandle);
   int deleteExpiredBefore(Instant before);
   static AccessTokenStore noop();
@@ -86,7 +86,7 @@ Adapter wiring:
 
 - **Pro**: Server-side logout works end-to-end with no host-side code
   beyond binding the JDBI/Dynamo `AccessTokenStore` bean and calling
-  `store.delete(jti)` from the logout endpoint.
+  `store.delete(userHandle, jti)` from the logout endpoint.
 - **Pro**: User deletion (ADR 0016) becomes a one-call operation:
   `UserDeletionService.deleteUser(handle)` fans out to every listener
   including the access-token cleanup.

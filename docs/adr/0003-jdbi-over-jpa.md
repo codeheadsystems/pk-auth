@@ -24,7 +24,7 @@ The build brief is explicit (§3): "JDBI 3 + Flyway against PostgreSQL. **No Hib
 ## Consequences
 
 - **Positive — predictability.** Every query is visible. No magic SQL emitted by an ORM. The audit-friendliest stance for an auth-layer module.
-- **Positive — minimal runtime surface.** JDBI 3 + the Postgres JDBC driver are the only runtime dependencies pk-auth-persistence-jdbi adds (Flyway is implementation-only and used at startup).
+- **Positive — minimal runtime surface.** pk-auth-persistence-jdbi adds only JDBI 3, the Postgres JDBC driver, HikariCP (connection pool), and slf4j-api as runtime dependencies; Flyway is implementation-scoped and used at startup.
 - **Positive — no JPA-style entity-manager threading caveats.** Repository methods are stateless; the brief's "no reflection in hot paths" stance (§11) holds.
 - **Negative — no automatic schema generation.** Every change to a `CredentialRecord` / `ChallengeRecord` field needs a new Flyway migration. We accept this — auth-data migrations should be deliberate.
 - **Negative — no entity-graph fetch.** pk-auth's data is shallow (no relationships across repositories), so this is fine for now. If a future feature needs a join, we write it.

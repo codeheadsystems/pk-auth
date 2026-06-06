@@ -9,7 +9,7 @@ Accepted.
 ## Context
 
 `pk-auth-micronaut` was written directly against Micronaut 4.x (the build
-catalog currently pins `micronaut = "4.10.23"`). The decision to skip
+catalog currently pins `micronaut = "4.10.25"`). The decision to skip
 Micronaut 3 entirely was made at module creation: Micronaut 3 reached end of
 maintenance during pk-auth's first development cycle, and adopters starting
 new projects in 2026 are expected on Micronaut 4.

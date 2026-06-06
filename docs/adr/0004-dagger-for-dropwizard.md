@@ -34,20 +34,24 @@ This ADR records the rationale.
 Use Dagger 2 (`com.google.dagger:dagger:2.59.x` with `dagger-compiler` on the
 `annotationProcessor` configuration) to wire the Dropwizard adapter's object graph. The bundle's
 public API does not leak Dagger types: host applications hand the bundle a `PersistenceBindings`
-record and an optional `AdminService`, and the bundle internally builds a `PkAuthComponent` whose
-provision methods Jersey resources consume.
+object and an optional `AdminService`, and the bundle internally builds a `PkAuthComponent` (or the
+larger `PkAuthFullComponent` when the alt-flow modules are auto-wired) whose provision methods
+Jersey resources consume.
 
 The Dagger module structure is intentionally small:
 
 - `PkAuthModule` — provides `PasskeyAuthenticationService`, `JwtConfig` / `JwtKeyset` /
-  `PkAuthJwtIssuer` / `PkAuthJwtValidator`, `PasskeyAuthenticator`, and the
-  `PasskeyCeremonyResource`. Bound to the runtime `PkAuthConfig` block via constructor injection
+  `PkAuthJwtIssuer` / `PkAuthJwtValidator`, `PkAuthDropwizardAuthenticator`, and the
+  `PkAuthCeremonyResource`. Bound to the runtime `PkAuthConfig` block via constructor injection
   on the module itself.
-- `PkAuthComponent` — the `@Component` whose four provision methods expose what the bundle hands
-  to Jersey (`ceremonyResource()`, `passkeyAuthenticator()`, `jwtIssuer()`, `jwtValidator()`).
-- The optional admin path (when `pk-auth-admin-api` is on the classpath) is not Dagger-wired —
-  the bundle instantiates `AdminResource` directly from the host-supplied `AdminService` so the
-  admin module's compile-time dependency stays optional.
+- `PkAuthComponent` — the `@Component` whose provision methods expose what the bundle hands to
+  Jersey: `ceremonyResource()`, `passkeyAuthenticator()`, `jwtIssuer()`, `jwtValidator()`,
+  `userDeletionService()`, and `refreshHandler()`.
+- The optional admin path (when `pk-auth-admin-api` is on the classpath): when the alt-flow modules
+  are auto-wired the bundle builds `PkAuthFullComponent` (`PkAuthModule` + `AltFlowsModule`), which
+  adds `adminResource()`; when a host supplies its own `AdminService` the bundle instantiates
+  `PkAuthAdminResource` directly. Either way the admin module's compile-time dependency stays
+  optional.
 
 Generated classes live in `com.codeheadsystems.pkauth.dropwizard.dagger` and are excluded from
 the JaCoCo coverage report (they're auto-generated boilerplate that should not skew the
