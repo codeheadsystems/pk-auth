@@ -2,6 +2,7 @@
 package com.codeheadsystems.pkauth.spring;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -41,12 +42,19 @@ class PkAuthAdminIntegrationTest {
   @Autowired private ObjectMapper objectMapper;
   @Autowired private UserLookup userLookup;
   @Autowired private RelyingPartyConfig relyingParty;
+  @Autowired private com.codeheadsystems.pkauth.spi.CeremonyRateLimiter ceremonyRateLimiter;
 
   private MockMvc mockMvc;
   private FakeAuthenticator authenticator;
 
   @BeforeEach
   void setUp() {
+    // The in-memory ceremony rate limiter is a shared singleton across this class's reused
+    // context; without a per-test reset the cumulative start/finish calls trip the per-IP limit.
+    if (ceremonyRateLimiter
+        instanceof com.codeheadsystems.pkauth.ceremony.InMemoryCeremonyRateLimiter inMemory) {
+      inMemory.reset();
+    }
     mockMvc =
         MockMvcBuilders.webAppContextSetup(webApplicationContext)
             .apply(SecurityMockMvcConfigurers.springSecurity())
@@ -156,6 +164,58 @@ class PkAuthAdminIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"token\":\"\"}"))
         .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  void authenticatedDeleteCredentialRemovesIt() throws Exception {
+    String token = registerAndLogin("ivan");
+    // Deleting the last credential is refused (409) unless backup codes remain — generate them
+    // first so the delete reaches its success path.
+    mockMvc
+        .perform(
+            post("/auth/admin/backup-codes/regenerate").header("Authorization", "Bearer " + token))
+        .andExpect(status().isOk());
+    MvcResult list =
+        mockMvc
+            .perform(get("/auth/admin/credentials").header("Authorization", "Bearer " + token))
+            .andReturn();
+    String body = list.getResponse().getContentAsString();
+    int idStart = body.indexOf("\"credentialId\":\"") + "\"credentialId\":\"".length();
+    int idEnd = body.indexOf('"', idStart);
+    String credentialId = body.substring(idStart, idEnd);
+
+    mockMvc
+        .perform(
+            delete("/auth/admin/credentials/" + credentialId)
+                .header("Authorization", "Bearer " + token))
+        .andExpect(status().isNoContent());
+
+    // The credential list is now empty.
+    mockMvc
+        .perform(get("/auth/admin/credentials").header("Authorization", "Bearer " + token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.length()").value(0));
+  }
+
+  @Test
+  void finishPhoneVerificationAfterStartReturnsResult() throws Exception {
+    String token = registerAndLogin("judy");
+    mockMvc
+        .perform(
+            post("/auth/admin/phone/start-verification")
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"phone\":\"+15557654321\"}"))
+        .andExpect(status().isOk());
+    // Complete with a (near-certainly) wrong code: the handler runs and maps the typed result to
+    // a 200 body regardless of match/mismatch.
+    mockMvc
+        .perform(
+            post("/auth/admin/phone/complete-verification")
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"phone\":\"+15557654321\",\"code\":\"000000\"}"))
+        .andExpect(status().isOk());
   }
 
   private String registerAndLogin(String username) throws Exception {

@@ -93,6 +93,56 @@ class DynamoDbRefreshTokenRepositoryIntegrationTest {
   }
 
   @Test
+  void deleteExpiredBeforeRemovesRevokedExpiredRowsButKeepsFresh() {
+    UserHandle user = UserHandle.of(new byte[] {1, 2, 3, 4});
+
+    // An expired + revoked row that is past the cutoff on both axes — eligible for cleanup.
+    String staleId = "stale-" + UUID.randomUUID();
+    repository.create(
+        new RefreshTokenRecord(
+            staleId,
+            new byte[32],
+            user,
+            "web",
+            Optional.empty(),
+            staleId,
+            Optional.empty(),
+            Instant.parse("2020-01-01T00:00:00Z"),
+            Instant.parse("2020-02-01T00:00:00Z"), // expiresAt in the past
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty(),
+            List.of("pkauth")));
+    repository.revokeFamily(
+        staleId,
+        Instant.parse("2020-02-02T00:00:00Z"),
+        com.codeheadsystems.pkauth.refresh.RevokeReason.ADMIN);
+
+    // A still-valid row well after the cutoff — must survive cleanup.
+    String freshId = "fresh-" + UUID.randomUUID();
+    repository.create(
+        new RefreshTokenRecord(
+            freshId,
+            new byte[32],
+            user,
+            "web",
+            Optional.empty(),
+            freshId,
+            Optional.empty(),
+            Instant.parse("2030-01-01T00:00:00Z"),
+            Instant.parse("2030-02-01T00:00:00Z"),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty(),
+            List.of("pkauth")));
+
+    int removed = repository.deleteExpiredBefore(Instant.parse("2021-01-01T00:00:00Z"));
+    assertThat(removed).isGreaterThanOrEqualTo(1);
+    assertThat(repository.findByRefreshId(staleId)).isEmpty();
+    assertThat(repository.findByRefreshId(freshId)).isPresent();
+  }
+
+  @Test
   void issueRotateRevokeHappyPath() {
     new RefreshTokenScenarios(repository).issueRotateRevokeHappyPath();
   }

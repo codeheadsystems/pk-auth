@@ -53,6 +53,48 @@ class DynamoDbAltFlowsIntegrationTest {
   }
 
   @Test
+  void backupCodeReplaceAllSwapsTheEntireCodeSet() {
+    UserHandle user = UserHandle.random();
+    Instant now = Instant.parse("2026-05-14T12:00:00Z");
+    backupCodes.save(
+        new BackupCodeRepository.StoredBackupCode("old1", user, "h1", false, now, null));
+    backupCodes.save(
+        new BackupCodeRepository.StoredBackupCode("old2", user, "h2", false, now, null));
+
+    backupCodes.replaceAll(
+        user,
+        java.util.List.of(
+            new BackupCodeRepository.StoredBackupCode("new1", user, "n1", false, now, null),
+            new BackupCodeRepository.StoredBackupCode("new2", user, "n2", false, now, null),
+            new BackupCodeRepository.StoredBackupCode("new3", user, "n3", false, now, null)));
+
+    assertThat(backupCodes.findByUserHandle(user))
+        .extracting(BackupCodeRepository.StoredBackupCode::codeId)
+        .containsExactlyInAnyOrder("new1", "new2", "new3");
+  }
+
+  @Test
+  void otpDeleteByUserHandleRemovesEveryRowForTheUser() {
+    UserHandle user = UserHandle.random();
+    UserHandle other = UserHandle.random();
+    Instant t0 = Instant.parse("2026-05-14T12:00:00Z");
+    otp.save(
+        new OtpRepository.StoredOtp(
+            "d1", user, "+15551110000", "h", 0, 5, false, t0, t0.plusSeconds(300)));
+    otp.save(
+        new OtpRepository.StoredOtp(
+            "d2", user, "+15551110000", "h", 0, 5, false, t0, t0.plusSeconds(300)));
+    otp.save(
+        new OtpRepository.StoredOtp(
+            "k1", other, "+15552220000", "h", 0, 5, false, t0, t0.plusSeconds(300)));
+
+    int removed = otp.deleteByUserHandle(user);
+    assertThat(removed).isEqualTo(2);
+    assertThat(otp.findLatestActive(user, "+15551110000")).isEmpty();
+    assertThat(otp.findLatestActive(other, "+15552220000")).isPresent();
+  }
+
+  @Test
   void otpRoundTripAndCountSince() {
     UserHandle user = UserHandle.random();
     Instant t0 = Instant.parse("2026-05-14T12:00:00Z");

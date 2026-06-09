@@ -170,4 +170,93 @@ final class PkAuthBundleAltFlowsIntegrationTest {
     assertThat(state.bundle.jwtIssuer()).isNotNull();
     assertThat(state.bundle.jwtValidator()).isNotNull();
   }
+
+  // -- Authenticated admin endpoints (exercise every PkAuthAdminResource handler) -----------
+
+  private String bearerFor(String username) {
+    com.codeheadsystems.pkauth.api.UserHandle uh =
+        state.everything.users.getOrCreateHandle(username);
+    return state
+        .bundle
+        .jwtIssuer()
+        .issue(com.codeheadsystems.pkauth.jwt.JwtClaims.forBackupCode(uh, java.util.List.of("t")));
+  }
+
+  private jakarta.ws.rs.client.Invocation.Builder authed(String path, String username) {
+    return client
+        .target(baseUrl + path)
+        .request(MediaType.APPLICATION_JSON)
+        .header("Authorization", "Bearer " + bearerFor(username));
+  }
+
+  @Test
+  void listCredentialsReturnsOkForAuthenticatedUser() {
+    try (Response r = authed("/auth/admin/credentials", "dw-list").get()) {
+      assertThat(r.getStatus()).isEqualTo(200);
+    }
+  }
+
+  @Test
+  void remainingBackupCodesCountReturnsOk() {
+    try (Response r = authed("/auth/admin/backup-codes/count", "dw-count").get()) {
+      assertThat(r.getStatus()).isEqualTo(200);
+    }
+  }
+
+  @Test
+  void regenerateBackupCodesReturnsOk() {
+    try (Response r =
+        authed("/auth/admin/backup-codes/regenerate", "dw-regen")
+            .post(jakarta.ws.rs.client.Entity.json("{}"))) {
+      assertThat(r.getStatus()).isEqualTo(200);
+    }
+  }
+
+  @Test
+  void deleteUnknownCredentialReturnsNotFound() {
+    String id = com.codeheadsystems.pkauth.json.Base64Url.encode(new byte[] {4, 5, 6});
+    try (Response r = authed("/auth/admin/credentials/" + id, "dw-del").delete()) {
+      assertThat(r.getStatus()).isEqualTo(404);
+    }
+  }
+
+  @Test
+  void startEmailVerificationReturnsNoContent() {
+    try (Response r =
+        authed("/auth/admin/email/start-verification", "dw-email")
+            .post(jakarta.ws.rs.client.Entity.json("{\"email\":\"a@example.com\"}"))) {
+      assertThat(r.getStatus()).isEqualTo(204);
+    }
+  }
+
+  @Test
+  void finishEmailVerificationUnauthenticatedRejectsBadToken() {
+    try (Response r =
+        client
+            .target(baseUrl + "/auth/admin/email/complete-verification")
+            .request(MediaType.APPLICATION_JSON)
+            .post(jakarta.ws.rs.client.Entity.json("{\"token\":\"not.a.jwt\"}"))) {
+      assertThat(r.getStatus()).isEqualTo(400);
+    }
+  }
+
+  @Test
+  void startPhoneVerificationReturnsOk() {
+    try (Response r =
+        authed("/auth/admin/phone/start-verification", "dw-phone")
+            .post(jakarta.ws.rs.client.Entity.json("{\"phone\":\"+15551230000\"}"))) {
+      assertThat(r.getStatus()).isEqualTo(200);
+    }
+  }
+
+  @Test
+  void finishPhoneVerificationWithNoActiveOtpReturnsOk() {
+    try (Response r =
+        authed("/auth/admin/phone/complete-verification", "dw-phone-finish")
+            .post(
+                jakarta.ws.rs.client.Entity.json(
+                    "{\"phone\":\"+15559990000\",\"code\":\"000000\"}"))) {
+      assertThat(r.getStatus()).isEqualTo(200);
+    }
+  }
 }
