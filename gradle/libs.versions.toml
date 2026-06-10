@@ -20,7 +20,7 @@ google-java-format = "1.25.2"
 jspecify = "1.0.0"
 
 # Runtime — pk-auth-core
-webauthn4j = "0.31.6.RELEASE"
+webauthn4j = "0.31.7.RELEASE"
 nimbus-jose-jwt = "10.9.1"
 jackson = "3.2.0"
 jackson-annotations = "2.22"
@@ -36,7 +36,7 @@ jdbi = "3.53.0"
 flyway = "12.8.1"
 postgresql = "42.7.11"
 hikaricp = "7.0.2"
-aws-sdk = "2.46.6"
+aws-sdk = "2.46.7"
 testcontainers = "1.21.4"
 
 # Spring Boot adapter (Phase 8). Spring Boot 4 / Spring Security 7. Spring Boot 4 standardized
@@ -45,7 +45,7 @@ testcontainers = "1.21.4"
 # `PkAuthObjectMappers.pkAuthModule()` as a Spring bean. Brief §6.10 originally specified
 # 3.5.x / 6.5.x; the upgrade landed as a deliberate framework refresh.
 spring-boot = "4.0.6"
-spring-security = "7.0.5"
+spring-security = "7.1.0"
 # H2 in the demo so reviewers can run the spring-boot-demo without an external Postgres.
 # Confined to the demo's runtime; the starter does not pull it in.
 h2 = "2.4.240"
