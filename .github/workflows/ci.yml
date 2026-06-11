@@ -95,6 +95,36 @@ jobs:
           path: clients/passkeys-browser/reports/mutation/
           if-no-files-found: ignore
 
+  # Run the full build/test, then submit coverage + static analysis to SonarQube Cloud
+  # (free open-source tier). The sonar task is not configuration-cache compatible, so it's
+  # invoked with --no-configuration-cache (gradle.properties enables the config cache globally).
+  sonar:
+    runs-on: ubuntu-latest
+    # SONAR_TOKEN is unavailable to PRs from forks; skip there to avoid a hard failure.
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          # Full history so Sonar can attribute new-code and SCM blame correctly.
+          fetch-depth: 0
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Validate Gradle wrapper
+        uses: gradle/actions/wrapper-validation@5e2ebd065dc2488b7a6ad670704656cbbe1e8f60 # v6
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@5e2ebd065dc2488b7a6ad670704656cbbe1e8f60 # v6
+
+      - name: Build, test, and analyze
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: ./gradlew build jacocoTestReport sonar --no-configuration-cache --stacktrace
+
   # Block PRs that introduce dependencies with known vulnerabilities or incompatible
   # licenses, before they merge. Uses the GitHub dependency graph; PR-only.
   dependency-review:
