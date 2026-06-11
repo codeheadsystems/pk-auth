@@ -109,11 +109,6 @@ public class PkAuthWebAutoConfiguration {
   }
 
   /**
-   * The ceremony controller is mounted explicitly via {@code @Import}, but Spring component-scan
-   * doesn't run on starter packages. We register the bean here so host apps don't need a
-   * {@code @ComponentScan(basePackages = "com.codeheadsystems.pkauth.spring.web")}.
-   */
-  /**
    * Shared ceremony orchestrator (JWT mint + label lookup + wire mapping). Lives in {@code
    * pk-auth-jwt} so every adapter holds a single dependency rather than three.
    */
@@ -126,6 +121,11 @@ public class PkAuthWebAutoConfiguration {
     return PkAuthComposition.ceremonyOrchestrator(service, jwtIssuer, credentialRepository);
   }
 
+  /**
+   * The ceremony controller is mounted explicitly via {@code @Import}, but Spring component-scan
+   * doesn't run on starter packages. We register the bean here so host apps don't need a
+   * {@code @ComponentScan(basePackages = "com.codeheadsystems.pkauth.spring.web")}.
+   */
   @Bean
   @ConditionalOnMissingBean
   public PkAuthCeremonyController pkAuthCeremonyController(CeremonyOrchestrator orchestrator) {
