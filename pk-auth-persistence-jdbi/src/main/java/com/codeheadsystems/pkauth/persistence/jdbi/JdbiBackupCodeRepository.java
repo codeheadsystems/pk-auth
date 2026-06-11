@@ -18,6 +18,7 @@ import org.jdbi.v3.core.Jdbi;
 import org.jdbi.v3.core.JdbiException;
 import org.jdbi.v3.core.mapper.RowMapper;
 import org.jdbi.v3.core.statement.Update;
+import org.jspecify.annotations.Nullable;
 
 /**
  * {@link BackupCodeRepository} backed by the {@code backup_codes} table (Flyway V3).
@@ -45,7 +46,7 @@ public final class JdbiBackupCodeRepository implements BackupCodeRepository {
   }
 
   private static void insertBackupCode(Handle h, StoredBackupCode code) {
-    Update update =
+    try (Update update =
         h.createUpdate(
                 "INSERT INTO backup_codes (code_id, user_handle, hashed_code, consumed,"
                     + " consumed_at, created_at)"
@@ -54,20 +55,22 @@ public final class JdbiBackupCodeRepository implements BackupCodeRepository {
             .bind("uh", code.userHandle().value())
             .bind("hash", code.hashedCode())
             .bind("consumed", code.consumed())
-            .bind("createdAt", OffsetDateTime.ofInstant(code.createdAt(), ZoneOffset.UTC));
-    // consumed_at is TIMESTAMPTZ; force Types.TIMESTAMP_WITH_TIMEZONE on the null branch so PG
-    // does not reject the untyped-null (Types.VARCHAR) default.
-    bindNullable(
-        update,
-        "consumedAt",
-        code.consumedAt() == null
-            ? null
-            : OffsetDateTime.ofInstant(code.consumedAt(), ZoneOffset.UTC),
-        Types.TIMESTAMP_WITH_TIMEZONE);
-    update.execute();
+            .bind("createdAt", OffsetDateTime.ofInstant(code.createdAt(), ZoneOffset.UTC))) {
+      // consumed_at is TIMESTAMPTZ; force Types.TIMESTAMP_WITH_TIMEZONE on the null branch so PG
+      // does not reject the untyped-null (Types.VARCHAR) default.
+      bindNullable(
+          update,
+          "consumedAt",
+          code.consumedAt() == null
+              ? null
+              : OffsetDateTime.ofInstant(code.consumedAt(), ZoneOffset.UTC),
+          Types.TIMESTAMP_WITH_TIMEZONE);
+      update.execute();
+    }
   }
 
-  private static void bindNullable(Update update, String name, Object value, int sqlType) {
+  private static void bindNullable(
+      Update update, String name, @Nullable Object value, int sqlType) {
     if (value == null) {
       update.bindNull(name, sqlType);
     } else {

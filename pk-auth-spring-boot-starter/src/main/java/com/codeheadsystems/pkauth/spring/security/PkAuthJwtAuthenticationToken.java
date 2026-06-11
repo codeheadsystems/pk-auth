@@ -4,6 +4,7 @@ package com.codeheadsystems.pkauth.spring.security;
 import com.codeheadsystems.pkauth.api.UserHandle;
 import com.codeheadsystems.pkauth.jwt.JwtClaims;
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -23,7 +24,7 @@ public final class PkAuthJwtAuthenticationToken extends AbstractAuthenticationTo
 
   private final UserHandle principal;
   private final JwtClaims claims;
-  private String token;
+  private @Nullable String token;
 
   public PkAuthJwtAuthenticationToken(UserHandle principal, JwtClaims claims, String token) {
     super(authorities(claims));
@@ -40,7 +41,7 @@ public final class PkAuthJwtAuthenticationToken extends AbstractAuthenticationTo
   }
 
   @Override
-  public Object getCredentials() {
+  public @Nullable Object getCredentials() {
     return token;
   }
 
@@ -60,7 +61,7 @@ public final class PkAuthJwtAuthenticationToken extends AbstractAuthenticationTo
    * — applications that need the raw bearer for outbound calls must capture it before the security
    * context post-processing pass.
    */
-  public String getToken() {
+  public @Nullable String getToken() {
     return token;
   }
 

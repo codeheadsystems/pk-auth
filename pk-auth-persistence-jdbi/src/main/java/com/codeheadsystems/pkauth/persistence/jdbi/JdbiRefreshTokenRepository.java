@@ -21,6 +21,7 @@ import org.jdbi.v3.core.Jdbi;
 import org.jdbi.v3.core.JdbiException;
 import org.jdbi.v3.core.mapper.RowMapper;
 import org.jdbi.v3.core.statement.Update;
+import org.jspecify.annotations.Nullable;
 
 /**
  * {@link RefreshTokenRepository} backed by the {@code refresh_tokens} table (Flyway V9; the {@code
@@ -176,7 +177,7 @@ public final class JdbiRefreshTokenRepository implements RefreshTokenRepository 
   // -- Internals --------------------------------------------------------------------------
 
   private static void insert(Handle h, RefreshTokenRecord r) {
-    Update update =
+    try (Update update =
         h.createUpdate(
                 "INSERT INTO refresh_tokens"
                     + " (refresh_id, token_hash, user_handle, audience, device_id, family_id,"
@@ -194,24 +195,26 @@ public final class JdbiRefreshTokenRepository implements RefreshTokenRepository 
             .bind("iat", OffsetDateTime.ofInstant(r.issuedAt(), ZoneOffset.UTC))
             .bind("exp", OffsetDateTime.ofInstant(r.expiresAt(), ZoneOffset.UTC))
             .bind("reason", r.revokedReason().map(Enum::name).orElse(null))
-            .bind("amr", joinAmr(r.amr()));
-    // used_at and revoked_at are TIMESTAMPTZ; JDBI's untyped-null default (Types.VARCHAR) is
-    // rejected by Postgres against a TIMESTAMPTZ column. Force Types.TIMESTAMP_WITH_TIMEZONE on
-    // the null branch.
-    bindNullable(
-        update,
-        "uat",
-        r.usedAt().map(t -> OffsetDateTime.ofInstant(t, ZoneOffset.UTC)).orElse(null),
-        Types.TIMESTAMP_WITH_TIMEZONE);
-    bindNullable(
-        update,
-        "rat",
-        r.revokedAt().map(t -> OffsetDateTime.ofInstant(t, ZoneOffset.UTC)).orElse(null),
-        Types.TIMESTAMP_WITH_TIMEZONE);
-    update.execute();
+            .bind("amr", joinAmr(r.amr()))) {
+      // used_at and revoked_at are TIMESTAMPTZ; JDBI's untyped-null default (Types.VARCHAR) is
+      // rejected by Postgres against a TIMESTAMPTZ column. Force Types.TIMESTAMP_WITH_TIMEZONE on
+      // the null branch.
+      bindNullable(
+          update,
+          "uat",
+          r.usedAt().map(t -> OffsetDateTime.ofInstant(t, ZoneOffset.UTC)).orElse(null),
+          Types.TIMESTAMP_WITH_TIMEZONE);
+      bindNullable(
+          update,
+          "rat",
+          r.revokedAt().map(t -> OffsetDateTime.ofInstant(t, ZoneOffset.UTC)).orElse(null),
+          Types.TIMESTAMP_WITH_TIMEZONE);
+      update.execute();
+    }
   }
 
-  private static void bindNullable(Update update, String name, Object value, int sqlType) {
+  private static void bindNullable(
+      Update update, String name, @Nullable Object value, int sqlType) {
     if (value == null) {
       update.bindNull(name, sqlType);
     } else {

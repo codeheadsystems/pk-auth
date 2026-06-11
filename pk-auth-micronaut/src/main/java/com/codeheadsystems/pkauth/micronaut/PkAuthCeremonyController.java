@@ -23,6 +23,7 @@ import io.micronaut.scheduling.TaskExecutors;
 import io.micronaut.scheduling.annotation.ExecuteOn;
 import java.net.InetSocketAddress;
 import java.util.Map;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -89,10 +90,7 @@ public class PkAuthCeremonyController {
         .body(wire.body());
   }
 
-  private static String clientIp(HttpRequest<?> request) {
-    if (request == null) {
-      return null;
-    }
+  private static @Nullable String clientIp(HttpRequest<?> request) {
     InetSocketAddress addr = request.getRemoteAddress();
     if (addr == null || addr.getAddress() == null) {
       return null;

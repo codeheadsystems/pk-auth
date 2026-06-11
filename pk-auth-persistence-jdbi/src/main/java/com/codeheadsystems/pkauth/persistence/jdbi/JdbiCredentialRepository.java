@@ -27,6 +27,7 @@ import org.jdbi.v3.core.Jdbi;
 import org.jdbi.v3.core.JdbiException;
 import org.jdbi.v3.core.mapper.RowMapper;
 import org.jdbi.v3.core.statement.Update;
+import org.jspecify.annotations.Nullable;
 
 /**
  * {@link CredentialRepository} backed by the Phase 5 {@code credentials} table.
@@ -210,7 +211,8 @@ public final class JdbiCredentialRepository implements CredentialRepository {
    * untyped-null default (Types.VARCHAR), which strict typing rejects against UUID and TIMESTAMPTZ
    * columns. See bug report for the original {@code aaguid} failure mode.
    */
-  private static void bindNullable(Update update, String name, Object value, int sqlType) {
+  private static void bindNullable(
+      Update update, String name, @Nullable Object value, int sqlType) {
     if (value == null) {
       update.bindNull(name, sqlType);
     } else {

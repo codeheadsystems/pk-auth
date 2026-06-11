@@ -45,8 +45,8 @@ public final class JavaMailEmailSender implements EmailSender {
             + " to="
             + to
             + " subjectLength="
-            + (subject == null ? 0 : subject.length())
+            + subject.length()
             + " bodyLength="
-            + (body == null ? 0 : body.length()));
+            + body.length());
   }
 }

@@ -199,9 +199,8 @@ public final class RefreshTokenScenarios {
     int threads = 8;
     CountDownLatch ready = new CountDownLatch(threads);
     CountDownLatch fire = new CountDownLatch(1);
-    ExecutorService pool = Executors.newFixedThreadPool(threads);
     List<Future<RotateResult>> futures = new ArrayList<>();
-    try {
+    try (ExecutorService pool = Executors.newFixedThreadPool(threads)) {
       for (int i = 0; i < threads; i++) {
         futures.add(
             pool.submit(
@@ -238,8 +237,6 @@ public final class RefreshTokenScenarios {
       assertThat(family)
           .allSatisfy(
               r -> assertThat(r.revokedAt()).as("row %s revoked", r.refreshId()).isPresent());
-    } finally {
-      pool.shutdownNow();
     }
   }
 

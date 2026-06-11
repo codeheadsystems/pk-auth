@@ -9,6 +9,7 @@ import io.micronaut.http.HttpRequest;
 import io.micronaut.http.annotation.Filter;
 import io.micronaut.http.filter.HttpServerFilter;
 import io.micronaut.http.filter.ServerFilterChain;
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Publisher;
 
 /**
@@ -54,7 +55,7 @@ public class PkAuthJwtAuthenticationFilter implements HttpServerFilter {
   }
 
   /** Extracts the authenticated user handle from a request, or null if none was attached. */
-  public static UserHandle attachedUserHandle(HttpRequest<?> request) {
+  public static @Nullable UserHandle attachedUserHandle(HttpRequest<?> request) {
     return request.getAttribute(ATTR_USER_HANDLE, UserHandle.class).orElse(null);
   }
 

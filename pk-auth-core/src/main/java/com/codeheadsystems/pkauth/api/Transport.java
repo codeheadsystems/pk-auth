@@ -3,6 +3,7 @@ package com.codeheadsystems.pkauth.api;
 
 import java.util.Objects;
 import java.util.Optional;
+import org.jspecify.annotations.Nullable;
 
 /**
  * WebAuthn {@code AuthenticatorTransport} values, per the Level 3 spec §5.8.4. Each constant knows
@@ -33,7 +34,7 @@ public enum Transport {
    * Optional#empty()} when the string is null or not a recognized value (e.g. when an authenticator
    * advertises a future transport this enum does not yet enumerate).
    */
-  public static Optional<Transport> fromWire(String s) {
+  public static Optional<Transport> fromWire(@Nullable String s) {
     if (s == null) {
       return Optional.empty();
     }

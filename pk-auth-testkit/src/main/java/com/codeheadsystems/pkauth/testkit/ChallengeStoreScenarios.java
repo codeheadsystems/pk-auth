@@ -61,9 +61,8 @@ public final class ChallengeStoreScenarios {
     int threads = 8;
     CountDownLatch ready = new CountDownLatch(threads);
     CountDownLatch fire = new CountDownLatch(1);
-    ExecutorService pool = Executors.newFixedThreadPool(threads);
     AtomicInteger winners = new AtomicInteger();
-    try {
+    try (ExecutorService pool = Executors.newFixedThreadPool(threads)) {
       List<Future<?>> futures = new java.util.ArrayList<>();
       for (int i = 0; i < threads; i++) {
         futures.add(
@@ -89,8 +88,6 @@ public final class ChallengeStoreScenarios {
       }
       assertThat(winners.get()).as("exactly one thread consumes the challenge").isEqualTo(1);
       assertThat(store.takeOnce(id)).as("nothing left after the race").isEmpty();
-    } finally {
-      pool.shutdownNow();
     }
   }
 

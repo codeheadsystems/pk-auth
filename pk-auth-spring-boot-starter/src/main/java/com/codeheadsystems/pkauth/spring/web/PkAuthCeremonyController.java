@@ -11,6 +11,7 @@ import com.codeheadsystems.pkauth.api.StartRegistrationResponse;
 import com.codeheadsystems.pkauth.jwt.CeremonyOrchestrator;
 import com.codeheadsystems.pkauth.spi.CeremonyRateLimitedException;
 import jakarta.servlet.http.HttpServletRequest;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
@@ -79,7 +80,7 @@ public class PkAuthCeremonyController {
     return ResponseEntity.status(wire.status()).body(wire.body());
   }
 
-  private static String clientIp(HttpServletRequest request) {
-    return request == null ? null : request.getRemoteAddr();
+  private static @Nullable String clientIp(HttpServletRequest request) {
+    return request.getRemoteAddr();
   }
 }

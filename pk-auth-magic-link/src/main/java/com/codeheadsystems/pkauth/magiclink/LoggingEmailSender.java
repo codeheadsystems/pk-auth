@@ -23,10 +23,6 @@ public final class LoggingEmailSender implements EmailSender {
   @Override
   public void send(String to, String subject, String body) {
     // Do not log the body — it contains the plaintext magic-link token.
-    LOG.info(
-        "email.dev to={} subject={} bodyLength={}",
-        to,
-        subject,
-        (body == null ? 0 : body.length()));
+    LOG.info("email.dev to={} subject={} bodyLength={}", to, subject, body.length());
   }
 }

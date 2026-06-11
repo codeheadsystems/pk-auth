@@ -13,6 +13,7 @@ import com.codeheadsystems.pkauth.admin.EmailVerificationResult;
 import com.codeheadsystems.pkauth.api.CredentialId;
 import com.codeheadsystems.pkauth.api.UserHandle;
 import com.codeheadsystems.pkauth.spring.security.PkAuthJwtAuthenticationToken;
+import org.jspecify.annotations.Nullable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
@@ -62,7 +63,8 @@ public class PkAuthAdminController {
 
   @PatchMapping("/credentials/{credentialId}")
   public ResponseEntity<Object> rename(
-      @PathVariable("credentialId") String credentialId, @RequestBody RenameCredential body) {
+      @PathVariable("credentialId") String credentialId,
+      @RequestBody @Nullable RenameCredential body) {
     UserHandle user = currentUser();
     CredentialId id = CredentialId.fromB64Url(credentialId);
     return PkAuthAdminResultMapper.toResponse(
@@ -95,7 +97,8 @@ public class PkAuthAdminController {
   // -- Email -----------------------------------------------------------------------------------
 
   @PostMapping("/email/start-verification")
-  public ResponseEntity<Object> startEmailVerification(@RequestBody StartEmailVerification body) {
+  public ResponseEntity<Object> startEmailVerification(
+      @RequestBody @Nullable StartEmailVerification body) {
     UserHandle user = currentUser();
     return PkAuthAdminResultMapper.toResponse(
         adminService.startEmailVerification(user, user, body == null ? "" : body.email()));
@@ -103,7 +106,8 @@ public class PkAuthAdminController {
 
   /** Unauthenticated per brief §6.9 ("token identifies the user"). */
   @PostMapping("/email/complete-verification")
-  public ResponseEntity<Object> finishEmailVerification(@RequestBody FinishEmailVerification body) {
+  public ResponseEntity<Object> finishEmailVerification(
+      @RequestBody @Nullable FinishEmailVerification body) {
     return PkAuthAdminResultMapper.toResponseEntity(
         AdminResponseMapper.toResponse(
             adminService.finishEmailVerification(body == null ? "" : body.token()),
@@ -113,14 +117,16 @@ public class PkAuthAdminController {
   // -- Phone -----------------------------------------------------------------------------------
 
   @PostMapping("/phone/start-verification")
-  public ResponseEntity<Object> startPhoneVerification(@RequestBody StartPhoneVerification body) {
+  public ResponseEntity<Object> startPhoneVerification(
+      @RequestBody @Nullable StartPhoneVerification body) {
     UserHandle user = currentUser();
     return PkAuthAdminResultMapper.toResponse(
         adminService.startPhoneVerification(user, user, body == null ? "" : body.phone()));
   }
 
   @PostMapping("/phone/complete-verification")
-  public ResponseEntity<Object> finishPhoneVerification(@RequestBody FinishPhoneVerification body) {
+  public ResponseEntity<Object> finishPhoneVerification(
+      @RequestBody @Nullable FinishPhoneVerification body) {
     UserHandle user = currentUser();
     return PkAuthAdminResultMapper.toResponse(
         adminService.finishPhoneVerification(

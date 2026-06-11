@@ -44,6 +44,6 @@ public final class TwilioSmsSender implements SmsSender {
             + ") phone="
             + phoneE164
             + " bodyLength="
-            + (body == null ? 0 : body.length()));
+            + body.length());
   }
 }
