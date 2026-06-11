@@ -46,8 +46,8 @@ dependencies {
     implementation(libs.slf4j.api)
     runtimeOnly(libs.logback.classic)
 
-    compileOnly("com.google.errorprone:error_prone_annotations:2.49.0")
-    testCompileOnly("com.google.errorprone:error_prone_annotations:2.49.0")
+    compileOnly("com.google.errorprone:error_prone_annotations:2.50.0")
+    testCompileOnly("com.google.errorprone:error_prone_annotations:2.50.0")
 
     testImplementation(libs.dropwizard.testing)
 }

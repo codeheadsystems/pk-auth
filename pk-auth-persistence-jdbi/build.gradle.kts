@@ -23,8 +23,8 @@ dependencies {
     // Without errorprone-annotations on the compile classpath, javac emits an annotation-not-found
     // warning that -Werror turns fatal. Pulled in compileOnly so we don't broadcast it as a
     // runtime dependency.
-    compileOnly("com.google.errorprone:error_prone_annotations:2.49.0")
-    testCompileOnly("com.google.errorprone:error_prone_annotations:2.49.0")
+    compileOnly("com.google.errorprone:error_prone_annotations:2.50.0")
+    testCompileOnly("com.google.errorprone:error_prone_annotations:2.50.0")
     implementation(libs.flyway.core)
     runtimeOnly(libs.flyway.postgres)
     runtimeOnly(libs.postgresql)

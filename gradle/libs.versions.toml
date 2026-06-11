@@ -15,7 +15,7 @@ java = "21"
 # this from getting bumped back. Revisit when Spotless 8 ships a fix.
 spotless = "8.6.0"
 errorprone-plugin = "5.1.0"
-errorprone-core = "2.49.0"
+errorprone-core = "2.50.0"
 google-java-format = "1.25.2"
 jspecify = "1.0.0"
 
@@ -36,7 +36,7 @@ jdbi = "3.53.0"
 flyway = "12.8.1"
 postgresql = "42.7.11"
 hikaricp = "7.0.2"
-aws-sdk = "2.46.7"
+aws-sdk = "2.46.8"
 testcontainers = "1.21.4"
 
 # Spring Boot adapter (Phase 8). Spring Boot 4 / Spring Security 7. Spring Boot 4 standardized
@@ -44,7 +44,7 @@ testcontainers = "1.21.4"
 # previous Jackson 2 bridge module is gone, replaced by direct registration of the core's
 # `PkAuthObjectMappers.pkAuthModule()` as a Spring bean. Brief §6.10 originally specified
 # 3.5.x / 6.5.x; the upgrade landed as a deliberate framework refresh.
-spring-boot = "4.0.6"
+spring-boot = "4.1.0"
 spring-security = "7.1.0"
 # H2 in the demo so reviewers can run the spring-boot-demo without an external Postgres.
 # Confined to the demo's runtime; the starter does not pull it in.

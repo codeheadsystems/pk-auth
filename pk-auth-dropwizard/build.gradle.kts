@@ -50,8 +50,8 @@ dependencies {
 
     // Dropwizard's transitive Jersey/Jakarta dependencies surface annotations whose enclosing
     // packages reference com.google.errorprone.annotations.* — same pattern as the JDBI module.
-    compileOnly("com.google.errorprone:error_prone_annotations:2.49.0")
-    testCompileOnly("com.google.errorprone:error_prone_annotations:2.49.0")
+    compileOnly("com.google.errorprone:error_prone_annotations:2.50.0")
+    testCompileOnly("com.google.errorprone:error_prone_annotations:2.50.0")
 
     implementation(libs.slf4j.api)
 
