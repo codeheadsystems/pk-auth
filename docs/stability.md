@@ -3,7 +3,9 @@
 ## Current status: 1.x
 
 pk-auth is **post-1.0** as of the `v1.0.0` tag. The current development line is
-**1.1.0-SNAPSHOT**; see [`CHANGELOG.md`](../CHANGELOG.md) for the in-flight delta.
+**1.3.1-SNAPSHOT** (`gradle.properties` is authoritative); the 1.1, 1.2, and
+1.3 releases have shipped. See [`CHANGELOG.md`](../CHANGELOG.md) for the
+per-release delta.
 
 The 1.x line follows [Semantic Versioning](https://semver.org/):
 
@@ -16,12 +18,12 @@ The 1.x line follows [Semantic Versioning](https://semver.org/):
 Configuration key renames or removals are treated as breaking changes and
 require a MAJOR bump.
 
-> **1.1 caveat.** The 1.1.0 line is still in development and carries a small
+> **1.1 migration note (historical).** The 1.1.0 release carried a small
 > number of *intentional* breaking SPI changes against 1.0 — the
 > `CredentialRepository.deleteByUserHandle` / `OtpRepository.deleteByUserHandle`
 > additions, the `JwtConfig.tokenTtl` → `JwtConfig.ttlPolicy` swap, and the
-> `JwtConfig.audience` → `JwtConfig.defaultAudience` rename. These will land
-> together at 1.1.0 final; see `CHANGELOG.md` for the migration notes. From
+> `JwtConfig.audience` → `JwtConfig.defaultAudience` rename. These landed
+> together at 1.1.0; see `CHANGELOG.md` for the migration notes. From
 > 1.1.0 onward the SemVer contract above is binding.
 
 Pin to an exact version in your build file and review the changelog before

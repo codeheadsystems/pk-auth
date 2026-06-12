@@ -30,7 +30,7 @@ JDK 21 is required (Gradle's toolchain fetches one if absent). Node ≥ 20 + npm
 
 Dependency arrows always point **inward**. Adapters depend on core; core depends on no adapter, no framework, no servlet/HTTP API, no JDBC/DynamoDB.
 
-1. **`pk-auth-core`** — framework- and persistence-neutral. Knows WebAuthn (WebAuthn4J), the wire contract, and declares the SPIs. `PasskeyAuthenticationService` is the ceremony entry point. Only `api`, `spi`, and `config` packages are exported (enforced via `module-info.java`).
+1. **`pk-auth-core`** — framework- and persistence-neutral. Knows WebAuthn (WebAuthn4J), the wire contract, and declares the SPIs. `PasskeyAuthenticationService` is the ceremony entry point. The exported packages are `api`, `ceremony`, `config`, `credential`, `error`, `json`, `lifecycle`, `metrics`, and `spi` (enforced via `module-info.java`); everything else is module-internal.
 2. **SPIs (ports)** — narrow interfaces the host implements: `UserLookup`, `CredentialRepository`, `ChallengeStore` (required); `BackupCodeRepository`, `OtpRepository`, `EmailSender`, `SmsSender`, `RefreshTokenRepository`, `AccessTokenStore`, `TokenTtlPolicy`, `UserDeletionListener`, `AttestationTrustPolicy`, `OriginValidator`, `ClockProvider` (optional / feature-gated). See `DESIGN.md` §6 for the required-vs-optional table.
 3. **Adapters** — `pk-auth-spring-boot-starter` (Spring Boot 4 / Security 7 autoconfigure), `pk-auth-dropwizard` (Dropwizard 5 `ConfiguredBundle` + Dagger 2), `pk-auth-micronaut` (Micronaut 4 `@Factory` + `@Filter`, deliberately **not** Micronaut Security). Each mounts the same `/auth/**` JSON contract and pattern-matches the core's sealed result sums into HTTP status codes.
 

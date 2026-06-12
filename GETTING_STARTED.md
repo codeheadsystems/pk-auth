@@ -261,6 +261,6 @@ project, and the three demos are the proof.
 - **The wire and class details** — [`DESIGN.md`](./DESIGN.md).
 - **Running it in production** — [`docs/operator-guide.md`](./docs/operator-guide.md).
 - **Security stance** — [`docs/threat-model.md`](./docs/threat-model.md).
-- **Why a thing is the way it is** — [`docs/adr/`](./docs/adr/) (16 ADRs).
+- **Why a thing is the way it is** — [`docs/adr/`](./docs/adr/).
 - **SPI stability + versioning** — [`docs/stability.md`](./docs/stability.md).
 - **Transactional behavior across SPIs** — [`docs/transactional-semantics.md`](./docs/transactional-semantics.md).

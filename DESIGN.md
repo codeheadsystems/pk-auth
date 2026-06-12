@@ -8,8 +8,8 @@ exposes, and the conventions the codebase follows.
 For specific topics:
 
 - **What it does + how to run a demo** — [`README.md`](./README.md).
-- **Per-decision rationale** — [`docs/adr/`](./docs/adr/) (16 ADRs,
-  numbered).
+- **Per-decision rationale** — [`docs/adr/`](./docs/adr/) (numbered,
+  sequential).
 - **Running it in production** — [`docs/operator-guide.md`](./docs/operator-guide.md).
 - **Security posture** — [`docs/threat-model.md`](./docs/threat-model.md).
 - **The original brief and phase plan** —
@@ -107,7 +107,7 @@ modules implement SPIs declared in core and are wired in by the host.
 
 | Module | Purpose |
 |---|---|
-| `pk-auth-core` | Framework-neutral ceremony engine. `PasskeyAuthenticationService` is the entry point; `api/`, `spi/`, `config/`, and `lifecycle/` are exported. Hosts the `UserDeletionService` fan-out and `UserDeletionListener` SPI ([ADR 0016](./docs/adr/0016-user-deletion-fan-out.md)). |
+| `pk-auth-core` | Framework-neutral ceremony engine. `PasskeyAuthenticationService` is the entry point; `api/`, `ceremony/`, `config/`, `credential/`, `error/`, `json/`, `lifecycle/`, `metrics/`, and `spi/` are exported (see `module-info.java`). Hosts the `UserDeletionService` fan-out and `UserDeletionListener` SPI ([ADR 0016](./docs/adr/0016-user-deletion-fan-out.md)). |
 | `pk-auth-jwt` | HS256 JWT mint (`PkAuthJwtIssuer`) + validate (`PkAuthJwtValidator`). Nimbus JOSE+JWT under the hood. Hosts the `TokenTtlPolicy` SPI for per-audience access-token TTL dispatch ([ADR 0014](./docs/adr/0014-per-audience-ttl-policy.md)) and the `AccessTokenStore` SPI for stateful (server-revocable) access tokens ([ADR 0015](./docs/adr/0015-stateful-access-tokens.md)). |
 | `pk-auth-backup-codes` | Alt flow: generate, hash (Argon2id), and atomically claim view-once backup codes. |
 | `pk-auth-magic-link` | Alt flow: random-token magic links over the host's email dispatcher. |
@@ -237,8 +237,8 @@ storage SPIs against a real backend.
 
 ```java
 // build.gradle.kts
-implementation("io.codeheadsystems:pk-auth-spring-boot-starter:<version>")
-implementation("io.codeheadsystems:pk-auth-persistence-jdbi:<version>")  // optional
+implementation("com.codeheadsystems:pk-auth-spring-boot-starter:<version>")
+implementation("com.codeheadsystems:pk-auth-persistence-jdbi:<version>")  // optional
 
 // application.yml
 pkauth:
@@ -475,8 +475,10 @@ Worth knowing if you're contributing:
 - **Null discipline**: `@org.jspecify.annotations.NonNull` /
   `@Nullable` on every public method parameter and return type.
   JSpecify is loaded; Error Prone catches violations.
-- **Public API is sealed** via `module-info.java` exports. Only `api`,
-  `spi`, and `config` packages are exported per module.
+- **Public API is sealed** via `module-info.java` exports. In
+  `pk-auth-core` the exported packages are `api`, `ceremony`, `config`,
+  `credential`, `error`, `json`, `lifecycle`, `metrics`, and `spi`;
+  everything else is module-internal.
 - **No reflection in hot paths.** The only reflection is Jackson's,
   confined to (de)serialization boundaries.
 - **Conventional commits** in commit messages; rationale for any
