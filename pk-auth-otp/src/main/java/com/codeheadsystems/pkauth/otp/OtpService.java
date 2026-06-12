@@ -338,7 +338,7 @@ public final class OtpService {
       int maxAttempts,
       int rateLimit,
       Duration rateWindow) {
-    /** Compact constructor — validates pepper length and non-null fields. */
+    /** Compact constructor — validates pepper length, field ranges, and non-null fields. */
     public Config {
       Objects.requireNonNull(random, "random");
       Objects.requireNonNull(pepper, "pepper");
@@ -346,6 +346,18 @@ public final class OtpService {
       Objects.requireNonNull(rateWindow, "rateWindow");
       if (pepper.length < 16) {
         throw new IllegalArgumentException("pepper must be at least 16 bytes");
+      }
+      if (ttl.isZero() || ttl.isNegative()) {
+        throw new IllegalArgumentException("ttl must be strictly positive");
+      }
+      if (rateWindow.isZero() || rateWindow.isNegative()) {
+        throw new IllegalArgumentException("rateWindow must be strictly positive");
+      }
+      if (maxAttempts < 1) {
+        throw new IllegalArgumentException("maxAttempts must be at least 1");
+      }
+      if (rateLimit < 1) {
+        throw new IllegalArgumentException("rateLimit must be at least 1");
       }
     }
 

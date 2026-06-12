@@ -2,6 +2,7 @@
 package com.codeheadsystems.pkauth.backupcodes;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.codeheadsystems.pkauth.api.UserHandle;
 import com.codeheadsystems.pkauth.backupcodes.BackupCodeService.InMemoryBackupCodeRateLimiter;
@@ -44,6 +45,27 @@ class BackupCodeServiceTest {
                 /* parallelism */ 1,
                 /* codeCount */ 5,
                 /* rateLimit */ BackupCodeService.DEFAULT_RATE_LIMIT));
+  }
+
+  @Test
+  void configRejectsNonPositiveRanges() {
+    SecureRandom rng = new SecureRandom();
+    Argon2 argon2 = Argon2Factory.create(Argon2Factory.Argon2Types.ARGON2id);
+    assertThatThrownBy(() -> new BackupCodeService.Config(rng, argon2, 0, 1024, 1, 5, 5))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("iterations");
+    assertThatThrownBy(() -> new BackupCodeService.Config(rng, argon2, 1, 0, 1, 5, 5))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("memory");
+    assertThatThrownBy(() -> new BackupCodeService.Config(rng, argon2, 1, 1024, 0, 5, 5))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("parallelism");
+    assertThatThrownBy(() -> new BackupCodeService.Config(rng, argon2, 1, 1024, 1, 0, 5))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("codeCount");
+    assertThatThrownBy(() -> new BackupCodeService.Config(rng, argon2, 1, 1024, 1, 5, 0))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("rateLimit");
   }
 
   @Test

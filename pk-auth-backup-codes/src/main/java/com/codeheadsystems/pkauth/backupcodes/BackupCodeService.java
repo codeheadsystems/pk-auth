@@ -356,10 +356,25 @@ public final class BackupCodeService {
       int parallelism,
       int codeCount,
       int rateLimit) {
-    /** Compact constructor — enforces non-null on object-typed fields. */
+    /** Compact constructor — enforces non-null on object-typed fields and positive ranges. */
     public Config {
       Objects.requireNonNull(random, "random");
       Objects.requireNonNull(argon2, "argon2");
+      if (iterations < 1) {
+        throw new IllegalArgumentException("iterations must be at least 1");
+      }
+      if (memory < 1) {
+        throw new IllegalArgumentException("memory must be at least 1");
+      }
+      if (parallelism < 1) {
+        throw new IllegalArgumentException("parallelism must be at least 1");
+      }
+      if (codeCount < 1) {
+        throw new IllegalArgumentException("codeCount must be at least 1");
+      }
+      if (rateLimit < 1) {
+        throw new IllegalArgumentException("rateLimit must be at least 1");
+      }
     }
 
     /**

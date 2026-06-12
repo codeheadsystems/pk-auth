@@ -2,6 +2,7 @@
 package com.codeheadsystems.pkauth.magiclink;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.codeheadsystems.pkauth.api.UserHandle;
 import com.codeheadsystems.pkauth.jwt.JwtConfig;
@@ -53,6 +54,19 @@ class MagicLinkServiceTest {
                 5,
                 new MagicLinkService.InMemoryRateLimiter(Duration.ofHours(1)),
                 MagicLinkService.DEFAULT_CONSUMED_JTI_TTL));
+  }
+
+  @Test
+  void configRejectsNonPositiveRanges() {
+    MagicLinkService.InMemoryRateLimiter limiter =
+        new MagicLinkService.InMemoryRateLimiter(Duration.ofHours(1));
+    assertThatThrownBy(
+            () -> new MagicLinkService.Config(BASE_URL, 0, limiter, Duration.ofMinutes(30)))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("rateLimit");
+    assertThatThrownBy(() -> new MagicLinkService.Config(BASE_URL, 5, limiter, Duration.ZERO))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("consumedJtiTtl");
   }
 
   @Test
