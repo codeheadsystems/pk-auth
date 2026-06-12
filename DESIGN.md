@@ -147,10 +147,11 @@ framework-specific on the wire.
 | `POST` | `/auth/passkeys/authentication/finish` | Mints a JWT; returns `{token}` |
 | `POST` | `/auth/refresh` | Rotates a refresh token; returns `{refresh, access}` on success, `401 {detail}` on any failure. Only mounted when `pk-auth-refresh-tokens` is on the classpath and a `RefreshTokenRepository` SPI is bound. |
 
-> The Dropwizard adapter mounts these one segment shorter
-> (`/auth/registration/start`, etc.) because Dropwizard's bundle root
-> path convention differs. The TypeScript SDK handles this via a
-> per-client path override; see `clients/passkeys-browser/README.md`.
+> All three adapters mount these paths identically — the Dropwizard
+> Jersey resources use the same `@Path("/auth/passkeys")` (and
+> `/auth/refresh`, `/auth/admin`) roots as the Spring and Micronaut
+> controllers, so the TypeScript SDK targets one path scheme everywhere
+> with no per-client path override.
 
 ### Admin endpoints (require `Authorization: Bearer <jwt>`)
 

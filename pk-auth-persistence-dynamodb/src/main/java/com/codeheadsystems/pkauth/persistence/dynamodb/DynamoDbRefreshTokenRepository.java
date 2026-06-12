@@ -207,11 +207,11 @@ public final class DynamoDbRefreshTokenRepository implements RefreshTokenReposit
 
   /**
    * True only when the {@code rotateAtomically} transaction was cancelled because the parent's
-   * freshness condition failed — the legitimate replay/race signal. The parent's conditional
-   * {@code UpdateItem} is the first action added to the transaction, so its reason is at index 0;
-   * a {@code ConditionalCheckFailed} code there means the parent was already used, revoked, or
-   * expired. Any other cancellation reason (throughput, transaction conflict, validation) is
-   * transient and returns false here so the caller rethrows rather than scorching the family.
+   * freshness condition failed — the legitimate replay/race signal. The parent's conditional {@code
+   * UpdateItem} is the first action added to the transaction, so its reason is at index 0; a {@code
+   * ConditionalCheckFailed} code there means the parent was already used, revoked, or expired. Any
+   * other cancellation reason (throughput, transaction conflict, validation) is transient and
+   * returns false here so the caller rethrows rather than scorching the family.
    */
   private static boolean isParentFreshnessFailure(TransactionCanceledException cancelled) {
     List<CancellationReason> reasons = cancelled.cancellationReasons();
@@ -398,7 +398,8 @@ public final class DynamoDbRefreshTokenRepository implements RefreshTokenReposit
           // begins_with filter keeps non-RT# rows of the shared table off the wire; note a scan
           // still consumes read capacity proportional to table size, so operators should prefer
           // native TTL and treat this as a test/maintenance path.
-          table.scan(ScanEnhancedRequest.builder().filterExpression(primaryItemsOnly()).build())
+          table
+              .scan(ScanEnhancedRequest.builder().filterExpression(primaryItemsOnly()).build())
               .items()
               .stream()
               .filter(item -> item.getPk() != null && item.getPk().startsWith(PRIMARY_PK_PREFIX))

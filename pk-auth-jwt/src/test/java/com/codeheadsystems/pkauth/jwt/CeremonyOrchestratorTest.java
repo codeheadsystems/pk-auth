@@ -15,8 +15,10 @@ import com.codeheadsystems.pkauth.api.FinishRegistrationRequest;
 import com.codeheadsystems.pkauth.api.RegistrationResult;
 import com.codeheadsystems.pkauth.api.StartAuthenticationRequest;
 import com.codeheadsystems.pkauth.api.StartAuthenticationResponse;
+import com.codeheadsystems.pkauth.api.StartAuthenticationResult;
 import com.codeheadsystems.pkauth.api.StartRegistrationRequest;
 import com.codeheadsystems.pkauth.api.StartRegistrationResponse;
+import com.codeheadsystems.pkauth.api.StartRegistrationResult;
 import com.codeheadsystems.pkauth.api.Transport;
 import com.codeheadsystems.pkauth.api.UserHandle;
 import com.codeheadsystems.pkauth.ceremony.PasskeyAuthenticationService;
@@ -60,7 +62,8 @@ class CeremonyOrchestratorTest {
   @Test
   void startRegistrationDelegates() {
     StartRegistrationRequest req = mock(StartRegistrationRequest.class);
-    StartRegistrationResponse resp = mock(StartRegistrationResponse.class);
+    StartRegistrationResult resp =
+        new StartRegistrationResult.Started(mock(StartRegistrationResponse.class));
     when(service.startRegistration(req, "1.2.3.4")).thenReturn(resp);
     assertThat(orchestrator.startRegistration(req, "1.2.3.4")).isSameAs(resp);
   }
@@ -68,7 +71,8 @@ class CeremonyOrchestratorTest {
   @Test
   void startAuthenticationDelegates() {
     StartAuthenticationRequest req = mock(StartAuthenticationRequest.class);
-    StartAuthenticationResponse resp = mock(StartAuthenticationResponse.class);
+    StartAuthenticationResult resp =
+        new StartAuthenticationResult.Started(mock(StartAuthenticationResponse.class));
     when(service.startAuthentication(req, null)).thenReturn(resp);
     assertThat(orchestrator.startAuthentication(req, null)).isSameAs(resp);
   }

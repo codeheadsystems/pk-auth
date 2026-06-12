@@ -49,18 +49,20 @@ await pk.ceremonies.authenticate({ conditional: true });
 Wires `mediation: "conditional"` into the underlying `navigator.credentials.get` call,
 so the browser can offer passkeys via autofill UI before the user clicks "Sign in."
 
-### Adapter path differences
+### Overriding ceremony paths
 
-The default ceremony paths target Spring Boot / Micronaut (`/auth/passkeys/...`). The
-Dropwizard adapter omits the `/passkeys/` segment; pass `paths` to override:
+All three adapters (Spring Boot, Dropwizard, Micronaut) mount the ceremony endpoints at the
+same `/auth/passkeys/...` paths, which are the SDK defaults — no per-adapter override is
+needed. The `paths` option remains an escape hatch for hosts that remount the endpoints under
+a custom prefix:
 
 ```ts
 new PkAuthCeremonyClient(options, {
   paths: {
-    startReg: "/auth/registration/start",
-    finishReg: "/auth/registration/finish",
-    startAuth: "/auth/authentication/start",
-    finishAuth: "/auth/authentication/finish",
+    startReg: "/api/auth/passkeys/registration/start",
+    finishReg: "/api/auth/passkeys/registration/finish",
+    startAuth: "/api/auth/passkeys/authentication/start",
+    finishAuth: "/api/auth/passkeys/authentication/finish",
   },
 });
 ```

@@ -2,7 +2,6 @@
 package com.codeheadsystems.pkauth.internal;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
@@ -21,7 +20,9 @@ import com.codeheadsystems.pkauth.api.RegistrationResponseJson.AuthenticatorAtte
 import com.codeheadsystems.pkauth.api.RegistrationResult;
 import com.codeheadsystems.pkauth.api.ResidentKeyRequirement;
 import com.codeheadsystems.pkauth.api.StartAuthenticationRequest;
+import com.codeheadsystems.pkauth.api.StartAuthenticationResult;
 import com.codeheadsystems.pkauth.api.StartRegistrationRequest;
+import com.codeheadsystems.pkauth.api.StartRegistrationResult;
 import com.codeheadsystems.pkauth.api.UserHandle;
 import com.codeheadsystems.pkauth.api.UserVerificationRequirement;
 import com.codeheadsystems.pkauth.config.CeremonyConfig;
@@ -29,7 +30,6 @@ import com.codeheadsystems.pkauth.config.CounterRegressionPolicy;
 import com.codeheadsystems.pkauth.config.RelyingPartyConfig;
 import com.codeheadsystems.pkauth.metrics.Metrics;
 import com.codeheadsystems.pkauth.spi.AttestationTrustPolicy;
-import com.codeheadsystems.pkauth.spi.CeremonyRateLimitedException;
 import com.codeheadsystems.pkauth.spi.CeremonyRateLimiter;
 import com.codeheadsystems.pkauth.spi.ChallengeStore;
 import com.codeheadsystems.pkauth.spi.ClockProvider;
@@ -128,13 +128,12 @@ class DefaultPasskeyAuthenticationServiceRateLimitTest {
   void startRegistrationRefusedWhenIpBucketDenies() {
     limiter.denyIp = true;
 
-    assertThatThrownBy(
-            () ->
-                service.startRegistration(
-                    new StartRegistrationRequest("alice", "Alice", null, null), "1.2.3.4"))
-        .isInstanceOf(CeremonyRateLimitedException.class)
-        .satisfies(t -> assertThat(((CeremonyRateLimitedException) t).bucket()).isEqualTo("ip"));
+    StartRegistrationResult result =
+        service.startRegistration(
+            new StartRegistrationRequest("alice", "Alice", null, null), "1.2.3.4");
 
+    assertThat(result).isInstanceOf(StartRegistrationResult.RateLimited.class);
+    assertThat(((StartRegistrationResult.RateLimited) result).bucket()).isEqualTo("ip");
     assertThat(limiter.ipCalls).containsExactly("1.2.3.4");
     assertThat(limiter.usernameCalls).isEmpty();
     verify(challengeStore, never()).put(any(), any(), any());
@@ -144,14 +143,12 @@ class DefaultPasskeyAuthenticationServiceRateLimitTest {
   void startRegistrationRefusedWhenUsernameBucketDenies() {
     limiter.denyUsername = true;
 
-    assertThatThrownBy(
-            () ->
-                service.startRegistration(
-                    new StartRegistrationRequest("alice", "Alice", null, null), "1.2.3.4"))
-        .isInstanceOf(CeremonyRateLimitedException.class)
-        .satisfies(
-            t -> assertThat(((CeremonyRateLimitedException) t).bucket()).isEqualTo("username"));
+    StartRegistrationResult result =
+        service.startRegistration(
+            new StartRegistrationRequest("alice", "Alice", null, null), "1.2.3.4");
 
+    assertThat(result).isInstanceOf(StartRegistrationResult.RateLimited.class);
+    assertThat(((StartRegistrationResult.RateLimited) result).bucket()).isEqualTo("username");
     assertThat(limiter.ipCalls).containsExactly("1.2.3.4");
     assertThat(limiter.usernameCalls).containsExactly("alice");
     verify(challengeStore, never()).put(any(), any(), any());
@@ -161,12 +158,10 @@ class DefaultPasskeyAuthenticationServiceRateLimitTest {
   void startAuthenticationRefusedWhenIpBucketDenies() {
     limiter.denyIp = true;
 
-    assertThatThrownBy(
-            () ->
-                service.startAuthentication(
-                    new StartAuthenticationRequest("alice", null), "9.9.9.9"))
-        .isInstanceOf(CeremonyRateLimitedException.class);
+    StartAuthenticationResult result =
+        service.startAuthentication(new StartAuthenticationRequest("alice", null), "9.9.9.9");
 
+    assertThat(result).isInstanceOf(StartAuthenticationResult.RateLimited.class);
     verify(challengeStore, never()).put(any(), any(), any());
   }
 

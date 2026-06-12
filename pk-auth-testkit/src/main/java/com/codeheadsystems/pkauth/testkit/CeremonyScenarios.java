@@ -91,7 +91,7 @@ public final class CeremonyScenarios {
     UserHandle handle = register();
 
     StartAuthenticationResponse start =
-        service.startAuthentication(new StartAuthenticationRequest(null, null));
+        service.startAuthentication(new StartAuthenticationRequest(null, null)).responseOrThrow();
     assertThat(start.publicKey().allowCredentials()).isNotNull().isEmpty();
 
     AuthenticationResponseJson resp = authenticator.createAssertionResponse(start, handle);
@@ -103,7 +103,9 @@ public final class CeremonyScenarios {
   /** Registers a single credential and returns the issued user handle. */
   public UserHandle register() {
     StartRegistrationResponse start =
-        service.startRegistration(new StartRegistrationRequest(USERNAME, DISPLAY_NAME, null, null));
+        service
+            .startRegistration(new StartRegistrationRequest(USERNAME, DISPLAY_NAME, null, null))
+            .responseOrThrow();
     RegistrationResponseJson resp = authenticator.createRegistrationResponse(start);
     RegistrationResult result =
         service.finishRegistration(
@@ -123,7 +125,9 @@ public final class CeremonyScenarios {
     long before = singleCredentialFor(handle).orElseThrow().signCount();
 
     StartAuthenticationResponse start =
-        service.startAuthentication(new StartAuthenticationRequest(USERNAME, null));
+        service
+            .startAuthentication(new StartAuthenticationRequest(USERNAME, null))
+            .responseOrThrow();
     AuthenticationResponseJson resp = authenticator.createAssertionResponse(start, handle);
     AssertionResult result =
         service.finishAuthentication(
@@ -140,7 +144,9 @@ public final class CeremonyScenarios {
    */
   public void tamperedRegistrationPayloadIsRejected() {
     StartRegistrationResponse start =
-        service.startRegistration(new StartRegistrationRequest(USERNAME, DISPLAY_NAME, null, null));
+        service
+            .startRegistration(new StartRegistrationRequest(USERNAME, DISPLAY_NAME, null, null))
+            .responseOrThrow();
     RegistrationResponseJson resp = authenticator.createRegistrationResponse(start);
     RegistrationResult result =
         service.finishRegistration(
@@ -162,7 +168,9 @@ public final class CeremonyScenarios {
     UserHandle handle = register();
 
     StartAuthenticationResponse start =
-        service.startAuthentication(new StartAuthenticationRequest(USERNAME, null));
+        service
+            .startAuthentication(new StartAuthenticationRequest(USERNAME, null))
+            .responseOrThrow();
     AuthenticationResponseJson resp = authenticator.createAssertionResponse(start, handle);
 
     AssertionResult first =
@@ -210,7 +218,9 @@ public final class CeremonyScenarios {
   /** Runs a single assertion for the registered username. */
   public AssertionResult assertOnce(UserHandle handle) {
     StartAuthenticationResponse start =
-        service.startAuthentication(new StartAuthenticationRequest(USERNAME, null));
+        service
+            .startAuthentication(new StartAuthenticationRequest(USERNAME, null))
+            .responseOrThrow();
     AuthenticationResponseJson resp = authenticator.createAssertionResponse(start, handle);
     return service.finishAuthentication(new FinishAuthenticationRequest(start.challengeId(), resp));
   }

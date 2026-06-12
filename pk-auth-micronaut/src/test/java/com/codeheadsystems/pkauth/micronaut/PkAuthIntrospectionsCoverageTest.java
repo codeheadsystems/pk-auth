@@ -44,7 +44,14 @@ class PkAuthIntrospectionsCoverageTest {
           // Internal mapper return shapes — the adapter unwraps these into framework
           // response objects, the records themselves are never JSON-serialized.
           "com.codeheadsystems.pkauth.api.CeremonyWireMapper$CeremonyResponse",
-          "com.codeheadsystems.pkauth.admin.AdminResponseMapper$AdminResponse");
+          "com.codeheadsystems.pkauth.admin.AdminResponseMapper$AdminResponse",
+          // start*-ceremony result sums — the controller serializes the Started variant's wrapped
+          // response (already introspected) or maps RateLimited to the rate_limited body; the
+          // result records themselves never cross the serialization boundary.
+          "com.codeheadsystems.pkauth.api.StartRegistrationResult$Started",
+          "com.codeheadsystems.pkauth.api.StartRegistrationResult$RateLimited",
+          "com.codeheadsystems.pkauth.api.StartAuthenticationResult$Started",
+          "com.codeheadsystems.pkauth.api.StartAuthenticationResult$RateLimited");
 
   @Test
   void everyWireRecordIsIntrospected() throws Exception {
