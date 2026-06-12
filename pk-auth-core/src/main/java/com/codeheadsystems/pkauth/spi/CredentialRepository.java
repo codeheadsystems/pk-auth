@@ -16,13 +16,46 @@ import java.util.Optional;
  */
 public interface CredentialRepository {
 
-  /** Inserts a new credential record. Implementations must reject duplicates on credentialId. */
+  /**
+   * Inserts a new credential record. Implementations MUST reject a duplicate {@code credentialId}
+   * by throwing {@link DuplicateCredentialException} rather than overwriting the existing row — a
+   * duplicate at registration-finish is a replay/clobber attempt, not an update.
+   *
+   * @param record the credential to persist.
+   * @throws DuplicateCredentialException if a credential with the same {@code credentialId} exists.
+   * @since 0.9.0
+   */
   void save(CredentialRecord record);
 
+  /**
+   * Looks up a credential by its (globally unique) {@code credentialId}.
+   *
+   * @param credentialId the credential to find.
+   * @return the credential, or {@link Optional#empty()} if no row matches.
+   * @since 0.9.0
+   */
   Optional<CredentialRecord> findByCredentialId(CredentialId credentialId);
 
+  /**
+   * Lists every credential owned by the supplied user, in unspecified order.
+   *
+   * @param userHandle the owner.
+   * @return the user's credentials, or an empty list if the user has none (never {@code null}).
+   * @since 0.9.0
+   */
   List<CredentialRecord> findByUserHandle(UserHandle userHandle);
 
+  /**
+   * Updates the stored signature counter and last-used timestamp after a successful assertion. This
+   * is a last-writer-wins overwrite of the two fields (no compare-and-set); the WebAuthn4J counter
+   * verification that authorizes the new value runs in the service before this call. A missing row
+   * is a silent no-op.
+   *
+   * @param credentialId the credential that just authenticated.
+   * @param newCount the new signature counter to store.
+   * @param lastUsedAt when the assertion occurred.
+   * @since 0.9.0
+   */
   void updateSignCount(CredentialId credentialId, long newCount, Instant lastUsedAt);
 
   /**

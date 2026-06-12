@@ -13,6 +13,13 @@ import java.time.Instant;
 @FunctionalInterface
 public interface ClockProvider {
 
+  /**
+   * Returns the current instant. Injecting this (rather than calling {@link Instant#now()}
+   * directly) lets tests drive ceremony/expiry timing deterministically.
+   *
+   * @return the current instant per this provider's clock.
+   * @since 0.9.0
+   */
   Instant now();
 
   /** Default provider backed by the system UTC clock. */

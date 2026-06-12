@@ -4,7 +4,11 @@ package com.codeheadsystems.pkauth.jwt;
 import java.time.Instant;
 import java.util.Objects;
 
-/** Closed sum of outcomes from {@link PkAuthJwtValidator#validate(String)}. */
+/**
+ * Closed sum of outcomes from {@link PkAuthJwtValidator#validate(String)}.
+ *
+ * @since 1.1.0
+ */
 public sealed interface JwtVerificationResult {
 
   /** Token signature verified and all standard claims pass. */
