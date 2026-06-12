@@ -2,7 +2,7 @@
 package com.codeheadsystems.pkauth.spring.web;
 
 import com.codeheadsystems.pkauth.spi.PkAuthPersistenceException;
-import java.util.LinkedHashMap;
+import com.codeheadsystems.pkauth.spi.PkAuthPersistenceResponse;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,9 +27,7 @@ public class PkAuthExceptionHandler {
   public ResponseEntity<Map<String, String>> handlePersistence(PkAuthPersistenceException e) {
     LOG.warn(
         "pkauth.persistence.failure operation={} message={}", e.operation(), e.getMessage(), e);
-    Map<String, String> body = new LinkedHashMap<>();
-    body.put("error", "persistence_failure");
-    body.put("operation", e.operation());
-    return ResponseEntity.status(503).body(body);
+    return ResponseEntity.status(PkAuthPersistenceResponse.STATUS)
+        .body(PkAuthPersistenceResponse.body(e));
   }
 }
