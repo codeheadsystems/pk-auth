@@ -98,22 +98,15 @@ public final class PkAuthModule {
   @Singleton
   RelyingPartyConfig provideRelyingPartyConfig(PkAuthConfig cfg) {
     PkAuthConfig.RelyingParty rp = cfg.relyingParty();
-    return new RelyingPartyConfig(rp.id(), rp.name(), Set.copyOf(rp.origins()));
+    return RelyingPartyConfig.from(rp.id(), rp.name(), rp.origins());
   }
 
   @Provides
   @Singleton
   CeremonyConfig provideCeremonyConfig(PkAuthConfig cfg) {
-    CeremonyConfig defaults = CeremonyConfig.defaults();
-    if (cfg.ceremony().challengeTtl() == null) {
-      return defaults;
-    }
-    return new CeremonyConfig(
-        cfg.ceremony().challengeTtl(),
-        defaults.userVerification(),
-        defaults.residentKey(),
-        defaults.attestationConveyance(),
-        defaults.counterRegression());
+    // Only challengeTtl is host-settable here; the remaining knobs take the conservative core
+    // defaults (UV=REQUIRED, counter=REJECT) via the null fallbacks.
+    return CeremonyConfig.from(cfg.ceremony().challengeTtl(), null, null, null, null);
   }
 
   /**

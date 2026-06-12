@@ -19,8 +19,9 @@ class PkAuthPersistenceResponseTest {
 
     var body = PkAuthPersistenceResponse.body(e);
 
-    assertThat(body).containsExactly(
-        org.assertj.core.api.Assertions.entry("error", "persistence_failure"),
-        org.assertj.core.api.Assertions.entry("operation", "credentials.save"));
+    assertThat(body)
+        .containsExactly(
+            org.assertj.core.api.Assertions.entry("error", "persistence_failure"),
+            org.assertj.core.api.Assertions.entry("operation", "credentials.save"));
   }
 }

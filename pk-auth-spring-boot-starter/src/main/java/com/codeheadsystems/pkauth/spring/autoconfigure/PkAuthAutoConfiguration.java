@@ -102,27 +102,23 @@ public class PkAuthAutoConfiguration {
   @ConditionalOnMissingBean
   public RelyingPartyConfig pkAuthRelyingPartyConfig(PkAuthProperties props) {
     PkAuthProperties.RelyingParty rp = props.relyingParty();
-    if (rp == null) {
-      throw new IllegalStateException(
-          "pkauth.relying-party.{id,name,origins} are required. Set them explicitly in"
-              + " configuration — there are no defaults.");
-    }
-    return new RelyingPartyConfig(rp.id(), rp.name(), rp.origins());
+    return rp == null
+        ? RelyingPartyConfig.from(null, null, null)
+        : RelyingPartyConfig.from(rp.id(), rp.name(), rp.origins());
   }
 
   @Bean
   @ConditionalOnMissingBean
   public CeremonyConfig pkAuthCeremonyConfig(PkAuthProperties props) {
     PkAuthProperties.Ceremony c = props.ceremony();
-    CeremonyConfig defaults = CeremonyConfig.defaults();
     // Every knob falls back to the framework-neutral core defaults (UV=REQUIRED, counter=REJECT),
     // not weaker adapter-local values — a host must opt in explicitly to relax any of them.
-    return new CeremonyConfig(
-        c.challengeTtl() == null ? defaults.challengeTtl() : c.challengeTtl(),
-        c.userVerification() == null ? defaults.userVerification() : c.userVerification(),
-        c.residentKey() == null ? defaults.residentKey() : c.residentKey(),
-        c.attestation() == null ? defaults.attestationConveyance() : c.attestation(),
-        c.counterRegression() == null ? defaults.counterRegression() : c.counterRegression());
+    return CeremonyConfig.from(
+        c.challengeTtl(),
+        c.userVerification(),
+        c.residentKey(),
+        c.attestation(),
+        c.counterRegression());
   }
 
   /**

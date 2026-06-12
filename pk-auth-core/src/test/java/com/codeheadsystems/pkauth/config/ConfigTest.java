@@ -54,4 +54,37 @@ class ConfigTest {
                     CounterRegressionPolicy.REJECT))
         .isInstanceOf(IllegalArgumentException.class);
   }
+
+  @Test
+  void relyingPartyConfigFromValidatesAndCopies() {
+    RelyingPartyConfig rp =
+        RelyingPartyConfig.from("example.com", "Example", java.util.List.of("https://example.com"));
+    assertThat(rp.origins()).containsExactly("https://example.com");
+  }
+
+  @Test
+  void relyingPartyConfigFromRejectsMissingFieldsWithCanonicalMessage() {
+    assertThatThrownBy(() -> RelyingPartyConfig.from(null, "n", Set.of("https://x")))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("pkauth.relying-party");
+    assertThatThrownBy(() -> RelyingPartyConfig.from("x", "  ", Set.of("https://x")))
+        .isInstanceOf(IllegalStateException.class);
+    assertThatThrownBy(() -> RelyingPartyConfig.from("x", "n", Set.of()))
+        .isInstanceOf(IllegalStateException.class);
+    assertThatThrownBy(() -> RelyingPartyConfig.from("x", "n", null))
+        .isInstanceOf(IllegalStateException.class);
+  }
+
+  @Test
+  void ceremonyConfigFromCoalescesNullsToDefaultsAndNeverWeakens() {
+    // All null -> every knob takes the conservative default.
+    CeremonyConfig allDefaults = CeremonyConfig.from(null, null, null, null, null);
+    assertThat(allDefaults).isEqualTo(CeremonyConfig.defaults());
+
+    // A supplied value overrides only that knob; the rest stay at the secure defaults.
+    CeremonyConfig overridden = CeremonyConfig.from(Duration.ofMinutes(2), null, null, null, null);
+    assertThat(overridden.challengeTtl()).isEqualTo(Duration.ofMinutes(2));
+    assertThat(overridden.userVerification()).isEqualTo(UserVerificationRequirement.REQUIRED);
+    assertThat(overridden.counterRegression()).isEqualTo(CounterRegressionPolicy.REJECT);
+  }
 }
