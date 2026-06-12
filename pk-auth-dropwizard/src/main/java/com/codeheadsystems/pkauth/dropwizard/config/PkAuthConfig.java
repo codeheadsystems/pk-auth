@@ -2,7 +2,6 @@
 package com.codeheadsystems.pkauth.dropwizard.config;
 
 import com.codeheadsystems.pkauth.refresh.RefreshTokenConfig;
-import com.codeheadsystems.pkauth.refresh.RefreshTtlPolicy;
 import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -235,21 +234,7 @@ public record PkAuthConfig(
 
     /** Builds a {@link RefreshTokenConfig} from this block. */
     public RefreshTokenConfig toRefreshTokenConfig() {
-      Duration ttl = defaultTtl == null ? RefreshTokenConfig.DEFAULT_REFRESH_TTL : defaultTtl;
-      Map<String, Duration> overrides = ttlsByAudience;
-      RefreshTtlPolicy policy =
-          overrides == null || overrides.isEmpty()
-              ? RefreshTtlPolicy.single(ttl)
-              : RefreshTtlPolicy.fixed(ttl, overrides);
-      Duration retention =
-          cleanupRetention == null
-              ? RefreshTokenConfig.DEFAULT_CLEANUP_RETENTION
-              : cleanupRetention;
-      return new RefreshTokenConfig(
-          policy,
-          RefreshTokenConfig.DEFAULT_SECRET_BYTES,
-          RefreshTokenConfig.DEFAULT_REFRESH_ID_BYTES,
-          retention);
+      return RefreshTokenConfig.from(defaultTtl, ttlsByAudience, cleanupRetention);
     }
   }
 }

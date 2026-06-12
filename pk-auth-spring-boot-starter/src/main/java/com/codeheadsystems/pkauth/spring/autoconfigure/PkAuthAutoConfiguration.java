@@ -19,7 +19,6 @@ import com.codeheadsystems.pkauth.jwt.JwtSecretResolver;
 import com.codeheadsystems.pkauth.jwt.PkAuthJwtIssuer;
 import com.codeheadsystems.pkauth.jwt.PkAuthJwtValidator;
 import com.codeheadsystems.pkauth.jwt.RevocationCheck;
-import com.codeheadsystems.pkauth.jwt.TokenTtlPolicy;
 import com.codeheadsystems.pkauth.lifecycle.BackupCodeRepositoryDeletionListener;
 import com.codeheadsystems.pkauth.lifecycle.CredentialRepositoryDeletionListener;
 import com.codeheadsystems.pkauth.lifecycle.OtpRepositoryDeletionListener;
@@ -35,7 +34,6 @@ import com.codeheadsystems.pkauth.otp.SmsSender;
 import com.codeheadsystems.pkauth.refresh.RefreshTokenConfig;
 import com.codeheadsystems.pkauth.refresh.RefreshTokenService;
 import com.codeheadsystems.pkauth.refresh.RefreshTokenServiceDeletionListener;
-import com.codeheadsystems.pkauth.refresh.RefreshTtlPolicy;
 import com.codeheadsystems.pkauth.refresh.spi.RefreshTokenRepository;
 import com.codeheadsystems.pkauth.refresh.web.RefreshHandler;
 import com.codeheadsystems.pkauth.spi.BackupCodeRepository;
@@ -51,9 +49,7 @@ import com.codeheadsystems.pkauth.testkit.InMemoryChallengeStore;
 import com.codeheadsystems.pkauth.testkit.InMemoryCredentialRepository;
 import com.codeheadsystems.pkauth.testkit.InMemoryOtpRepository;
 import com.codeheadsystems.pkauth.testkit.InMemoryUserLookup;
-import java.time.Duration;
 import java.util.List;
-import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -216,18 +212,7 @@ public class PkAuthAutoConfiguration {
   @ConditionalOnMissingBean
   public JwtConfig pkAuthJwtConfig(PkAuthProperties props) {
     PkAuthProperties.Jwt jwt = requireJwt(props);
-    Duration defaultTtl = jwt.defaultTtl() == null ? JwtConfig.DEFAULT_TOKEN_TTL : jwt.defaultTtl();
-    Map<String, Duration> overrides = jwt.ttlsByAudience();
-    TokenTtlPolicy ttlPolicy =
-        overrides == null || overrides.isEmpty()
-            ? TokenTtlPolicy.single(defaultTtl)
-            : TokenTtlPolicy.fixed(defaultTtl, overrides);
-    return new JwtConfig(
-        jwt.issuer(),
-        jwt.audience(),
-        ttlPolicy,
-        JwtConfig.DEFAULT_NBF_SKEW,
-        JwtConfig.DEFAULT_CLOCK_SKEW);
+    return JwtConfig.from(jwt.issuer(), jwt.audience(), jwt.defaultTtl(), jwt.ttlsByAudience());
   }
 
   @Bean
@@ -345,24 +330,8 @@ public class PkAuthAutoConfiguration {
   @ConditionalOnMissingBean
   public RefreshTokenConfig pkAuthRefreshTokenConfig(PkAuthProperties props) {
     PkAuthProperties.Refresh refresh = props.refresh();
-    Duration defaultTtl =
-        refresh.defaultTtl() == null
-            ? RefreshTokenConfig.DEFAULT_REFRESH_TTL
-            : refresh.defaultTtl();
-    Map<String, Duration> overrides = refresh.ttlsByAudience();
-    RefreshTtlPolicy policy =
-        overrides == null || overrides.isEmpty()
-            ? RefreshTtlPolicy.single(defaultTtl)
-            : RefreshTtlPolicy.fixed(defaultTtl, overrides);
-    Duration retention =
-        refresh.cleanupRetention() == null
-            ? RefreshTokenConfig.DEFAULT_CLEANUP_RETENTION
-            : refresh.cleanupRetention();
-    return new RefreshTokenConfig(
-        policy,
-        RefreshTokenConfig.DEFAULT_SECRET_BYTES,
-        RefreshTokenConfig.DEFAULT_REFRESH_ID_BYTES,
-        retention);
+    return RefreshTokenConfig.from(
+        refresh.defaultTtl(), refresh.ttlsByAudience(), refresh.cleanupRetention());
   }
 
   /** {@link RefreshTokenService} bean — only when a {@link RefreshTokenRepository} is wired. */

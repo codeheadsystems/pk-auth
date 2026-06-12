@@ -2,7 +2,9 @@
 package com.codeheadsystems.pkauth.refresh;
 
 import java.time.Duration;
+import java.util.Map;
 import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Configuration for {@link RefreshTokenService}.
@@ -55,5 +57,35 @@ public record RefreshTokenConfig(
         DEFAULT_SECRET_BYTES,
         DEFAULT_REFRESH_ID_BYTES,
         DEFAULT_CLEANUP_RETENTION);
+  }
+
+  /**
+   * Builds a {@link RefreshTokenConfig} from host configuration with the documented entropy
+   * defaults ({@link #DEFAULT_SECRET_BYTES} / {@link #DEFAULT_REFRESH_ID_BYTES}). A {@code null}
+   * {@code defaultTtl} falls back to {@link #DEFAULT_REFRESH_TTL}; {@code ttlsByAudience} that is
+   * {@code null} or empty yields a single-TTL policy (see {@link RefreshTtlPolicy#from}); a {@code
+   * null} {@code cleanupRetention} falls back to {@link #DEFAULT_CLEANUP_RETENTION}.
+   *
+   * <p>This is the host-config-to-domain-config translation each framework adapter performs;
+   * centralizing it keeps the entropy and retention defaults identical across adapters.
+   *
+   * @param defaultTtl the refresh-token TTL, or {@code null} for {@link #DEFAULT_REFRESH_TTL}.
+   * @param ttlsByAudience per-audience TTL overrides, or {@code null}/empty for a uniform TTL.
+   * @param cleanupRetention forensic retention window, or {@code null} for {@link
+   *     #DEFAULT_CLEANUP_RETENTION}.
+   * @return the assembled config.
+   * @since 1.3.1
+   */
+  public static RefreshTokenConfig from(
+      @Nullable Duration defaultTtl,
+      @Nullable Map<String, Duration> ttlsByAudience,
+      @Nullable Duration cleanupRetention) {
+    Duration ttl = defaultTtl == null ? DEFAULT_REFRESH_TTL : defaultTtl;
+    Duration retention = cleanupRetention == null ? DEFAULT_CLEANUP_RETENTION : cleanupRetention;
+    return new RefreshTokenConfig(
+        RefreshTtlPolicy.from(ttl, ttlsByAudience),
+        DEFAULT_SECRET_BYTES,
+        DEFAULT_REFRESH_ID_BYTES,
+        retention);
   }
 }

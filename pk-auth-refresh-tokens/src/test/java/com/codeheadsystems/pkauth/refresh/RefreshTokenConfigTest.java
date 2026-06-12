@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.Duration;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 /** Validates {@link RefreshTokenConfig} compact-constructor guards and the {@code defaults()}. */
@@ -57,5 +58,26 @@ class RefreshTokenConfigTest {
     assertThat(config.secretBytes()).isEqualTo(16);
     assertThat(config.refreshIdBytes()).isEqualTo(8);
     assertThat(config.cleanupRetention()).isEqualTo(Duration.ZERO);
+  }
+
+  @Test
+  void fromAppliesAllDocumentedDefaultsWhenNull() {
+    RefreshTokenConfig config = RefreshTokenConfig.from(null, null, null);
+    assertThat(config.secretBytes()).isEqualTo(RefreshTokenConfig.DEFAULT_SECRET_BYTES);
+    assertThat(config.refreshIdBytes()).isEqualTo(RefreshTokenConfig.DEFAULT_REFRESH_ID_BYTES);
+    assertThat(config.cleanupRetention()).isEqualTo(RefreshTokenConfig.DEFAULT_CLEANUP_RETENTION);
+    assertThat(config.ttlPolicy().refreshTtl("web"))
+        .isEqualTo(RefreshTokenConfig.DEFAULT_REFRESH_TTL);
+    assertThat(config.ttlPolicy().knownAudiences()).isEmpty();
+  }
+
+  @Test
+  void fromHonorsExplicitValuesAndPerAudienceOverrides() {
+    RefreshTokenConfig config =
+        RefreshTokenConfig.from(
+            Duration.ofDays(7), Map.of("cli", Duration.ofDays(90)), Duration.ofDays(60));
+    assertThat(config.cleanupRetention()).isEqualTo(Duration.ofDays(60));
+    assertThat(config.ttlPolicy().refreshTtl("cli")).isEqualTo(Duration.ofDays(90));
+    assertThat(config.ttlPolicy().refreshTtl("web")).isEqualTo(Duration.ofDays(7));
   }
 }

@@ -16,7 +16,6 @@ import com.codeheadsystems.pkauth.jwt.JwtConfig;
 import com.codeheadsystems.pkauth.jwt.JwtKeyset;
 import com.codeheadsystems.pkauth.jwt.PkAuthJwtIssuer;
 import com.codeheadsystems.pkauth.jwt.PkAuthJwtValidator;
-import com.codeheadsystems.pkauth.jwt.TokenTtlPolicy;
 import com.codeheadsystems.pkauth.lifecycle.CredentialRepositoryDeletionListener;
 import com.codeheadsystems.pkauth.lifecycle.UserDeletionListener;
 import com.codeheadsystems.pkauth.lifecycle.UserDeletionService;
@@ -34,8 +33,6 @@ import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.IntoSet;
 import jakarta.inject.Singleton;
-import java.time.Duration;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -150,18 +147,7 @@ public final class PkAuthModule {
   @Singleton
   JwtConfig provideJwtConfig(PkAuthConfig cfg) {
     PkAuthConfig.Jwt jwt = cfg.jwt();
-    Duration defaultTtl = jwt.defaultTtl() == null ? JwtConfig.DEFAULT_TOKEN_TTL : jwt.defaultTtl();
-    Map<String, Duration> overrides = jwt.ttlsByAudience();
-    TokenTtlPolicy ttlPolicy =
-        overrides == null || overrides.isEmpty()
-            ? TokenTtlPolicy.single(defaultTtl)
-            : TokenTtlPolicy.fixed(defaultTtl, overrides);
-    return new JwtConfig(
-        jwt.issuer(),
-        jwt.audience(),
-        ttlPolicy,
-        JwtConfig.DEFAULT_NBF_SKEW,
-        JwtConfig.DEFAULT_CLOCK_SKEW);
+    return JwtConfig.from(jwt.issuer(), jwt.audience(), jwt.defaultTtl(), jwt.ttlsByAudience());
   }
 
   @Provides
