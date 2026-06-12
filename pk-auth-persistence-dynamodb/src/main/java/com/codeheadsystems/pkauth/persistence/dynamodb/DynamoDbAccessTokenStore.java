@@ -9,9 +9,12 @@ import java.util.Objects;
 import java.util.Optional;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
+import software.amazon.awssdk.enhanced.dynamodb.Expression;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
 import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
+import software.amazon.awssdk.enhanced.dynamodb.model.ScanEnhancedRequest;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /**
  * {@link AccessTokenStore} backed by the {@code PkAuthCore} single table. Each issued JTI is
@@ -184,8 +187,14 @@ public final class DynamoDbAccessTokenStore implements AccessTokenStore {
         () -> {
           long beforeEpoch = before.getEpochSecond();
           int[] removed = {0};
-          table.scan().items().stream()
-              .filter(item -> DynamoKeys.AT.regionMatches(0, item.getPk(), 0, 3))
+          // The server-side begins_with filter keeps non-AT# rows of the shared table off the wire;
+          // a scan still consumes read capacity proportional to table size, so operators should
+          // prefer native TTL and treat this as a test/maintenance path.
+          table
+              .scan(ScanEnhancedRequest.builder().filterExpression(primaryItemsOnly()).build())
+              .items()
+              .stream()
+              .filter(item -> item.getPk() != null && item.getPk().startsWith(DynamoKeys.AT))
               .filter(item -> item.getPk().equals(item.getSk())) // primary items only
               .filter(item -> item.getTtl() != null && item.getTtl() < beforeEpoch)
               .forEach(
@@ -230,5 +239,13 @@ public final class DynamoDbAccessTokenStore implements AccessTokenStore {
     item.setExpiresAtIso(DynamoDbSupport.encodeInstant(expiresAt));
     item.setTtl(ttl);
     return item;
+  }
+
+  /** Server-side filter restricting a table scan to AT# primary items (pk begins with AT#). */
+  private static Expression primaryItemsOnly() {
+    return Expression.builder()
+        .expression("begins_with(pk, :atPrefix)")
+        .putExpressionValue(":atPrefix", AttributeValue.fromS(DynamoKeys.AT))
+        .build();
   }
 }
