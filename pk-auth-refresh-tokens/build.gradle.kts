@@ -32,6 +32,10 @@ tasks.named<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
                 counter = "LINE"
                 minimum = "0.70".toBigDecimal()
             }
+            limit {
+                counter = "BRANCH"
+                minimum = "0.80".toBigDecimal()
+            }
         }
     }
 }

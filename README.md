@@ -2,8 +2,6 @@
 
 ![pk-auth CI](https://github.com/codeheadsystems/pk-auth/actions/workflows/ci.yml/badge.svg)
 [![passkeys-browser mutation score](https://img.shields.io/endpoint?style=flat&label=mutation%20(passkeys-browser)&url=https%3A%2F%2Fbadge-api.stryker-mutator.io%2Fgithub.com%2Fcodeheadsystems%2Fpk-auth%2Fmain%3Fmodule%3Dpasskeys-browser)](https://dashboard.stryker-mutator.io/reports/github.com/codeheadsystems/pk-auth/main?module=passkeys-browser)
-[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=codeheadsystems_pk-auth&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=codeheadsystems_pk-auth)
-[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=codeheadsystems_pk-auth&metric=coverage)](https://sonarcloud.io/summary/new_code?id=codeheadsystems_pk-auth)
 
 A production-grade, **passkeys-first** authentication template for the JVM.
 pk-auth ships as a reusable library set that can be dropped into a Spring

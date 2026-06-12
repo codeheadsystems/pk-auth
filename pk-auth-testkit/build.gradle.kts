@@ -44,6 +44,10 @@ tasks.named<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
                 // crypto wiring that's mostly exercised via the end-to-end ceremony test.
                 minimum = "0.70".toBigDecimal()
             }
+            limit {
+                counter = "BRANCH"
+                minimum = "0.55".toBigDecimal()
+            }
         }
     }
 }

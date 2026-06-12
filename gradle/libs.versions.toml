@@ -18,10 +18,6 @@ errorprone-plugin = "5.1.0"
 errorprone-core = "2.50.0"
 google-java-format = "1.25.2"
 jspecify = "1.0.0"
-# SonarScanner for Gradle — drives CI-based analysis on SonarQube Cloud (free open-source tier).
-# Applied to the root project for multi-module aggregation; consumes the per-module JaCoCo XML
-# reports already produced by pkauth.test-conventions.
-sonarqube = "7.3.1.8318"
 
 # Runtime — pk-auth-core
 webauthn4j = "0.31.7.RELEASE"
@@ -180,4 +176,3 @@ jackson = ["jackson-databind", "jackson-annotations"]
 [plugins]
 spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
 errorprone = { id = "net.ltgt.errorprone", version.ref = "errorprone-plugin" }
-sonarqube = { id = "org.sonarqube", version.ref = "sonarqube" }

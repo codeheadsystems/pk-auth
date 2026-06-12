@@ -3,21 +3,6 @@
 // assemble).
 plugins {
     base
-    alias(libs.plugins.sonarqube)
-}
-
-// SonarQube Cloud analysis. Applied at the root for multi-module aggregation; the scanner
-// auto-detects each module's JaCoCo XML report (build/reports/jacoco/test/jacocoTestReport.xml),
-// produced by pkauth.test-conventions. Run via `./gradlew build jacocoTestReport sonar`.
-// NOTE: the sonar task is not configuration-cache compatible, so CI invokes it with
-// `--no-configuration-cache` (gradle.properties enables the config cache globally).
-sonar {
-    properties {
-        property("sonar.projectKey", "codeheadsystems_pk-auth")
-        property("sonar.organization", "codeheadsystems")
-        property("sonar.host.url", "https://sonarcloud.io")
-        property("sonar.exclusions", "examples/**,clients/passkeys-browser/dist/**")
-    }
 }
 
 // Required for the nmcp aggregation plugin (auto-applied by `nmcp.settings` in settings.gradle.kts)
