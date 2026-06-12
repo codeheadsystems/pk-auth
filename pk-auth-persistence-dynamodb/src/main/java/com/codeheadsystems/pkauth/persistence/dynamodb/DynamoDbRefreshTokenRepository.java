@@ -6,6 +6,7 @@ import com.codeheadsystems.pkauth.json.Base64Url;
 import com.codeheadsystems.pkauth.refresh.RefreshTokenConfig;
 import com.codeheadsystems.pkauth.refresh.RefreshTokenRecord;
 import com.codeheadsystems.pkauth.refresh.RevokeReason;
+import com.codeheadsystems.pkauth.refresh.spi.Amr;
 import com.codeheadsystems.pkauth.refresh.spi.RefreshTokenRepository;
 import java.time.Duration;
 import java.time.Instant;
@@ -452,7 +453,7 @@ public final class DynamoDbRefreshTokenRepository implements RefreshTokenReposit
     item.setUsedAtIso(r.usedAt().map(Instant::toString).orElse(null));
     item.setRevokedAtIso(r.revokedAt().map(Instant::toString).orElse(null));
     item.setRevokedReason(r.revokedReason().map(Enum::name).orElse(null));
-    item.setAmr(String.join(",", r.amr()));
+    item.setAmr(Amr.encode(r.amr()));
     item.setExpiresAtEpoch(r.expiresAt().getEpochSecond());
     item.setTtl(r.expiresAt().plus(cleanupRetention).getEpochSecond());
     return item;
@@ -474,18 +475,7 @@ public final class DynamoDbRefreshTokenRepository implements RefreshTokenReposit
         Optional.ofNullable(item.getUsedAtIso()).map(Instant::parse),
         Optional.ofNullable(item.getRevokedAtIso()).map(Instant::parse),
         Optional.ofNullable(item.getRevokedReason()).map(RevokeReason::valueOf),
-        splitAmr(item.getAmr()));
-  }
-
-  /**
-   * Parses the stored comma-separated {@code amr} attribute back into a list. A null/blank value
-   * (items written before the attribute existed) maps to the generic {@code ["user"]}.
-   */
-  private static List<String> splitAmr(String stored) {
-    if (stored == null || stored.isBlank()) {
-      return List.of("user");
-    }
-    return List.of(stored.split(","));
+        Amr.decode(item.getAmr()));
   }
 
   // Defensive: silence unused-import warnings on classes pulled in for the TransactWrite path.

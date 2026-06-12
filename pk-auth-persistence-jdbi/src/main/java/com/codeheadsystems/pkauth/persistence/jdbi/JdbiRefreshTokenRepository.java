@@ -4,6 +4,7 @@ package com.codeheadsystems.pkauth.persistence.jdbi;
 import com.codeheadsystems.pkauth.api.UserHandle;
 import com.codeheadsystems.pkauth.refresh.RefreshTokenRecord;
 import com.codeheadsystems.pkauth.refresh.RevokeReason;
+import com.codeheadsystems.pkauth.refresh.spi.Amr;
 import com.codeheadsystems.pkauth.refresh.spi.RefreshTokenRepository;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -192,7 +193,7 @@ public final class JdbiRefreshTokenRepository implements RefreshTokenRepository 
             .bind("iat", OffsetDateTime.ofInstant(r.issuedAt(), ZoneOffset.UTC))
             .bind("exp", OffsetDateTime.ofInstant(r.expiresAt(), ZoneOffset.UTC))
             .bind("reason", r.revokedReason().map(Enum::name).orElse(null))
-            .bind("amr", joinAmr(r.amr()))) {
+            .bind("amr", Amr.encode(r.amr()))) {
       // used_at and revoked_at are TIMESTAMPTZ; JDBI's untyped-null default (Types.VARCHAR) is
       // rejected by Postgres against a TIMESTAMPTZ column. Force Types.TIMESTAMP_WITH_TIMEZONE on
       // the null branch.
@@ -240,22 +241,6 @@ public final class JdbiRefreshTokenRepository implements RefreshTokenRepository 
         Optional.ofNullable(usedAt).map(OffsetDateTime::toInstant),
         Optional.ofNullable(revokedAt).map(OffsetDateTime::toInstant),
         Optional.ofNullable(revokedReasonStr).map(RevokeReason::valueOf),
-        splitAmr(rs.getString("amr")));
-  }
-
-  /** Serializes the RFC 8176 {@code amr} references as a comma-separated string for storage. */
-  private static String joinAmr(List<String> amr) {
-    return String.join(",", amr);
-  }
-
-  /**
-   * Parses the stored comma-separated {@code amr} string back into a list. A null/blank value (rows
-   * written before the V10 column existed) maps to the generic {@code ["user"]}.
-   */
-  private static List<String> splitAmr(String stored) {
-    if (stored == null || stored.isBlank()) {
-      return List.of("user");
-    }
-    return List.of(stored.split(","));
+        Amr.decode(rs.getString("amr")));
   }
 }
