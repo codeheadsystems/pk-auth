@@ -10,7 +10,6 @@ import com.codeheadsystems.pkauth.refresh.spi.Amr;
 import com.codeheadsystems.pkauth.refresh.spi.RefreshTokenRepository;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,14 +20,15 @@ import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 import software.amazon.awssdk.enhanced.dynamodb.Expression;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
 import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
-import software.amazon.awssdk.enhanced.dynamodb.model.ConditionCheck;
 import software.amazon.awssdk.enhanced.dynamodb.model.IgnoreNullsMode;
 import software.amazon.awssdk.enhanced.dynamodb.model.PutItemEnhancedRequest;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
+import software.amazon.awssdk.enhanced.dynamodb.model.ScanEnhancedRequest;
 import software.amazon.awssdk.enhanced.dynamodb.model.TransactPutItemEnhancedRequest;
 import software.amazon.awssdk.enhanced.dynamodb.model.TransactUpdateItemEnhancedRequest;
 import software.amazon.awssdk.enhanced.dynamodb.model.TransactWriteItemsEnhancedRequest;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import software.amazon.awssdk.services.dynamodb.model.CancellationReason;
 import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedException;
 import software.amazon.awssdk.services.dynamodb.model.TransactionCanceledException;
 
@@ -57,6 +57,8 @@ public final class DynamoDbRefreshTokenRepository implements RefreshTokenReposit
   // named separately because they play distinct roles in the single-table layout.
   private static final String PRIMARY_PK_PREFIX = DynamoKeys.RT;
   private static final String INDEX_SK_PREFIX = DynamoKeys.RT;
+  // DynamoDB's code() for a cancellation reason whose ConditionExpression evaluated false.
+  private static final String CONDITIONAL_CHECK_FAILED = "ConditionalCheckFailed";
 
   private final DynamoDbEnhancedClient enhanced;
   private final DynamoDbTable<RefreshTokenItem> table;
@@ -158,7 +160,7 @@ public final class DynamoDbRefreshTokenRepository implements RefreshTokenReposit
           RefreshTokenItem successorUser =
               toItem(
                   successor,
-                  USER_PK_PREFIX + successor_userB64(successor),
+                  USER_PK_PREFIX + successorUserB64(successor),
                   INDEX_SK_PREFIX + successor.refreshId());
           RefreshTokenItem successorFamily =
               toItem(
@@ -188,9 +190,35 @@ public final class DynamoDbRefreshTokenRepository implements RefreshTokenReposit
                     .build());
             return true;
           } catch (TransactionCanceledException cancelled) {
-            return false;
+            // Distinguish a genuine freshness-condition failure (the parent was already used,
+            // revoked, or expired — a real replay/race that SHOULD return false and let the caller
+            // scorch the family) from a transient cancellation (throughput, transaction conflict,
+            // validation). Only the former is "race lost". Surfacing the latter as false would let
+            // a momentary throughput blip be misread as a replay and silently revoke a legitimate
+            // token family; rethrowing instead maps it (via DynamoDbSupport.wrap) to a 5xx the
+            // client can retry. When the reason is undeterminable, fail closed by rethrowing.
+            if (isParentFreshnessFailure(cancelled)) {
+              return false;
+            }
+            throw cancelled;
           }
         });
+  }
+
+  /**
+   * True only when the {@code rotateAtomically} transaction was cancelled because the parent's
+   * freshness condition failed — the legitimate replay/race signal. The parent's conditional {@code
+   * UpdateItem} is the first action added to the transaction, so its reason is at index 0; a {@code
+   * ConditionalCheckFailed} code there means the parent was already used, revoked, or expired. Any
+   * other cancellation reason (throughput, transaction conflict, validation) is transient and
+   * returns false here so the caller rethrows rather than scorching the family.
+   */
+  private static boolean isParentFreshnessFailure(TransactionCanceledException cancelled) {
+    List<CancellationReason> reasons = cancelled.cancellationReasons();
+    if (reasons == null || reasons.isEmpty()) {
+      return false;
+    }
+    return CONDITIONAL_CHECK_FAILED.equals(reasons.get(0).code());
   }
 
   @Override
@@ -366,8 +394,14 @@ public final class DynamoDbRefreshTokenRepository implements RefreshTokenReposit
           int[] removed = {0};
           // Scan only primary items (pk and sk both start with RT#) and filter by the
           // retention predicate that mirrors the JDBI cleanup SQL (expires_at < cutoff). This uses
-          // `expiresAtEpoch`, NOT the retention-extended `ttl` attribute.
-          table.scan().items().stream()
+          // `expiresAtEpoch`, NOT the retention-extended `ttl` attribute. The server-side
+          // begins_with filter keeps non-RT# rows of the shared table off the wire; note a scan
+          // still consumes read capacity proportional to table size, so operators should prefer
+          // native TTL and treat this as a test/maintenance path.
+          table
+              .scan(ScanEnhancedRequest.builder().filterExpression(primaryItemsOnly()).build())
+              .items()
+              .stream()
               .filter(item -> item.getPk() != null && item.getPk().startsWith(PRIMARY_PK_PREFIX))
               .filter(item -> item.getPk().equals(item.getSk())) // primary only
               .filter(
@@ -437,7 +471,7 @@ public final class DynamoDbRefreshTokenRepository implements RefreshTokenReposit
     }
   }
 
-  private static String successor_userB64(RefreshTokenRecord r) {
+  private static String successorUserB64(RefreshTokenRecord r) {
     return Base64Url.encode(r.userHandle().value());
   }
 
@@ -454,8 +488,8 @@ public final class DynamoDbRefreshTokenRepository implements RefreshTokenReposit
     item.setParentRefreshId(r.parentRefreshId().orElse(null));
     item.setIssuedAtIso(DynamoDbSupport.encodeInstant(r.issuedAt()));
     item.setExpiresAtIso(DynamoDbSupport.encodeInstant(r.expiresAt()));
-    item.setUsedAtIso(r.usedAt().map(Instant::toString).orElse(null));
-    item.setRevokedAtIso(r.revokedAt().map(Instant::toString).orElse(null));
+    item.setUsedAtIso(r.usedAt().map(DynamoDbSupport::encodeInstant).orElse(null));
+    item.setRevokedAtIso(r.revokedAt().map(DynamoDbSupport::encodeInstant).orElse(null));
     item.setRevokedReason(r.revokedReason().map(Enum::name).orElse(null));
     item.setAmr(Amr.encode(r.amr()));
     item.setExpiresAtEpoch(r.expiresAt().getEpochSecond());
@@ -464,7 +498,6 @@ public final class DynamoDbRefreshTokenRepository implements RefreshTokenReposit
   }
 
   private static RefreshTokenRecord toRecord(RefreshTokenItem item) {
-    Map<String, AttributeValue> ignored = new HashMap<>();
     byte[] hash = Base64Url.decode(item.getTokenHashB64u());
     return new RefreshTokenRecord(
         item.getRefreshId(),
@@ -482,7 +515,11 @@ public final class DynamoDbRefreshTokenRepository implements RefreshTokenReposit
         Amr.decode(item.getAmr()));
   }
 
-  // Defensive: silence unused-import warnings on classes pulled in for the TransactWrite path.
-  @SuppressWarnings("unused")
-  private static final ConditionCheck<RefreshTokenItem> UNUSED_CONDITION = null;
+  /** Server-side filter restricting a table scan to RT# primary items (pk begins with RT#). */
+  private static Expression primaryItemsOnly() {
+    return Expression.builder()
+        .expression("begins_with(pk, :rtPrefix)")
+        .putExpressionValue(":rtPrefix", AttributeValue.fromS(PRIMARY_PK_PREFIX))
+        .build();
+  }
 }

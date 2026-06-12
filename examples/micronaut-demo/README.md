@@ -35,6 +35,13 @@ persistence:
 
 Replace the `InMemoryPersistenceFactory` with a factory that surfaces those repos.
 
+For hands-on poking at those backends, [`docker-compose.yml`](./docker-compose.yml) ships a
+Postgres 16 + DynamoDB Local stack (none of which the default in-memory profile needs):
+
+```bash
+docker compose up -d
+```
+
 ## Frontend
 
 The demo's SPA lives in `src/main/resources/public/index.html` and `demo.js`, both of

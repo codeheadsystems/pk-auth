@@ -24,4 +24,4 @@ JDK 21 required (Gradle toolchain will fetch one if needed).
 
 ## Running locally
 
-Module-level READMEs (added in each phase) document the "5-minute integration" snippet and per-module specifics.
+See [`GETTING_STARTED.md`](./GETTING_STARTED.md) for the "5-minute integration" snippet and per-module specifics.

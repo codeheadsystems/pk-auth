@@ -150,7 +150,9 @@ class DefaultPasskeyAuthenticationServiceTest {
     when(credentialRepository.findByUserHandle(USER_HANDLE)).thenReturn(List.of());
 
     StartRegistrationResponse resp =
-        service.startRegistration(new StartRegistrationRequest("alice", "Alice", null, null));
+        service
+            .startRegistration(new StartRegistrationRequest("alice", "Alice", null, null))
+            .responseOrThrow();
 
     // The challengeId is now an opaque random handle, independent of the challenge bytes. Assert it
     // is well-formed and that the SAME id is what gets persisted (the binding to the bytes is
@@ -181,7 +183,9 @@ class DefaultPasskeyAuthenticationServiceTest {
     when(credentialRepository.findByUserHandle(USER_HANDLE)).thenReturn(List.of());
 
     StartRegistrationResponse resp =
-        service.startRegistration(new StartRegistrationRequest("brand-new", null, null, null));
+        service
+            .startRegistration(new StartRegistrationRequest("brand-new", null, null, null))
+            .responseOrThrow();
     String json = jsonMapper.writeValueAsString(resp.publicKey());
     assertThat(json).contains("\"excludeCredentials\":[]");
   }
@@ -193,7 +197,9 @@ class DefaultPasskeyAuthenticationServiceTest {
         .thenReturn(List.of(stubStoredCredential()));
 
     StartAuthenticationResponse resp =
-        service.startAuthentication(new StartAuthenticationRequest("alice", null));
+        service
+            .startAuthentication(new StartAuthenticationRequest("alice", null))
+            .responseOrThrow();
 
     assertThat(resp.publicKey().rpId()).isEqualTo("example.com");
     assertThat(resp.publicKey().allowCredentials()).hasSize(1);
@@ -208,7 +214,7 @@ class DefaultPasskeyAuthenticationServiceTest {
     // empty list so
     // it is wire-indistinguishable from an unknown-username request.
     StartAuthenticationResponse resp =
-        service.startAuthentication(new StartAuthenticationRequest(null, null));
+        service.startAuthentication(new StartAuthenticationRequest(null, null)).responseOrThrow();
     assertThat(resp.publicKey().allowCredentials()).isNotNull().isEmpty();
   }
 
@@ -221,7 +227,9 @@ class DefaultPasskeyAuthenticationServiceTest {
     when(userLookup.findHandleByUsername("ghost")).thenReturn(Optional.empty());
 
     StartAuthenticationResponse resp =
-        service.startAuthentication(new StartAuthenticationRequest("ghost", null));
+        service
+            .startAuthentication(new StartAuthenticationRequest("ghost", null))
+            .responseOrThrow();
 
     assertThat(resp.publicKey().allowCredentials()).isNotNull().isEmpty();
   }
@@ -232,7 +240,9 @@ class DefaultPasskeyAuthenticationServiceTest {
     // "allowCredentials":[] field present in the JSON, not an omitted field.
     when(userLookup.findHandleByUsername("ghost")).thenReturn(Optional.empty());
     StartAuthenticationResponse resp =
-        service.startAuthentication(new StartAuthenticationRequest("ghost", null));
+        service
+            .startAuthentication(new StartAuthenticationRequest("ghost", null))
+            .responseOrThrow();
     String json = jsonMapper.writeValueAsString(resp.publicKey());
     assertThat(json).contains("\"allowCredentials\":[]");
   }

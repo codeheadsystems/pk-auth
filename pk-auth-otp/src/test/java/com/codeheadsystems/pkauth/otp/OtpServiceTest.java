@@ -2,6 +2,7 @@
 package com.codeheadsystems.pkauth.otp;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.codeheadsystems.pkauth.api.UserHandle;
 import com.codeheadsystems.pkauth.spi.ClockProvider;
@@ -131,6 +132,40 @@ class OtpServiceTest {
     assertThat(OtpService.maskPhone("+1")).isEqualTo("+***");
     assertThat(OtpService.maskPhone(null)).isEqualTo("+***");
     assertThat(OtpService.maskPhone("abc")).isEqualTo("+***");
+  }
+
+  @Test
+  void configRejectsNonPositiveRangesAndShortPepper() {
+    SecureRandom rng = new SecureRandom();
+    assertThatThrownBy(
+            () ->
+                new OtpService.Config(
+                    rng, new byte[8], Duration.ofMinutes(5), 3, 3, Duration.ofMinutes(15)))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("pepper");
+    assertThatThrownBy(
+            () ->
+                new OtpService.Config(
+                    rng, TEST_PEPPER, Duration.ZERO, 3, 3, Duration.ofMinutes(15)))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("ttl");
+    assertThatThrownBy(
+            () ->
+                new OtpService.Config(
+                    rng, TEST_PEPPER, Duration.ofMinutes(5), 0, 3, Duration.ofMinutes(15)))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("maxAttempts");
+    assertThatThrownBy(
+            () ->
+                new OtpService.Config(
+                    rng, TEST_PEPPER, Duration.ofMinutes(5), 3, 0, Duration.ofMinutes(15)))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("rateLimit");
+    assertThatThrownBy(
+            () ->
+                new OtpService.Config(rng, TEST_PEPPER, Duration.ofMinutes(5), 3, 3, Duration.ZERO))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("rateWindow");
   }
 
   /** Captures sends so tests can pluck the dispatched code out of the message body. */

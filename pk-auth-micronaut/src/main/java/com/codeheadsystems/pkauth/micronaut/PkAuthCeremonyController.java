@@ -5,18 +5,16 @@ import com.codeheadsystems.pkauth.api.CeremonyWireMapper.CeremonyResponse;
 import com.codeheadsystems.pkauth.api.FinishAuthenticationRequest;
 import com.codeheadsystems.pkauth.api.FinishRegistrationRequest;
 import com.codeheadsystems.pkauth.api.StartAuthenticationRequest;
-import com.codeheadsystems.pkauth.api.StartAuthenticationResponse;
+import com.codeheadsystems.pkauth.api.StartAuthenticationResult;
 import com.codeheadsystems.pkauth.api.StartRegistrationRequest;
-import com.codeheadsystems.pkauth.api.StartRegistrationResponse;
+import com.codeheadsystems.pkauth.api.StartRegistrationResult;
 import com.codeheadsystems.pkauth.jwt.CeremonyOrchestrator;
-import com.codeheadsystems.pkauth.spi.CeremonyRateLimitedException;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.HttpStatus;
 import io.micronaut.http.MediaType;
 import io.micronaut.http.annotation.Body;
 import io.micronaut.http.annotation.Controller;
-import io.micronaut.http.annotation.Error;
 import io.micronaut.http.annotation.Post;
 import io.micronaut.http.annotation.Produces;
 import io.micronaut.scheduling.TaskExecutors;
@@ -50,9 +48,15 @@ public class PkAuthCeremonyController {
   }
 
   @Post("/registration/start")
-  public HttpResponse<StartRegistrationResponse> startRegistration(
+  public HttpResponse<?> startRegistration(
       @Body StartRegistrationRequest req, HttpRequest<?> httpRequest) {
-    return HttpResponse.ok(orchestrator.startRegistration(req, clientIp(httpRequest)));
+    return switch (orchestrator.startRegistration(req, clientIp(httpRequest))) {
+      case StartRegistrationResult.Started started -> HttpResponse.ok(started.response());
+      case StartRegistrationResult.RateLimited rl -> {
+        LOG.info("auth.registration.start rate-limited bucket={}", rl.bucket());
+        yield toResponse(orchestrator.rateLimited());
+      }
+    };
   }
 
   @Post("/registration/finish")
@@ -62,27 +66,21 @@ public class PkAuthCeremonyController {
   }
 
   @Post("/authentication/start")
-  public HttpResponse<StartAuthenticationResponse> startAuthentication(
+  public HttpResponse<?> startAuthentication(
       @Body StartAuthenticationRequest req, HttpRequest<?> httpRequest) {
-    return HttpResponse.ok(orchestrator.startAuthentication(req, clientIp(httpRequest)));
+    return switch (orchestrator.startAuthentication(req, clientIp(httpRequest))) {
+      case StartAuthenticationResult.Started started -> HttpResponse.ok(started.response());
+      case StartAuthenticationResult.RateLimited rl -> {
+        LOG.info("auth.authentication.start rate-limited bucket={}", rl.bucket());
+        yield toResponse(orchestrator.rateLimited());
+      }
+    };
   }
 
   @Post("/authentication/finish")
   public HttpResponse<Map<String, Object>> finishAuthentication(
       @Body FinishAuthenticationRequest req, HttpRequest<?> httpRequest) {
     return toResponse(orchestrator.finishAuthentication(req, clientIp(httpRequest)));
-  }
-
-  /**
-   * Maps a {@link CeremonyRateLimitedException} thrown by {@code startRegistration} / {@code
-   * startAuthentication} to the canonical {@code 429} wire shape.
-   *
-   * @since 0.9.1
-   */
-  @Error(exception = CeremonyRateLimitedException.class)
-  public HttpResponse<Map<String, Object>> handleRateLimited(CeremonyRateLimitedException ex) {
-    LOG.info("auth.ceremony rate-limited bucket={}", ex.bucket());
-    return toResponse(orchestrator.rateLimited());
   }
 
   private static HttpResponse<Map<String, Object>> toResponse(CeremonyResponse wire) {

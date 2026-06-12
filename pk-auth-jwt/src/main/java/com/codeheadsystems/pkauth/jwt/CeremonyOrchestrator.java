@@ -8,9 +8,9 @@ import com.codeheadsystems.pkauth.api.FinishAuthenticationRequest;
 import com.codeheadsystems.pkauth.api.FinishRegistrationRequest;
 import com.codeheadsystems.pkauth.api.RegistrationResult;
 import com.codeheadsystems.pkauth.api.StartAuthenticationRequest;
-import com.codeheadsystems.pkauth.api.StartAuthenticationResponse;
+import com.codeheadsystems.pkauth.api.StartAuthenticationResult;
 import com.codeheadsystems.pkauth.api.StartRegistrationRequest;
-import com.codeheadsystems.pkauth.api.StartRegistrationResponse;
+import com.codeheadsystems.pkauth.api.StartRegistrationResult;
 import com.codeheadsystems.pkauth.ceremony.PasskeyAuthenticationService;
 import com.codeheadsystems.pkauth.credential.CredentialRecord;
 import com.codeheadsystems.pkauth.spi.CredentialRepository;
@@ -54,13 +54,13 @@ public final class CeremonyOrchestrator {
   }
 
   /** Delegates to {@link PasskeyAuthenticationService#startRegistration}. */
-  public StartRegistrationResponse startRegistration(
+  public StartRegistrationResult startRegistration(
       StartRegistrationRequest request, @Nullable String clientIp) {
     return service.startRegistration(request, clientIp);
   }
 
   /** Delegates to {@link PasskeyAuthenticationService#startAuthentication}. */
-  public StartAuthenticationResponse startAuthentication(
+  public StartAuthenticationResult startAuthentication(
       StartAuthenticationRequest request, @Nullable String clientIp) {
     return service.startAuthentication(request, clientIp);
   }
@@ -109,9 +109,10 @@ public final class CeremonyOrchestrator {
   }
 
   /**
-   * Canonical wire shape for a {@code start*} ceremony rate-limit refusal. Adapter exception
-   * handlers convert {@link com.codeheadsystems.pkauth.spi.CeremonyRateLimitedException} into a
-   * {@link CeremonyResponse} via this helper.
+   * Canonical wire shape (HTTP {@code 429}) for a {@code start*} ceremony rate-limit refusal.
+   * Adapter controllers call this for the {@code RateLimited} variant of {@link
+   * com.codeheadsystems.pkauth.api.StartRegistrationResult} / {@link
+   * com.codeheadsystems.pkauth.api.StartAuthenticationResult}.
    */
   public CeremonyResponse rateLimited() {
     return CeremonyWireMapper.rateLimited();

@@ -5,17 +5,15 @@ import com.codeheadsystems.pkauth.api.CeremonyWireMapper.CeremonyResponse;
 import com.codeheadsystems.pkauth.api.FinishAuthenticationRequest;
 import com.codeheadsystems.pkauth.api.FinishRegistrationRequest;
 import com.codeheadsystems.pkauth.api.StartAuthenticationRequest;
-import com.codeheadsystems.pkauth.api.StartAuthenticationResponse;
+import com.codeheadsystems.pkauth.api.StartAuthenticationResult;
 import com.codeheadsystems.pkauth.api.StartRegistrationRequest;
-import com.codeheadsystems.pkauth.api.StartRegistrationResponse;
+import com.codeheadsystems.pkauth.api.StartRegistrationResult;
 import com.codeheadsystems.pkauth.jwt.CeremonyOrchestrator;
-import com.codeheadsystems.pkauth.spi.CeremonyRateLimitedException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -39,10 +37,16 @@ public class PkAuthCeremonyController {
   }
 
   @PostMapping("/registration/start")
-  public StartRegistrationResponse startRegistration(
+  public ResponseEntity<Object> startRegistration(
       @RequestBody StartRegistrationRequest req, HttpServletRequest httpRequest) {
     LOG.debug("auth.registration.start username={}", req.username());
-    return orchestrator.startRegistration(req, clientIp(httpRequest));
+    return switch (orchestrator.startRegistration(req, clientIp(httpRequest))) {
+      case StartRegistrationResult.Started started -> ResponseEntity.ok(started.response());
+      case StartRegistrationResult.RateLimited rl -> {
+        LOG.info("auth.registration.start rate-limited bucket={}", rl.bucket());
+        yield toResponseEntity(orchestrator.rateLimited());
+      }
+    };
   }
 
   @PostMapping("/registration/finish")
@@ -52,28 +56,22 @@ public class PkAuthCeremonyController {
   }
 
   @PostMapping("/authentication/start")
-  public StartAuthenticationResponse startAuthentication(
+  public ResponseEntity<Object> startAuthentication(
       @RequestBody StartAuthenticationRequest req, HttpServletRequest httpRequest) {
     LOG.debug("auth.authentication.start username={}", req.username());
-    return orchestrator.startAuthentication(req, clientIp(httpRequest));
+    return switch (orchestrator.startAuthentication(req, clientIp(httpRequest))) {
+      case StartAuthenticationResult.Started started -> ResponseEntity.ok(started.response());
+      case StartAuthenticationResult.RateLimited rl -> {
+        LOG.info("auth.authentication.start rate-limited bucket={}", rl.bucket());
+        yield toResponseEntity(orchestrator.rateLimited());
+      }
+    };
   }
 
   @PostMapping("/authentication/finish")
   public ResponseEntity<Object> finishAuthentication(
       @RequestBody FinishAuthenticationRequest req, HttpServletRequest httpRequest) {
     return toResponseEntity(orchestrator.finishAuthentication(req, clientIp(httpRequest)));
-  }
-
-  /**
-   * Maps a {@link CeremonyRateLimitedException} thrown by {@code startRegistration} / {@code
-   * startAuthentication} to a canonical {@code 429} response.
-   *
-   * @since 0.9.1
-   */
-  @ExceptionHandler(CeremonyRateLimitedException.class)
-  public ResponseEntity<Object> handleRateLimited(CeremonyRateLimitedException ex) {
-    LOG.info("auth.ceremony rate-limited bucket={}", ex.bucket());
-    return toResponseEntity(orchestrator.rateLimited());
   }
 
   private static ResponseEntity<Object> toResponseEntity(CeremonyResponse wire) {

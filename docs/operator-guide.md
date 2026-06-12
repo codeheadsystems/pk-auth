@@ -26,10 +26,25 @@ adapters all consume the same core. A typical production deployment needs:
 | `pkauth.jwt.secret` (HS256) | 32 bytes | Hard fail at boot if shorter. Rotate by issuing a fresh secret and tolerating a grace window (issue + verify in parallel — pk-auth itself does not rotate; the host shoulds run two issuers behind a load balancer until tokens expire). |
 | `pkauth.relying-party.id` | n/a | The eTLD+1 (e.g. `example.com`, NOT `auth.example.com`). Cross-subdomain passkeys all bind to this. Once a credential is registered against an RP ID, it cannot be re-registered against a different one without a fresh enrollment. |
 | `pkauth.relying-party.origins` | n/a | Strict allow-list of `https://` origins. WebAuthn rejects mismatches; expand the list as you add subdomains. |
-| OTP pepper (`pkauth.otp.pepper`) | n/a | Per-deployment pepper for OTP hashes only — OTP codes are hashed with HMAC-SHA256(pepper, code), not Argon2id. (Backup codes use Argon2id with no pepper.) Treat as a long-lived secret; rotating it invalidates every existing OTP hash. |
+| OTP pepper (`pkauth.otp.pepper`) | 16 bytes decoded (32+ recommended) | Base64-encoded per-deployment pepper for OTP hashes only — OTP codes are hashed with HMAC-SHA256(pepper, code), not Argon2id. (Backup codes use Argon2id with no pepper.) Hard fail at boot if the value is not valid Base64 or decodes to fewer than 16 bytes. If unset, the adapter auto-generates a throwaway per-startup pepper **only when `pkauth.dev-mode=true`** (dev only — it invalidates outstanding OTPs across restarts and across cluster instances); with dev-mode off, an unset pepper is a hard boot failure. Treat as a long-lived secret; rotating it invalidates every existing OTP hash. |
 
 Recommended: stash secrets in a KMS/Secrets Manager and inject as environment
 variables (`PKAUTH_JWT_SECRET`, `PKAUTH_OTP_PEPPER`). The adapters bind both.
+
+### User Verification (UV)
+
+`CeremonyConfig.userVerification` defaults to **`REQUIRED`**. With this default
+WebAuthn4J enforces the asserted `flagUV` on every registration and
+authentication, so each ceremony must carry a per-ceremony biometric or PIN —
+this is what makes a passkey a genuine factor (something you *have* **and**
+something you *are*/*know*).
+
+Relaxing it to `PREFERRED` or `DISCOURAGED` accepts a present-but-unverified
+authenticator (mere user-presence, no biometric/PIN). A passkey then degrades to
+"something you have" alone, which materially weakens the factor for every user.
+**Generally do not relax UV.** The only standard reason to opt out is supporting
+UV-incapable roaming hardware security keys; if you do, scope it deliberately and
+understand the trade-off.
 
 ## 3. Persistence migrations
 

@@ -9,6 +9,8 @@ package com.codeheadsystems.pkauth.jwt;
  * <p>Register a custom implementation by passing it to the {@link
  * PkAuthJwtValidator#PkAuthJwtValidator(JwtConfig, JwtKeyset,
  * com.codeheadsystems.pkauth.spi.ClockProvider, RevocationCheck)} constructor.
+ *
+ * @since 1.1.0
  */
 @FunctionalInterface
 public interface RevocationCheck {
@@ -29,6 +31,7 @@ public interface RevocationCheck {
    * @param jti the JWT ID claim ({@code jti}), may be {@code null} if absent from the token
    * @param subject the subject claim ({@code sub}), always non-null when called from the validator
    * @return {@code true} to reject the token; {@code false} to allow it
+   * @since 1.1.0
    */
   boolean isRevoked(String jti, String subject);
 

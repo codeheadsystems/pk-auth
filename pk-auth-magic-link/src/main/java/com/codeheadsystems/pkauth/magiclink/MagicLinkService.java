@@ -398,6 +398,12 @@ public final class MagicLinkService {
       Objects.requireNonNull(rateLimiter, "rateLimiter");
       Objects.requireNonNull(consumedJtiTtl, "consumedJtiTtl");
       validateBaseUrl(baseUrl);
+      if (rateLimit < 1) {
+        throw new IllegalArgumentException("rateLimit must be at least 1");
+      }
+      if (consumedJtiTtl.isZero() || consumedJtiTtl.isNegative()) {
+        throw new IllegalArgumentException("consumedJtiTtl must be strictly positive");
+      }
     }
 
     private static void validateBaseUrl(String baseUrl) {

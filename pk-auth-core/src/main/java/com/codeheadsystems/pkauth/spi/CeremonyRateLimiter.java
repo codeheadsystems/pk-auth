@@ -27,9 +27,10 @@ import org.jspecify.annotations.Nullable;
  * </ul>
  *
  * <p>When the limiter denies a call, the ceremony service short-circuits before generating /
- * consulting a challenge and surfaces the refusal through the existing sealed result types ({@code
- * AssertionResult.RateLimited}, {@code RegistrationResult.RateLimited}) for {@code finish*} and
- * through {@link CeremonyRateLimitedException} for {@code start*}.
+ * consulting a challenge and surfaces the refusal through sealed result types: {@code
+ * AssertionResult.RateLimited} / {@code RegistrationResult.RateLimited} for {@code finish*}, and
+ * {@code StartAuthenticationResult.RateLimited} / {@code StartRegistrationResult.RateLimited} for
+ * {@code start*}.
  *
  * <p><strong>Production deployments with more than one replica MUST override this SPI with a
  * shared, race-safe limiter (Redis token-bucket, etc.). The default implementation supplied by

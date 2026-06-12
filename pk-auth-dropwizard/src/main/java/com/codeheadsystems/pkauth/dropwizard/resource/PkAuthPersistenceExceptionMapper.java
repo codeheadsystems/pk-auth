@@ -2,11 +2,10 @@
 package com.codeheadsystems.pkauth.dropwizard.resource;
 
 import com.codeheadsystems.pkauth.spi.PkAuthPersistenceException;
+import com.codeheadsystems.pkauth.spi.PkAuthPersistenceResponse;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,9 +28,8 @@ public class PkAuthPersistenceExceptionMapper
         exception.operation(),
         exception.getMessage(),
         exception);
-    Map<String, String> body = new LinkedHashMap<>();
-    body.put("error", "persistence_failure");
-    body.put("operation", exception.operation());
-    return Response.status(503).entity(body).build();
+    return Response.status(PkAuthPersistenceResponse.STATUS)
+        .entity(PkAuthPersistenceResponse.body(exception))
+        .build();
   }
 }

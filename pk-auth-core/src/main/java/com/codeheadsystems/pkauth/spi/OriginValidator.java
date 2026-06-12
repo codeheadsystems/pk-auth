@@ -14,6 +14,15 @@ import java.util.Objects;
 @FunctionalInterface
 public interface OriginValidator {
 
+  /**
+   * Decides whether a client-reported WebAuthn origin is acceptable for this relying party.
+   *
+   * @param origin the origin string from the authenticator's client data (e.g. {@code
+   *     https://example.com}).
+   * @return {@code true} if the origin is allowed; {@code false} (including for a {@code null}
+   *     origin) rejects the ceremony.
+   * @since 0.9.0
+   */
   boolean isAllowed(String origin);
 
   /** Strict allow-list validator backed by the configured set of origins. */

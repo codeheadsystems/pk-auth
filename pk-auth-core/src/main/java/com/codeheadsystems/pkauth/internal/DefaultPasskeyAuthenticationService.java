@@ -16,8 +16,10 @@ import com.codeheadsystems.pkauth.api.PublicKeyCredentialRequestOptionsJson;
 import com.codeheadsystems.pkauth.api.RegistrationResult;
 import com.codeheadsystems.pkauth.api.StartAuthenticationRequest;
 import com.codeheadsystems.pkauth.api.StartAuthenticationResponse;
+import com.codeheadsystems.pkauth.api.StartAuthenticationResult;
 import com.codeheadsystems.pkauth.api.StartRegistrationRequest;
 import com.codeheadsystems.pkauth.api.StartRegistrationResponse;
+import com.codeheadsystems.pkauth.api.StartRegistrationResult;
 import com.codeheadsystems.pkauth.api.Transport;
 import com.codeheadsystems.pkauth.api.UserHandle;
 import com.codeheadsystems.pkauth.api.UserVerificationRequirement;
@@ -29,7 +31,6 @@ import com.codeheadsystems.pkauth.credential.AuthenticatorData;
 import com.codeheadsystems.pkauth.credential.CredentialRecord;
 import com.codeheadsystems.pkauth.metrics.Metrics;
 import com.codeheadsystems.pkauth.spi.AttestationTrustPolicy;
-import com.codeheadsystems.pkauth.spi.CeremonyRateLimitedException;
 import com.codeheadsystems.pkauth.spi.CeremonyRateLimiter;
 import com.codeheadsystems.pkauth.spi.ChallengeRecord;
 import com.codeheadsystems.pkauth.spi.ChallengeStore;
@@ -216,10 +217,13 @@ public final class DefaultPasskeyAuthenticationService implements PasskeyAuthent
    * @since 0.9.1
    */
   @Override
-  public StartRegistrationResponse startRegistration(
+  public StartRegistrationResult startRegistration(
       StartRegistrationRequest req, @Nullable String clientIp) {
     Objects.requireNonNull(req, "req");
-    enforceRateLimit("registration.start", clientIp, req.username());
+    String deniedBucket = rateLimitedBucket("registration.start", clientIp, req.username());
+    if (deniedBucket != null) {
+      return new StartRegistrationResult.RateLimited(deniedBucket);
+    }
     UserHandle userHandle = userLookup.getOrCreateHandle(req.username());
 
     byte[] challenge = challengeGenerator.generate();
@@ -266,7 +270,7 @@ public final class DefaultPasskeyAuthenticationService implements PasskeyAuthent
 
     metrics.incrementCounter("pkauth.registration.start", "rp", rpConfig.id());
     LOG.info("registration.start userHandle={} challengeId={}", userHandle, challengeId.value());
-    return new StartRegistrationResponse(challengeId, options);
+    return new StartRegistrationResult.Started(new StartRegistrationResponse(challengeId, options));
   }
 
   @Override
@@ -447,10 +451,13 @@ public final class DefaultPasskeyAuthenticationService implements PasskeyAuthent
    * @since 0.9.1
    */
   @Override
-  public StartAuthenticationResponse startAuthentication(
+  public StartAuthenticationResult startAuthentication(
       StartAuthenticationRequest req, @Nullable String clientIp) {
     Objects.requireNonNull(req, "req");
-    enforceRateLimit("authentication.start", clientIp, req.username());
+    String deniedBucket = rateLimitedBucket("authentication.start", clientIp, req.username());
+    if (deniedBucket != null) {
+      return new StartAuthenticationResult.RateLimited(deniedBucket);
+    }
 
     @Nullable UserHandle resolvedHandle = null;
     // Always non-null: unknown usernames and the usernameless flow both yield an empty list
@@ -490,7 +497,8 @@ public final class DefaultPasskeyAuthenticationService implements PasskeyAuthent
     metrics.incrementCounter("pkauth.authentication.start", "rp", rpConfig.id());
     LOG.info(
         "authentication.start username={} challengeId={}", req.username(), challengeId.value());
-    return new StartAuthenticationResponse(challengeId, options);
+    return new StartAuthenticationResult.Started(
+        new StartAuthenticationResponse(challengeId, options));
   }
 
   @Override
@@ -850,18 +858,21 @@ public final class DefaultPasskeyAuthenticationService implements PasskeyAuthent
 
   /**
    * Consults the configured {@link CeremonyRateLimiter} for both the per-IP and per-username
-   * buckets on a {@code start*} call. Throws {@link CeremonyRateLimitedException} when either
-   * bucket denies; the adapter controller catches this and emits {@code 429 Too Many Requests}.
+   * buckets on a {@code start*} call. Returns the name of the bucket that denied the call ({@code
+   * "ip"} or {@code "username"}), or {@code null} when both buckets allow it. The caller surfaces a
+   * non-null result as the {@code RateLimited} variant of the relevant start-result sum — and MUST
+   * do so before creating any challenge, so a throttled caller never touches the ChallengeStore.
    */
-  private void enforceRateLimit(
+  private @Nullable String rateLimitedBucket(
       String phase, @Nullable String clientIp, @Nullable String username) {
     if (!rateLimiter.tryAcquireForIp(clientIp)) {
       LOG.info("{} rate-limited ip-bucket clientIp={}", phase, clientIp);
-      throw new CeremonyRateLimitedException("ip");
+      return "ip";
     }
     if (username != null && !rateLimiter.tryAcquireForUsername(username)) {
       LOG.info("{} rate-limited username-bucket username={}", phase, username);
-      throw new CeremonyRateLimitedException("username");
+      return "username";
     }
+    return null;
   }
 }

@@ -43,8 +43,6 @@ import io.micronaut.context.annotation.Requires;
 import jakarta.inject.Singleton;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
-import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,31 +60,14 @@ public class PkAuthFactory {
   @Singleton
   RelyingPartyConfig relyingPartyConfig(PkAuthConfiguration config) {
     PkAuthConfiguration.RelyingParty rp = config.getRelyingParty();
-    String id = rp.getId();
-    String name = rp.getName();
-    List<String> origins = rp.getOrigins();
-    if (id == null
-        || id.isBlank()
-        || name == null
-        || name.isBlank()
-        || origins == null
-        || origins.isEmpty()) {
-      throw new IllegalStateException(
-          "pkauth.relying-party.{id,name,origins} are required. Set them explicitly in"
-              + " configuration — there are no defaults.");
-    }
-    return new RelyingPartyConfig(id, name, Set.copyOf(origins));
+    return RelyingPartyConfig.from(rp.getId(), rp.getName(), rp.getOrigins());
   }
 
   @Singleton
   CeremonyConfig ceremonyConfig(PkAuthConfiguration config) {
-    CeremonyConfig defaults = CeremonyConfig.defaults();
-    return new CeremonyConfig(
-        config.getCeremony().getChallengeTtl(),
-        defaults.userVerification(),
-        defaults.residentKey(),
-        defaults.attestationConveyance(),
-        defaults.counterRegression());
+    // Only challengeTtl is host-settable here; the remaining knobs take the conservative core
+    // defaults (UV=REQUIRED, counter=REJECT) via the null fallbacks.
+    return CeremonyConfig.from(config.getCeremony().getChallengeTtl(), null, null, null, null);
   }
 
   @Singleton

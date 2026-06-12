@@ -2,6 +2,7 @@
 package com.codeheadsystems.pkauth.micronaut;
 
 import com.codeheadsystems.pkauth.spi.PkAuthPersistenceException;
+import com.codeheadsystems.pkauth.spi.PkAuthPersistenceResponse;
 import io.micronaut.context.annotation.Requires;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;
@@ -9,8 +10,6 @@ import io.micronaut.http.HttpStatus;
 import io.micronaut.http.annotation.Produces;
 import io.micronaut.http.server.exceptions.ExceptionHandler;
 import jakarta.inject.Singleton;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,9 +36,7 @@ public class PkAuthPersistenceExceptionHandler
         exception.operation(),
         exception.getMessage(),
         exception);
-    Map<String, String> body = new LinkedHashMap<>();
-    body.put("error", "persistence_failure");
-    body.put("operation", exception.operation());
-    return HttpResponse.status(HttpStatus.SERVICE_UNAVAILABLE).body(body);
+    return HttpResponse.status(HttpStatus.valueOf(PkAuthPersistenceResponse.STATUS))
+        .body(PkAuthPersistenceResponse.body(exception));
   }
 }

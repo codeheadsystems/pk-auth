@@ -5,11 +5,10 @@ import com.codeheadsystems.pkauth.api.CeremonyWireMapper.CeremonyResponse;
 import com.codeheadsystems.pkauth.api.FinishAuthenticationRequest;
 import com.codeheadsystems.pkauth.api.FinishRegistrationRequest;
 import com.codeheadsystems.pkauth.api.StartAuthenticationRequest;
-import com.codeheadsystems.pkauth.api.StartAuthenticationResponse;
+import com.codeheadsystems.pkauth.api.StartAuthenticationResult;
 import com.codeheadsystems.pkauth.api.StartRegistrationRequest;
-import com.codeheadsystems.pkauth.api.StartRegistrationResponse;
+import com.codeheadsystems.pkauth.api.StartRegistrationResult;
 import com.codeheadsystems.pkauth.jwt.CeremonyOrchestrator;
-import com.codeheadsystems.pkauth.spi.CeremonyRateLimitedException;
 import jakarta.inject.Inject;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.ws.rs.Consumes;
@@ -46,13 +45,10 @@ public class PkAuthCeremonyResource {
   @Path("/registration/start")
   public Response startRegistration(
       StartRegistrationRequest request, @Context HttpServletRequest httpRequest) {
-    try {
-      StartRegistrationResponse body =
-          orchestrator.startRegistration(request, clientIp(httpRequest));
-      return Response.ok(body).build();
-    } catch (CeremonyRateLimitedException ex) {
-      return rateLimitedResponse(ex);
-    }
+    return switch (orchestrator.startRegistration(request, clientIp(httpRequest))) {
+      case StartRegistrationResult.Started started -> Response.ok(started.response()).build();
+      case StartRegistrationResult.RateLimited rl -> rateLimitedResponse(rl.bucket());
+    };
   }
 
   @POST
@@ -66,13 +62,10 @@ public class PkAuthCeremonyResource {
   @Path("/authentication/start")
   public Response startAuthentication(
       StartAuthenticationRequest request, @Context HttpServletRequest httpRequest) {
-    try {
-      StartAuthenticationResponse body =
-          orchestrator.startAuthentication(request, clientIp(httpRequest));
-      return Response.ok(body).build();
-    } catch (CeremonyRateLimitedException ex) {
-      return rateLimitedResponse(ex);
-    }
+    return switch (orchestrator.startAuthentication(request, clientIp(httpRequest))) {
+      case StartAuthenticationResult.Started started -> Response.ok(started.response()).build();
+      case StartAuthenticationResult.RateLimited rl -> rateLimitedResponse(rl.bucket());
+    };
   }
 
   @POST
@@ -90,8 +83,8 @@ public class PkAuthCeremonyResource {
     return httpRequest == null ? null : httpRequest.getRemoteAddr();
   }
 
-  private Response rateLimitedResponse(CeremonyRateLimitedException ex) {
-    LOG.info("auth.ceremony rate-limited bucket={}", ex.bucket());
+  private Response rateLimitedResponse(String bucket) {
+    LOG.info("auth.ceremony rate-limited bucket={}", bucket);
     return toResponse(orchestrator.rateLimited());
   }
 }

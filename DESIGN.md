@@ -91,10 +91,17 @@ The whole project is structured around three concentric rings:
    WebAuthn, JWT, and the wire contract. Has no dependencies on
    Spring, Dropwizard, Micronaut, JDBC, DynamoDB, HTTP, or any
    servlet API. Exposes services and SPIs.
-2. **SPIs (ports).** Interfaces the host implements:
-   `CredentialRepository`, `UserLookup`, `ChallengeStore`,
-   `BackupCodeRepository`, `OtpRepository`, `EmailSender`, `SmsSender`,
-   `AttestationTrustPolicy`, `OriginValidator`, `ClockProvider`.
+2. **SPIs (ports).** Interfaces the host implements. The required and
+   core-resident ones live in `pk-auth-core/spi` (`CredentialRepository`,
+   `UserLookup`, `ChallengeStore`, plus the optional `AttestationTrustPolicy`,
+   `OriginValidator`, `ClockProvider`, `ConsumedJtiStore`,
+   `CeremonyRateLimiter`); `UserDeletionListener` is in `pk-auth-core/lifecycle`.
+   The remaining ports ship with the feature modules that own them —
+   `BackupCodeRepository` (`pk-auth-backup-codes`), `OtpRepository` /
+   `SmsSender` (`pk-auth-otp`), `EmailSender` (`pk-auth-magic-link`),
+   `AccessTokenStore` / `TokenTtlPolicy` / `RevocationCheck` (`pk-auth-jwt`),
+   and `RefreshTokenRepository` (`pk-auth-refresh-tokens`). The §6 table below
+   lists the owning module for each.
 3. **Adapters.** Three of them — Spring Boot, Dropwizard, Micronaut.
    Each adapter mounts the same JSON contract under `/auth/**` and
    delegates to the core.
@@ -111,7 +118,7 @@ modules implement SPIs declared in core and are wired in by the host.
 | `pk-auth-jwt` | HS256 JWT mint (`PkAuthJwtIssuer`) + validate (`PkAuthJwtValidator`). Nimbus JOSE+JWT under the hood. Hosts the `TokenTtlPolicy` SPI for per-audience access-token TTL dispatch ([ADR 0014](./docs/adr/0014-per-audience-ttl-policy.md)) and the `AccessTokenStore` SPI for stateful (server-revocable) access tokens ([ADR 0015](./docs/adr/0015-stateful-access-tokens.md)). |
 | `pk-auth-backup-codes` | Alt flow: generate, hash (Argon2id), and atomically claim view-once backup codes. |
 | `pk-auth-magic-link` | Alt flow: random-token magic links over the host's email dispatcher. |
-| `pk-auth-otp` | Alt flow: 6-digit OTPs over the host's SMS dispatcher; Argon2id-hashed and atomic-claim. |
+| `pk-auth-otp` | Alt flow: 6-digit OTPs over the host's SMS dispatcher; hashed with HMAC-SHA256 (server-side pepper) and atomic-claim. |
 | `pk-auth-refresh-tokens` | Rotating refresh tokens with family-based replay defense. `RefreshTokenService` + `RefreshTokenRepository` SPI; `RefreshHandler` is the framework-neutral `POST /auth/refresh` composer ([ADR 0013](./docs/adr/0013-refresh-tokens-family-rotation.md)). |
 | `pk-auth-admin-api` | `AdminService` exposes account/credential/backup-code/email/phone operations. Result-typed (`AdminResult<T>` sealed sum). |
 | `pk-auth-persistence-jdbi` | SPI impls on JDBI + Postgres + Flyway. Migrations at `src/main/resources/db/migration/`. |
@@ -140,10 +147,11 @@ framework-specific on the wire.
 | `POST` | `/auth/passkeys/authentication/finish` | Mints a JWT; returns `{token}` |
 | `POST` | `/auth/refresh` | Rotates a refresh token; returns `{refresh, access}` on success, `401 {detail}` on any failure. Only mounted when `pk-auth-refresh-tokens` is on the classpath and a `RefreshTokenRepository` SPI is bound. |
 
-> The Dropwizard adapter mounts these one segment shorter
-> (`/auth/registration/start`, etc.) because Dropwizard's bundle root
-> path convention differs. The TypeScript SDK handles this via a
-> per-client path override; see `clients/passkeys-browser/README.md`.
+> All three adapters mount these paths identically — the Dropwizard
+> Jersey resources use the same `@Path("/auth/passkeys")` (and
+> `/auth/refresh`, `/auth/admin`) roots as the Spring and Micronaut
+> controllers, so the TypeScript SDK targets one path scheme everywhere
+> with no per-client path override.
 
 ### Admin endpoints (require `Authorization: Bearer <jwt>`)
 
@@ -207,23 +215,23 @@ Worth knowing for any non-trivial integration:
 If you adopt pk-auth, the SPIs are your only mandatory contact
 surface. They are intentionally narrow.
 
-| SPI | Required? | Notes |
-|---|---|---|
-| `UserLookup` | **Yes** | Maps `(username/email) ↔ UserHandle`. Atomic find-or-create on first registration. |
-| `CredentialRepository` | **Yes** | Insert / list-by-user / update / delete / find-by-id. |
-| `ChallengeStore` | **Yes** | `create(...)`, `takeOnce(challengeId)` — atomic single-use. |
-| `BackupCodeRepository` | Only if backup codes are enabled | Hashed-storage CRUD + atomic claim. |
-| `OtpRepository` | Only if phone OTP is enabled | Same shape as backup codes. |
-| `EmailSender` | Only if magic-link is enabled | `send(to, subject, body)`. |
-| `SmsSender` | Only if phone OTP is enabled | `send(phoneE164, body)`. |
-| `AccessTokenStore` | Optional (paved road for revocability) | Stateful access tokens. Issuer calls `record` on issue, validator calls `exists` on every validate. Default `AccessTokenStore.noop()` preserves stateless behaviour. JDBI + DynamoDB implementations ship in-tree. See [ADR 0015](./docs/adr/0015-stateful-access-tokens.md). |
-| `TokenTtlPolicy` | Optional | Per-audience access-token TTL dispatch. Static factories `TokenTtlPolicy.single(ttl)` and `TokenTtlPolicy.fixed(default, overrides)` cover the common cases. See [ADR 0014](./docs/adr/0014-per-audience-ttl-policy.md). |
-| `RefreshTokenRepository` | Only if `pk-auth-refresh-tokens` is wired | Storage SPI for the rotating refresh-token primitive. Load-bearing `rotateAtomically` atomically marks the parent used and inserts the successor. JDBI, DynamoDB, and in-memory impls ship; the contract is enforced by a parity test suite that includes the 8-thread concurrent-rotation race test. See [ADR 0013](./docs/adr/0013-refresh-tokens-family-rotation.md). |
-| `UserDeletionListener` | Optional (extension point) | Hook for the `UserDeletionService` fan-out. The library auto-registers listeners for credentials, backup codes, OTPs, access tokens, and refresh tokens; hosts add their own to clean up host-owned tables on user delete. See [ADR 0016](./docs/adr/0016-user-deletion-fan-out.md). |
-| `RevocationCheck` | Optional | In-process deny-list for hosts that want fast invalidation of a small set of JTIs without persisting every issued token. Orthogonal to `AccessTokenStore`. |
-| `AttestationTrustPolicy` | Optional | Default policy is `none`. Override to enforce MDS3 / specific AAGUID lists. |
-| `OriginValidator` | Optional | Default is config-driven exact-match. Override for tenancy-aware origins. |
-| `ClockProvider` | Optional | Default is `Clock.systemUTC()`. Override in tests. |
+| SPI | Module | Required? | Notes |
+|---|---|---|---|
+| `UserLookup` | `pk-auth-core` | **Yes** | Maps `(username/email) ↔ UserHandle`. Atomic find-or-create on first registration. |
+| `CredentialRepository` | `pk-auth-core` | **Yes** | Insert / list-by-user / update / delete / find-by-id. |
+| `ChallengeStore` | `pk-auth-core` | **Yes** | `create(...)`, `takeOnce(challengeId)` — atomic single-use. |
+| `BackupCodeRepository` | `pk-auth-backup-codes` | Only if backup codes are enabled | Hashed-storage CRUD + atomic claim. |
+| `OtpRepository` | `pk-auth-otp` | Only if phone OTP is enabled | Same shape as backup codes. |
+| `EmailSender` | `pk-auth-magic-link` | Only if magic-link is enabled | `send(to, subject, body)`. |
+| `SmsSender` | `pk-auth-otp` | Only if phone OTP is enabled | `send(phoneE164, body)`. |
+| `AccessTokenStore` | `pk-auth-jwt` | Optional (paved road for revocability) | Stateful access tokens. Issuer calls `record` on issue, validator calls `exists` on every validate. Default `AccessTokenStore.noop()` preserves stateless behaviour. JDBI + DynamoDB implementations ship in-tree. See [ADR 0015](./docs/adr/0015-stateful-access-tokens.md). |
+| `TokenTtlPolicy` | `pk-auth-jwt` | Optional | Per-audience access-token TTL dispatch. Static factories `TokenTtlPolicy.single(ttl)` and `TokenTtlPolicy.fixed(default, overrides)` cover the common cases. See [ADR 0014](./docs/adr/0014-per-audience-ttl-policy.md). |
+| `RevocationCheck` | `pk-auth-jwt` | Optional | In-process deny-list for hosts that want fast invalidation of a small set of JTIs without persisting every issued token. Orthogonal to `AccessTokenStore`. |
+| `RefreshTokenRepository` | `pk-auth-refresh-tokens` (`…refresh.spi`) | Only if `pk-auth-refresh-tokens` is wired | Storage SPI for the rotating refresh-token primitive. Load-bearing `rotateAtomically` atomically marks the parent used and inserts the successor. JDBI, DynamoDB, and in-memory impls ship; the contract is enforced by a parity test suite that includes the 8-thread concurrent-rotation race test. See [ADR 0013](./docs/adr/0013-refresh-tokens-family-rotation.md). |
+| `UserDeletionListener` | `pk-auth-core` (`…lifecycle`, not `spi`) | Optional (extension point) | Hook for the `UserDeletionService` fan-out. The library auto-registers listeners for credentials, backup codes, OTPs, access tokens, and refresh tokens; hosts add their own to clean up host-owned tables on user delete. See [ADR 0016](./docs/adr/0016-user-deletion-fan-out.md). |
+| `AttestationTrustPolicy` | `pk-auth-core` | Optional | Default policy is `none`. Override to enforce MDS3 / specific AAGUID lists. |
+| `OriginValidator` | `pk-auth-core` | Optional | Default is config-driven exact-match. Override for tenancy-aware origins. |
+| `ClockProvider` | `pk-auth-core` | Optional | Default is `Clock.systemUTC()`. Override in tests. |
 
 For a fresh project, the testkit's in-memory implementations let
 you boot end-to-end without writing any SPI. For Phase-12-style
@@ -303,8 +311,10 @@ SPIs.
   (V1–V5, no `pkauth_` prefix), plus the append-only `pkauth_audit_events`
   table from V6. `V8__create_access_tokens.sql` and
   `V9__create_refresh_tokens.sql` add the stateful-access-token and
-  refresh-token tables for the 1.1.0 SPIs.
-  `PkAuthJdbiSchema.CURRENT_SCHEMA_VERSION` is `"9"`. Magic-link tokens are
+  refresh-token tables for the 1.1.0 SPIs; `V10__refresh_tokens_amr.sql`
+  adds the `amr` (RFC 8176 authentication-method-reference) column to
+  `refresh_tokens`. `PkAuthJdbiSchema.CURRENT_SCHEMA_VERSION` is `"10"`.
+  Magic-link tokens are
   not persisted — the JWT itself is the credential; consumed JTIs live in a
   `ConsumedJtiStore` (in-memory by default, swap in a shared backend for
   multi-replica deployments).
@@ -431,8 +441,11 @@ Highlights:
   for sites where synced (counter-0) passkeys dominate, at the cost
   of weakening the clone-detection signal.
 - **Challenges are single-use** and TTL-bounded (5 min default).
-- **Backup codes and OTPs are Argon2id-hashed** server-side. Plaintext
-  is returned only at regeneration time (view-once).
+- **Backup codes are Argon2id-hashed** server-side; **OTPs are hashed
+  with HMAC-SHA256 using a server-side pepper** (the 10^6 search space
+  makes a CPU-heavy hash pointless — the per-attempt cap and rate
+  limiter are the brute-force defence). Backup-code plaintext is
+  returned only at regeneration time (view-once).
 - **Last-credential guard**: `DELETE /credentials/{id}` returns 409
   if it would leave the user with zero passkeys. Backup codes are the
   intended recovery path; encourage users to add a second passkey

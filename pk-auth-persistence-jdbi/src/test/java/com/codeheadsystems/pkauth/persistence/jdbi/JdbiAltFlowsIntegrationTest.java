@@ -6,6 +6,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.codeheadsystems.pkauth.api.UserHandle;
 import com.codeheadsystems.pkauth.spi.BackupCodeRepository;
 import com.codeheadsystems.pkauth.spi.OtpRepository;
+import com.codeheadsystems.pkauth.testkit.BackupCodeRepositoryScenarios;
+import com.codeheadsystems.pkauth.testkit.OtpRepositoryScenarios;
 import java.time.Instant;
 import org.jdbi.v3.core.Jdbi;
 import org.junit.jupiter.api.BeforeEach;
@@ -170,5 +172,15 @@ class JdbiAltFlowsIntegrationTest {
     otp.consume(user, "o2");
     var noActive = otp.findLatestActive(user, "+15551234567");
     assertThat(noActive).hasValueSatisfying(o -> assertThat(o.otpId()).isEqualTo("o1"));
+  }
+
+  @Test
+  void concurrentOtpConsumeYieldsExactlyOneWinner() throws Exception {
+    new OtpRepositoryScenarios(otp).concurrentConsumeYieldsExactlyOneWinner();
+  }
+
+  @Test
+  void concurrentBackupCodeConsumeYieldsExactlyOneWinner() throws Exception {
+    new BackupCodeRepositoryScenarios(backupCodes).concurrentConsumeYieldsExactlyOneWinner();
   }
 }

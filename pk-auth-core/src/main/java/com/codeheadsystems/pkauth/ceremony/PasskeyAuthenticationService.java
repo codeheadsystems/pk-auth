@@ -6,10 +6,9 @@ import com.codeheadsystems.pkauth.api.FinishAuthenticationRequest;
 import com.codeheadsystems.pkauth.api.FinishRegistrationRequest;
 import com.codeheadsystems.pkauth.api.RegistrationResult;
 import com.codeheadsystems.pkauth.api.StartAuthenticationRequest;
-import com.codeheadsystems.pkauth.api.StartAuthenticationResponse;
+import com.codeheadsystems.pkauth.api.StartAuthenticationResult;
 import com.codeheadsystems.pkauth.api.StartRegistrationRequest;
-import com.codeheadsystems.pkauth.api.StartRegistrationResponse;
-import com.codeheadsystems.pkauth.spi.CeremonyRateLimitedException;
+import com.codeheadsystems.pkauth.api.StartRegistrationResult;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -30,7 +29,7 @@ public interface PasskeyAuthenticationService {
    * both the WebAuthn options the browser consumes and the {@code ChallengeId} the client must
    * round-trip in {@code finishRegistration}.
    */
-  default StartRegistrationResponse startRegistration(StartRegistrationRequest req) {
+  default StartRegistrationResult startRegistration(StartRegistrationRequest req) {
     return startRegistration(req, null);
   }
 
@@ -43,11 +42,12 @@ public interface PasskeyAuthenticationService {
    * @param req start request
    * @param clientIp source IP address of the HTTP request, or {@code null} when the host cannot
    *     determine one — the limiter implementation decides how to handle the null case
-   * @return start-registration envelope
-   * @throws CeremonyRateLimitedException when the configured limiter refuses the call
+   * @return start-registration result; {@link StartRegistrationResult.RateLimited} when the limiter
+   *     refuses the call (before any challenge is created), otherwise {@link
+   *     StartRegistrationResult.Started}
    * @since 0.9.1
    */
-  StartRegistrationResponse startRegistration(
+  StartRegistrationResult startRegistration(
       StartRegistrationRequest req, @Nullable String clientIp);
 
   /** Verify a registration response and produce a persistable credential record. */
@@ -75,7 +75,7 @@ public interface PasskeyAuthenticationService {
    * WebAuthn options the browser consumes and the {@code ChallengeId} the client must round-trip in
    * {@code finishAuthentication}.
    */
-  default StartAuthenticationResponse startAuthentication(StartAuthenticationRequest req) {
+  default StartAuthenticationResult startAuthentication(StartAuthenticationRequest req) {
     return startAuthentication(req, null);
   }
 
@@ -86,11 +86,12 @@ public interface PasskeyAuthenticationService {
    * @param req start request
    * @param clientIp source IP address of the HTTP request, or {@code null} when the host cannot
    *     determine one
-   * @return start-authentication envelope
-   * @throws CeremonyRateLimitedException when the configured limiter refuses the call
+   * @return start-authentication result; {@link StartAuthenticationResult.RateLimited} when the
+   *     limiter refuses the call (before any challenge is created), otherwise {@link
+   *     StartAuthenticationResult.Started}
    * @since 0.9.1
    */
-  StartAuthenticationResponse startAuthentication(
+  StartAuthenticationResult startAuthentication(
       StartAuthenticationRequest req, @Nullable String clientIp);
 
   /** Verify an authentication response. */

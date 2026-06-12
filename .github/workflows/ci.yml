@@ -33,6 +33,17 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@5e2ebd065dc2488b7a6ad670704656cbbe1e8f60 # v6
 
+      # The persistence integration suites self-skip when PKAUTH_SKIP_TESTCONTAINERS=1. The CI
+      # gate must exercise them against real Postgres/DynamoDB Local, so fail loudly if that
+      # escape hatch leaks into the gating pipeline (otherwise the build can go green with zero
+      # persistence and concurrency coverage).
+      - name: Guard against skipped integration tests
+        run: |
+          if [ "${PKAUTH_SKIP_TESTCONTAINERS:-}" = "1" ]; then
+            echo "PKAUTH_SKIP_TESTCONTAINERS=1 must not be set in the CI gate — it would silently skip all persistence integration tests." >&2
+            exit 1
+          fi
+
       - name: Build and test
         run: ./gradlew clean build test --stacktrace
 
@@ -65,6 +76,8 @@ jobs:
         working-directory: clients/passkeys-browser
 
       - name: SonarQube scan
+        # JavaScript/browser-SDK static analysis only. SonarQube was dropped for the JVM modules
+        # (ADR 0018, native JaCoCo gates) but retained here for the TypeScript SDK.
         # SONAR_TOKEN is unavailable to PRs from forks; skip there to avoid a hard failure.
         if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
         uses: sonarsource/sonarqube-scan-action@713881670b6b3676cda39549040e2d88c70d582e # v8.2.0

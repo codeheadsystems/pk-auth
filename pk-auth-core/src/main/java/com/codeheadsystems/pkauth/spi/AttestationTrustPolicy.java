@@ -25,6 +25,13 @@ import org.jspecify.annotations.Nullable;
  */
 public interface AttestationTrustPolicy {
 
+  /**
+   * Evaluates the attestation presented during registration and decides whether to trust it.
+   *
+   * @param data the parsed attestation material for the registering credential.
+   * @return a {@link Decision} — trusted, or rejected with a reason.
+   * @since 0.9.0
+   */
   Decision evaluate(AttestationData data);
 
   /** Policy that accepts any attestation. */

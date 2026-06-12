@@ -26,8 +26,9 @@ import org.jspecify.annotations.Nullable;
  *   <li>Assertion success → 200; {@code UnknownCredential} → 404; {@code CounterRegression} →
  *       409; {@code UserVerificationRequired} / {@code InvalidSignature} → 401; {@code
  *       RateLimited} → 429; the rest → 400.
- *   <li>Start ceremony rate-limit refusal (a {@code CeremonyRateLimitedException} escaping the
- *       service) → 429; adapters call {@link #rateLimited()} to shape the response.
+ *   <li>Start ceremony rate-limit refusal (the {@code RateLimited} variant of {@code
+ *       StartRegistrationResult} / {@code StartAuthenticationResult}) → 429; adapters call {@link
+ *       #rateLimited()} to shape the response.
  * </ul>
  *
  * @since 0.9.0
@@ -74,8 +75,8 @@ public final class CeremonyWireMapper {
 
   /**
    * Canonical 429 response shape for {@code start*} ceremony rate-limit refusals. Adapter
-   * controllers use this when {@link com.codeheadsystems.pkauth.spi.CeremonyRateLimitedException}
-   * escapes the service.
+   * controllers use this for the {@code RateLimited} variant of {@code StartRegistrationResult} /
+   * {@code StartAuthenticationResult}.
    *
    * @return canonical rate-limited response (HTTP 429, body {@code {"outcome": "rate_limited"}})
    * @since 0.9.1
