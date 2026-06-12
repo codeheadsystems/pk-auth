@@ -50,10 +50,13 @@ import software.amazon.awssdk.services.dynamodb.model.TransactionCanceledExcepti
  */
 public final class DynamoDbRefreshTokenRepository implements RefreshTokenRepository {
 
-  private static final String FAMILY_PK_PREFIX = "RTF#";
-  private static final String USER_PK_PREFIX = "USER#";
-  private static final String PRIMARY_PK_PREFIX = "RT#";
-  private static final String INDEX_SK_PREFIX = "RT#";
+  private static final String FAMILY_PK_PREFIX = DynamoKeys.RTF;
+  private static final String USER_PK_PREFIX = DynamoKeys.USER;
+  // PRIMARY_PK_PREFIX and INDEX_SK_PREFIX intentionally share the same DynamoKeys.RT value: the
+  // primary item's partition key and the jti-index's sort key both namespace on "RT#". They are
+  // named separately because they play distinct roles in the single-table layout.
+  private static final String PRIMARY_PK_PREFIX = DynamoKeys.RT;
+  private static final String INDEX_SK_PREFIX = DynamoKeys.RT;
 
   private final DynamoDbEnhancedClient enhanced;
   private final DynamoDbTable<RefreshTokenItem> table;
@@ -134,7 +137,7 @@ public final class DynamoDbRefreshTokenRepository implements RefreshTokenReposit
           RefreshTokenItem parentMark = new RefreshTokenItem();
           parentMark.setPk(PRIMARY_PK_PREFIX + parentRefreshId);
           parentMark.setSk(PRIMARY_PK_PREFIX + parentRefreshId);
-          parentMark.setUsedAtIso(now.toString());
+          parentMark.setUsedAtIso(DynamoDbSupport.encodeInstant(now));
 
           Expression freshness =
               Expression.builder()
@@ -198,7 +201,7 @@ public final class DynamoDbRefreshTokenRepository implements RefreshTokenReposit
           // Query the family-index for every member, then mutate the primary item of each (the
           // primary is the authority on revoked_at).
           int[] revoked = {0};
-          String nowIso = now.toString();
+          String nowIso = DynamoDbSupport.encodeInstant(now);
           table
               .query(
                   QueryConditional.sortBeginsWith(
@@ -248,7 +251,7 @@ public final class DynamoDbRefreshTokenRepository implements RefreshTokenReposit
         () -> {
           String userB64 = Base64Url.encode(userHandle.value());
           int[] revoked = {0};
-          String nowIso = now.toString();
+          String nowIso = DynamoDbSupport.encodeInstant(now);
           table
               .query(
                   QueryConditional.sortBeginsWith(
@@ -373,9 +376,10 @@ public final class DynamoDbRefreshTokenRepository implements RefreshTokenReposit
               .filter(
                   item ->
                       (item.getUsedAtIso() != null
-                              && Instant.parse(item.getUsedAtIso()).isBefore(cutoff))
+                              && DynamoDbSupport.parseInstant(item.getUsedAtIso()).isBefore(cutoff))
                           || (item.getRevokedAtIso() != null
-                              && Instant.parse(item.getRevokedAtIso()).isBefore(cutoff)))
+                              && DynamoDbSupport.parseInstant(item.getRevokedAtIso())
+                                  .isBefore(cutoff)))
               .forEach(
                   item -> {
                     deleteAllItems(item);
@@ -448,8 +452,8 @@ public final class DynamoDbRefreshTokenRepository implements RefreshTokenReposit
     item.setDeviceId(r.deviceId().orElse(null));
     item.setFamilyId(r.familyId());
     item.setParentRefreshId(r.parentRefreshId().orElse(null));
-    item.setIssuedAtIso(r.issuedAt().toString());
-    item.setExpiresAtIso(r.expiresAt().toString());
+    item.setIssuedAtIso(DynamoDbSupport.encodeInstant(r.issuedAt()));
+    item.setExpiresAtIso(DynamoDbSupport.encodeInstant(r.expiresAt()));
     item.setUsedAtIso(r.usedAt().map(Instant::toString).orElse(null));
     item.setRevokedAtIso(r.revokedAt().map(Instant::toString).orElse(null));
     item.setRevokedReason(r.revokedReason().map(Enum::name).orElse(null));
@@ -470,8 +474,8 @@ public final class DynamoDbRefreshTokenRepository implements RefreshTokenReposit
         Optional.ofNullable(item.getDeviceId()),
         item.getFamilyId(),
         Optional.ofNullable(item.getParentRefreshId()),
-        Instant.parse(item.getIssuedAtIso()),
-        Instant.parse(item.getExpiresAtIso()),
+        DynamoDbSupport.parseInstant(item.getIssuedAtIso()),
+        DynamoDbSupport.parseInstant(item.getExpiresAtIso()),
         Optional.ofNullable(item.getUsedAtIso()).map(Instant::parse),
         Optional.ofNullable(item.getRevokedAtIso()).map(Instant::parse),
         Optional.ofNullable(item.getRevokedReason()).map(RevokeReason::valueOf),

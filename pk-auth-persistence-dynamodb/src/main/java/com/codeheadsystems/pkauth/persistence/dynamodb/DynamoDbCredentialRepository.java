@@ -69,7 +69,10 @@ public final class DynamoDbCredentialRepository implements CredentialRepository 
           return credentialByIdIndex
               .query(
                   QueryConditional.keyEqualTo(
-                      Key.builder().partitionValue("CRED#" + credIdB64).sortValue("META").build()))
+                      Key.builder()
+                          .partitionValue(DynamoKeys.CRED + credIdB64)
+                          .sortValue("META")
+                          .build()))
               .stream()
               .flatMap(page -> page.items().stream())
               .findFirst()
@@ -86,7 +89,10 @@ public final class DynamoDbCredentialRepository implements CredentialRepository 
           return table
               .query(
                   QueryConditional.sortBeginsWith(
-                      Key.builder().partitionValue("USER#" + userB64).sortValue("CRED#").build()))
+                      Key.builder()
+                          .partitionValue(DynamoKeys.USER + userB64)
+                          .sortValue(DynamoKeys.CRED)
+                          .build()))
               .stream()
               .flatMap(page -> page.items().stream())
               .map(CredentialItem::toRecord)
@@ -110,7 +116,7 @@ public final class DynamoDbCredentialRepository implements CredentialRepository 
             }
             CredentialItem item = existing.get();
             item.setSignCount(newCount);
-            item.setLastUsedAt(lastUsedAt.toString());
+            item.setLastUsedAt(DynamoDbSupport.encodeInstant(lastUsedAt));
             // Guard against the lost-update race: two concurrent assertions (e.g. a clone vs. the
             // real authenticator) would otherwise overwrite a higher stored counter with a lower
             // one, silently defeating clone detection. The conditional rejects the write unless
@@ -206,7 +212,10 @@ public final class DynamoDbCredentialRepository implements CredentialRepository 
           table
               .query(
                   QueryConditional.sortBeginsWith(
-                      Key.builder().partitionValue("USER#" + userB64).sortValue("CRED#").build()))
+                      Key.builder()
+                          .partitionValue(DynamoKeys.USER + userB64)
+                          .sortValue(DynamoKeys.CRED)
+                          .build()))
               .stream()
               .flatMap(page -> page.items().stream())
               .forEach(
@@ -224,7 +233,10 @@ public final class DynamoDbCredentialRepository implements CredentialRepository 
     return credentialByIdIndex
         .query(
             QueryConditional.keyEqualTo(
-                Key.builder().partitionValue("CRED#" + credIdB64).sortValue("META").build()))
+                Key.builder()
+                    .partitionValue(DynamoKeys.CRED + credIdB64)
+                    .sortValue("META")
+                    .build()))
         .stream()
         .flatMap(page -> page.items().stream())
         .findFirst();

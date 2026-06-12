@@ -6,7 +6,6 @@ import com.codeheadsystems.pkauth.api.Transport;
 import com.codeheadsystems.pkauth.api.UserHandle;
 import com.codeheadsystems.pkauth.credential.CredentialRecord;
 import com.codeheadsystems.pkauth.json.Base64Url;
-import java.time.Instant;
 import java.util.EnumSet;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -197,10 +196,10 @@ public final class CredentialItem {
     String credIdB64 = r.credentialId().b64url();
     String userB64 = Base64Url.encode(r.userHandle().value());
     CredentialItem item = new CredentialItem();
-    item.setPk("USER#" + userB64);
-    item.setSk("CRED#" + credIdB64);
+    item.setPk(DynamoKeys.USER + userB64);
+    item.setSk(DynamoKeys.CRED + credIdB64);
     item.setEntityType("Credential");
-    item.setGsi1pk("CRED#" + credIdB64);
+    item.setGsi1pk(DynamoKeys.CRED + credIdB64);
     item.setGsi1sk("META");
     item.setCredentialId(credIdB64);
     item.setUserHandle(userB64);
@@ -219,8 +218,8 @@ public final class CredentialItem {
     }
     item.setBackupEligible(r.backupEligible());
     item.setBackupState(r.backupState());
-    item.setCreatedAt(r.createdAt().toString());
-    item.setLastUsedAt(r.lastUsedAt() == null ? null : r.lastUsedAt().toString());
+    item.setCreatedAt(DynamoDbSupport.encodeInstant(r.createdAt()));
+    item.setLastUsedAt(DynamoDbSupport.encodeInstantOrNull(r.lastUsedAt()));
     return item;
   }
 
@@ -242,7 +241,7 @@ public final class CredentialItem {
         tx,
         backupEligible,
         backupState,
-        Instant.parse(createdAt),
-        lastUsedAt == null ? null : Instant.parse(lastUsedAt));
+        DynamoDbSupport.parseInstant(createdAt),
+        DynamoDbSupport.parseInstantOrNull(lastUsedAt));
   }
 }

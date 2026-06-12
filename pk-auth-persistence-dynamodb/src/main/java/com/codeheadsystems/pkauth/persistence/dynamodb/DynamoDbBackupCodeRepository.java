@@ -59,7 +59,10 @@ public final class DynamoDbBackupCodeRepository implements BackupCodeRepository 
           return table
               .query(
                   QueryConditional.sortBeginsWith(
-                      Key.builder().partitionValue("USER#" + userB64).sortValue("BACKUP#").build()))
+                      Key.builder()
+                          .partitionValue(DynamoKeys.USER + userB64)
+                          .sortValue(DynamoKeys.BACKUP)
+                          .build()))
               .stream()
               .flatMap(page -> page.items().stream())
               .map(BackupCodeItem::toRecord)
@@ -84,8 +87,8 @@ public final class DynamoDbBackupCodeRepository implements BackupCodeRepository 
                     .tableName(tableName)
                     .key(
                         Map.of(
-                            "pk", AttributeValue.fromS("USER#" + userB64),
-                            "sk", AttributeValue.fromS("BACKUP#" + codeId)))
+                            "pk", AttributeValue.fromS(DynamoKeys.USER + userB64),
+                            "sk", AttributeValue.fromS(DynamoKeys.BACKUP + codeId)))
                     .updateExpression("SET #c = :true, consumedAt = :consumedAt")
                     .conditionExpression("attribute_exists(pk) AND #c = :false")
                     .expressionAttributeNames(Map.of("#c", "consumed"))
@@ -93,7 +96,8 @@ public final class DynamoDbBackupCodeRepository implements BackupCodeRepository 
                         Map.of(
                             ":true", AttributeValue.fromBool(true),
                             ":false", AttributeValue.fromBool(false),
-                            ":consumedAt", AttributeValue.fromS(consumedAt.toString())))
+                            ":consumedAt",
+                                AttributeValue.fromS(DynamoDbSupport.encodeInstant(consumedAt))))
                     .build());
             return true;
           } catch (ConditionalCheckFailedException ignored) {
@@ -114,7 +118,10 @@ public final class DynamoDbBackupCodeRepository implements BackupCodeRepository 
           table
               .query(
                   QueryConditional.sortBeginsWith(
-                      Key.builder().partitionValue("USER#" + userB64).sortValue("BACKUP#").build()))
+                      Key.builder()
+                          .partitionValue(DynamoKeys.USER + userB64)
+                          .sortValue(DynamoKeys.BACKUP)
+                          .build()))
               .stream()
               .flatMap(page -> page.items().stream())
               .forEach(
@@ -141,13 +148,13 @@ public final class DynamoDbBackupCodeRepository implements BackupCodeRepository 
     Objects.requireNonNull(userHandle, "userHandle");
     Objects.requireNonNull(records, "records");
     String userB64 = Base64Url.encode(userHandle.value());
-    String pk = "USER#" + userB64;
+    String pk = DynamoKeys.USER + userB64;
 
     List<BackupCodeItem> existing =
         table
             .query(
                 QueryConditional.sortBeginsWith(
-                    Key.builder().partitionValue(pk).sortValue("BACKUP#").build()))
+                    Key.builder().partitionValue(pk).sortValue(DynamoKeys.BACKUP).build()))
             .stream()
             .flatMap(page -> page.items().stream())
             .toList();

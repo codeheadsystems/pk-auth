@@ -57,7 +57,10 @@ public final class DynamoDbOtpRepository implements OtpRepository {
           return table
               .query(
                   QueryConditional.sortBeginsWith(
-                      Key.builder().partitionValue("USER#" + userB64).sortValue("OTP#").build()))
+                      Key.builder()
+                          .partitionValue(DynamoKeys.USER + userB64)
+                          .sortValue(DynamoKeys.OTP)
+                          .build()))
               .stream()
               .flatMap(page -> page.items().stream())
               .filter(i -> phoneE164.equals(i.getPhoneE164()))
@@ -83,8 +86,8 @@ public final class DynamoDbOtpRepository implements OtpRepository {
                         .tableName(tableName)
                         .key(
                             Map.of(
-                                "pk", AttributeValue.fromS("USER#" + userB64),
-                                "sk", AttributeValue.fromS("OTP#" + otpId)))
+                                "pk", AttributeValue.fromS(DynamoKeys.USER + userB64),
+                                "sk", AttributeValue.fromS(DynamoKeys.OTP + otpId)))
                         .updateExpression("SET #a = if_not_exists(#a, :zero) + :one")
                         .conditionExpression("attribute_exists(pk)")
                         .expressionAttributeNames(Map.of("#a", "attempts"))
@@ -120,8 +123,8 @@ public final class DynamoDbOtpRepository implements OtpRepository {
                     .tableName(tableName)
                     .key(
                         Map.of(
-                            "pk", AttributeValue.fromS("USER#" + userB64),
-                            "sk", AttributeValue.fromS("OTP#" + otpId)))
+                            "pk", AttributeValue.fromS(DynamoKeys.USER + userB64),
+                            "sk", AttributeValue.fromS(DynamoKeys.OTP + otpId)))
                     .updateExpression("SET #c = :true")
                     .conditionExpression("attribute_exists(pk) AND #c = :false")
                     .expressionAttributeNames(Map.of("#c", "consumed"))
@@ -148,7 +151,10 @@ public final class DynamoDbOtpRepository implements OtpRepository {
           table
               .query(
                   QueryConditional.sortBeginsWith(
-                      Key.builder().partitionValue("USER#" + userB64).sortValue("OTP#").build()))
+                      Key.builder()
+                          .partitionValue(DynamoKeys.USER + userB64)
+                          .sortValue(DynamoKeys.OTP)
+                          .build()))
               .stream()
               .flatMap(page -> page.items().stream())
               .forEach(
@@ -172,13 +178,13 @@ public final class DynamoDbOtpRepository implements OtpRepository {
                   .query(
                       QueryConditional.sortBeginsWith(
                           Key.builder()
-                              .partitionValue("USER#" + userB64)
-                              .sortValue("OTP#")
+                              .partitionValue(DynamoKeys.USER + userB64)
+                              .sortValue(DynamoKeys.OTP)
                               .build()))
                   .stream()
                   .flatMap(page -> page.items().stream())
                   .filter(i -> phoneE164.equals(i.getPhoneE164()))
-                  .filter(i -> !Instant.parse(i.getCreatedAt()).isBefore(since))
+                  .filter(i -> !DynamoDbSupport.parseInstant(i.getCreatedAt()).isBefore(since))
                   .count();
         });
   }

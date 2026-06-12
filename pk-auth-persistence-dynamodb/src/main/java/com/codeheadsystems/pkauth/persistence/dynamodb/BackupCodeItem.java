@@ -4,7 +4,6 @@ package com.codeheadsystems.pkauth.persistence.dynamodb;
 import com.codeheadsystems.pkauth.api.UserHandle;
 import com.codeheadsystems.pkauth.json.Base64Url;
 import com.codeheadsystems.pkauth.spi.BackupCodeRepository.StoredBackupCode;
-import java.time.Instant;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbBean;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortKey;
@@ -101,15 +100,15 @@ public final class BackupCodeItem {
   public static BackupCodeItem fromRecord(StoredBackupCode c) {
     String userB64 = Base64Url.encode(c.userHandle().value());
     BackupCodeItem item = new BackupCodeItem();
-    item.setPk("USER#" + userB64);
-    item.setSk("BACKUP#" + c.codeId());
+    item.setPk(DynamoKeys.USER + userB64);
+    item.setSk(DynamoKeys.BACKUP + c.codeId());
     item.setEntityType("BackupCode");
     item.setCodeId(c.codeId());
     item.setUserHandle(userB64);
     item.setHashedCode(c.hashedCode());
     item.setConsumed(c.consumed());
-    item.setConsumedAt(c.consumedAt() == null ? null : c.consumedAt().toString());
-    item.setCreatedAt(c.createdAt().toString());
+    item.setConsumedAt(DynamoDbSupport.encodeInstantOrNull(c.consumedAt()));
+    item.setCreatedAt(DynamoDbSupport.encodeInstant(c.createdAt()));
     return item;
   }
 
@@ -120,7 +119,7 @@ public final class BackupCodeItem {
         UserHandle.of(Base64Url.decode(userHandle)),
         hashedCode,
         consumed,
-        Instant.parse(createdAt),
-        consumedAt == null ? null : Instant.parse(consumedAt));
+        DynamoDbSupport.parseInstant(createdAt),
+        DynamoDbSupport.parseInstantOrNull(consumedAt));
   }
 }
