@@ -215,11 +215,14 @@ public final class DefaultAdminService implements AdminService {
     }
     if (otpService == null) return notConfigured("phone verification");
     OtpService.SendResult send = otpService.startVerification(target, phoneE164);
-    if (send instanceof OtpService.SendResult.RateLimited) {
-      return new AdminResult.RateLimited<>(Duration.ofMinutes(15));
-    }
-    return new AdminResult.Success<>(
-        new OtpDispatchResult(((OtpService.SendResult.Sent) send).otpId()));
+    // Exhaustive switch over the sealed SendResult — a new variant becomes a compile error here
+    // rather than a ClassCastException across the AdminResult boundary.
+    return switch (send) {
+      case OtpService.SendResult.Sent sent ->
+          new AdminResult.Success<>(new OtpDispatchResult(sent.otpId()));
+      case OtpService.SendResult.RateLimited rateLimited ->
+          new AdminResult.RateLimited<>(Duration.ofMinutes(15));
+    };
   }
 
   @Override
