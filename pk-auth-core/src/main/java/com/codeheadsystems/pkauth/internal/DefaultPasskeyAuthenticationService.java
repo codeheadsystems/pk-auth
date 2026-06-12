@@ -69,6 +69,7 @@ import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import tools.jackson.core.JacksonException;
 
 /**
  * Default {@link PasskeyAuthenticationService} backed by WebAuthn4J's {@link WebAuthnManager}.
@@ -300,6 +301,16 @@ public final class DefaultPasskeyAuthenticationService implements PasskeyAuthent
       return outcome(
           ChallengeValidator.Ceremony.REGISTRATION,
           new RegistrationResult.InvalidPayload(messageOf(ex)),
+          start);
+    } catch (JacksonException ex) {
+      // WebAuthn4J does not always wrap a malformed attestation-object CBOR payload in
+      // DataConversionException — a structurally-broken object can surface a raw Jackson
+      // (de)serialization error. Map it to InvalidPayload so attacker-controlled garbage yields a
+      // clean 400, never an uncaught 500 across the sealed-result boundary.
+      LOG.debug("registration.finish malformed attestation CBOR", ex);
+      return outcome(
+          ChallengeValidator.Ceremony.REGISTRATION,
+          new RegistrationResult.InvalidPayload("malformed attestation object"),
           start);
     } catch (VerificationException ex) {
       return outcome(
