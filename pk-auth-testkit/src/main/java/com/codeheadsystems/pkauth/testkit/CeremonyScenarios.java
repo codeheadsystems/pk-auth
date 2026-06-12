@@ -65,8 +65,9 @@ public final class CeremonyScenarios {
 
     Optional<CredentialRecord> stored = singleCredentialFor(handle);
     assertThat(stored).isPresent();
-    assertThat(stored.get().signCount()).isZero();
-    CredentialId credentialId = stored.get().credentialId();
+    CredentialRecord credential = stored.orElseThrow();
+    assertThat(credential.signCount()).isZero();
+    CredentialId credentialId = credential.credentialId();
 
     AssertionResult first = assertOnce(handle);
     assertThat(first)

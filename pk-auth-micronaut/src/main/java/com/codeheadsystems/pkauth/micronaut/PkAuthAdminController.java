@@ -30,6 +30,7 @@ import io.micronaut.http.annotation.Post;
 import io.micronaut.http.annotation.Produces;
 import io.micronaut.scheduling.TaskExecutors;
 import io.micronaut.scheduling.annotation.ExecuteOn;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Admin controller mounting the brief §6.9 endpoints under {@code /auth/admin/**}. All
@@ -76,7 +77,9 @@ public class PkAuthAdminController {
   /** Renames the credential identified by its base64url-encoded id. */
   @Patch("/credentials/{credentialId}")
   public HttpResponse<?> renameCredential(
-      HttpRequest<?> request, @PathVariable String credentialId, @Body RenameCredential body) {
+      HttpRequest<?> request,
+      @PathVariable String credentialId,
+      @Body @Nullable RenameCredential body) {
     UserHandle actor = PkAuthJwtAuthenticationFilter.attachedUserHandle(request);
     if (actor == null) return HttpResponse.status(HttpStatus.UNAUTHORIZED);
     CredentialId id = CredentialId.fromB64Url(credentialId);
@@ -111,7 +114,7 @@ public class PkAuthAdminController {
 
   @Post("/email/start-verification")
   public HttpResponse<?> startEmailVerification(
-      HttpRequest<?> request, @Body StartEmailVerification body) {
+      HttpRequest<?> request, @Body @Nullable StartEmailVerification body) {
     UserHandle actor = PkAuthJwtAuthenticationFilter.attachedUserHandle(request);
     if (actor == null) return HttpResponse.status(HttpStatus.UNAUTHORIZED);
     return map(adminService.startEmailVerification(actor, actor, body == null ? "" : body.email()));
@@ -119,7 +122,7 @@ public class PkAuthAdminController {
 
   /** Unauthenticated. */
   @Post("/email/complete-verification")
-  public HttpResponse<?> finishEmailVerification(@Body FinishEmailVerification body) {
+  public HttpResponse<?> finishEmailVerification(@Body @Nullable FinishEmailVerification body) {
     return toMicronaut(
         AdminResponseMapper.toResponse(
             adminService.finishEmailVerification(body == null ? "" : body.token()),
@@ -128,7 +131,7 @@ public class PkAuthAdminController {
 
   @Post("/phone/start-verification")
   public HttpResponse<?> startPhoneVerification(
-      HttpRequest<?> request, @Body StartPhoneVerification body) {
+      HttpRequest<?> request, @Body @Nullable StartPhoneVerification body) {
     UserHandle actor = PkAuthJwtAuthenticationFilter.attachedUserHandle(request);
     if (actor == null) return HttpResponse.status(HttpStatus.UNAUTHORIZED);
     return map(adminService.startPhoneVerification(actor, actor, body == null ? "" : body.phone()));
@@ -136,7 +139,7 @@ public class PkAuthAdminController {
 
   @Post("/phone/complete-verification")
   public HttpResponse<?> finishPhoneVerification(
-      HttpRequest<?> request, @Body FinishPhoneVerification body) {
+      HttpRequest<?> request, @Body @Nullable FinishPhoneVerification body) {
     UserHandle actor = PkAuthJwtAuthenticationFilter.attachedUserHandle(request);
     if (actor == null) return HttpResponse.status(HttpStatus.UNAUTHORIZED);
     return map(

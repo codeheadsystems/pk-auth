@@ -40,7 +40,39 @@ Adopt **SonarQube Cloud** via the `org.sonarqube` Gradle plugin, driven from CI.
 - **Negative — fork PRs get no analysis.** GitHub withholds secrets from fork PRs, so the `sonar` job is skipped there. External contributors' branches are covered once merged to `main`; the standard trade-off for an open-source repo.
 - **Negative — heavier CI job.** The `sonar` job runs the full `build` (including the Docker-backed Testcontainers integration tests) so coverage exists when the scanner reads it. Acceptable on `ubuntu-latest`; can be optimized later by sharing coverage artifacts with the existing `build` job.
 
+## New-code quality gate and false-positive policy
+
+The default **Sonar way** gate scores the *new-code period* (Clean as You Code). On the very first
+analysis that period is the whole history, so the entire backlog is judged against strict new-code
+thresholds (80% coverage, A ratings, <3% duplication) — which is why the initial run reported red
+even though the project's *overall* numbers are healthy (≈88% coverage, ≈2% duplication). This is an
+onboarding artifact, not a regression.
+
+Two things keep the gate meaningful instead of noisy:
+
+- **New Code definition.** Set the project's New Code to **"Previous version"** in SonarCloud
+  (Administration → New Code). Because all modules share one `gradle.properties` version, each
+  release bounds a clean new-code window, and the gate then measures genuinely new changes rather
+  than the onboarding backlog. *This is a server-side setting and cannot live in the repo.*
+- **Documented false-positive suppressions live in `build.gradle.kts`**, not the SonarCloud UI, so
+  the rationale is version-controlled and reviewed:
+  - `java:S4449` (demands JSR-305 `javax.annotation.Nullable`) is suppressed project-wide — we
+    standardize on **JSpecify**, enforced by Error Prone (CONTRIBUTING.md §7).
+  - `java:S2699` ("tests should include assertions") is suppressed on `**/*Test.java` — the
+    persistence/in-memory suites delegate assertions to shared testkit `*Scenarios` classes so one
+    suite runs against every backend; the rule cannot see across the call. Test effectiveness is
+    already gated by the per-module JaCoCo floors and mutation testing.
+  - DynamoDB `*Item.java` beans and `module-info.java` are excluded from **coverage** — mandatory
+    structural code (SDK-driven POJOs / no executable statements) with nothing meaningful to test.
+
+Reliability findings flagged on intentional defensive null-guards (e.g. `S2583`/`S2589` where a
+framework can still inject null despite a `@NullMarked` package) are fixed *in code* by annotating
+the parameter `@Nullable` to match reality — see the Micronaut admin controller's `@Body` params —
+never by deleting the guard.
+
 ## Open follow-ups
 
-- If we want the quality gate to block merges, wire the Sonar status check into branch protection.
-- If CI time becomes a concern, have the `sonar` job download JaCoCo artifacts from the `build` job instead of rebuilding.
+- Once the New Code definition is set and the gate is green, optionally wire the Sonar status check
+  into branch protection to block merges.
+- If CI time becomes a concern, have the `sonar` job download JaCoCo artifacts from the `build` job
+  instead of rebuilding.

@@ -17,6 +17,35 @@ sonar {
         property("sonar.organization", "codeheadsystems")
         property("sonar.host.url", "https://sonarcloud.io")
         property("sonar.exclusions", "examples/**,clients/passkeys-browser/dist/**")
+
+        // Coverage exclusions: structural code with no meaningful logic to unit-test. The DynamoDB
+        // Enhanced Client item beans are mandatory mutable POJOs (no-arg ctor + getters/setters)
+        // driven entirely by the SDK's bean mapper, and module-info has no executable statements.
+        // Excluding them keeps the coverage signal honest instead of padding it with trivial tests.
+        property(
+            "sonar.coverage.exclusions",
+            "**/persistence/dynamodb/*Item.java,**/module-info.java",
+        )
+
+        // Documented false-positive suppressions (see docs/adr/0017). These are kept in the build
+        // (version-controlled, reviewed) rather than the SonarCloud UI so the rationale travels with
+        // the code. Real defects in these rules' domains are still caught: null discipline by Error
+        // Prone + JSpecify, and test effectiveness by the per-module JaCoCo floors plus mutation
+        // testing — these two rules are redundant with gates we already enforce.
+        property("sonar.issue.ignore.multicriteria", "jspecifyNullable,delegatedAssertions")
+        // S4449 demands JSR-305 `javax.annotation.Nullable`; the project standardizes on JSpecify
+        // (CONTRIBUTING.md §7), enforced at compile time by Error Prone. Two annotation systems for
+        // the same contract — we follow JSpecify, so this rule is noise here.
+        property("sonar.issue.ignore.multicriteria.jspecifyNullable.ruleKey", "java:S4449")
+        property("sonar.issue.ignore.multicriteria.jspecifyNullable.resourceKey", "**/*.java")
+        // S2699 ("tests should include assertions") cannot see across a call: the persistence and
+        // in-memory tests deliberately delegate their assertions to shared testkit `*Scenarios`
+        // classes so one suite runs against every backend. The assertions exist, just not inline.
+        property("sonar.issue.ignore.multicriteria.delegatedAssertions.ruleKey", "java:S2699")
+        property(
+            "sonar.issue.ignore.multicriteria.delegatedAssertions.resourceKey",
+            "**/*Test.java",
+        )
     }
 }
 
