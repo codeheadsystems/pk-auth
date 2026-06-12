@@ -4,7 +4,6 @@ package com.codeheadsystems.pkauth.persistence.dynamodb;
 import com.codeheadsystems.pkauth.api.UserHandle;
 import com.codeheadsystems.pkauth.json.Base64Url;
 import com.codeheadsystems.pkauth.spi.OtpRepository.StoredOtp;
-import java.time.Instant;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbBean;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortKey;
@@ -137,8 +136,8 @@ public final class OtpItem {
   public static OtpItem fromRecord(StoredOtp o) {
     String userB64 = Base64Url.encode(o.userHandle().value());
     OtpItem item = new OtpItem();
-    item.setPk("USER#" + userB64);
-    item.setSk("OTP#" + o.otpId());
+    item.setPk(DynamoKeys.USER + userB64);
+    item.setSk(DynamoKeys.OTP + o.otpId());
     item.setEntityType("OtpCode");
     item.setTtl(o.expiresAt().getEpochSecond());
     item.setOtpId(o.otpId());
@@ -148,8 +147,8 @@ public final class OtpItem {
     item.setAttempts(o.attempts());
     item.setMaxAttempts(o.maxAttempts());
     item.setConsumed(o.consumed());
-    item.setCreatedAt(o.createdAt().toString());
-    item.setExpiresAt(o.expiresAt().toString());
+    item.setCreatedAt(DynamoDbSupport.encodeInstant(o.createdAt()));
+    item.setExpiresAt(DynamoDbSupport.encodeInstant(o.expiresAt()));
     return item;
   }
 
@@ -163,7 +162,7 @@ public final class OtpItem {
         attempts,
         maxAttempts,
         consumed,
-        Instant.parse(createdAt),
-        Instant.parse(expiresAt));
+        DynamoDbSupport.parseInstant(createdAt),
+        DynamoDbSupport.parseInstant(expiresAt));
   }
 }

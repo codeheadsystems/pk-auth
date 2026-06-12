@@ -92,7 +92,7 @@ public final class ChallengeItem {
   /** Constructs a DynamoDB row from a ChallengeId + record + computed expiry epoch second. */
   public static ChallengeItem build(ChallengeId id, ChallengeRecord record) {
     ChallengeItem item = new ChallengeItem();
-    item.setPk("CHAL#" + id.value());
+    item.setPk(DynamoKeys.CHAL + id.value());
     item.setSk("META");
     item.setEntityType("Challenge");
     item.setTtl(record.expiresAt().getEpochSecond());

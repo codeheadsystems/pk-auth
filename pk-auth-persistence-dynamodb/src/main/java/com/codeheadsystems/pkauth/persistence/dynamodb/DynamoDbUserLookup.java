@@ -45,7 +45,8 @@ public final class DynamoDbUserLookup implements UserLookup {
         () -> {
           String h = Base64Url.encode(handle.value());
           UserItem item =
-              table.getItem(Key.builder().partitionValue("USER#" + h).sortValue("META").build());
+              table.getItem(
+                  Key.builder().partitionValue(DynamoKeys.USER + h).sortValue("META").build());
           return Optional.ofNullable(item).map(UserItem::toView);
         });
   }
@@ -89,7 +90,7 @@ public final class DynamoDbUserLookup implements UserLookup {
   }
 
   private Optional<UserItem> lookupByUsername(String username) {
-    String key = "USERNAME#" + username.toLowerCase(Locale.ROOT);
+    String key = DynamoKeys.USERNAME + username.toLowerCase(Locale.ROOT);
     return byUsername
         .query(
             QueryConditional.keyEqualTo(

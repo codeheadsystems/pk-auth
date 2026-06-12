@@ -65,7 +65,7 @@ public final class DynamoDbChallengeStore implements ChallengeStore {
         "challenges.takeOnce",
         () -> {
           Map<String, AttributeValue> key = new HashMap<>();
-          key.put("pk", AttributeValue.fromS("CHAL#" + id.value()));
+          key.put("pk", AttributeValue.fromS(DynamoKeys.CHAL + id.value()));
           key.put("sk", AttributeValue.fromS("META"));
           // Server-side expiry: refuse to delete a row that's already past its expiresAt timestamp.
           // expiresAt is stored as a numeric epoch-millis attribute so DynamoDB's numeric

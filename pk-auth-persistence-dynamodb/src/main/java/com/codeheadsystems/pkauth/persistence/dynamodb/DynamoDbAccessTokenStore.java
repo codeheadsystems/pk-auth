@@ -60,8 +60,8 @@ public final class DynamoDbAccessTokenStore implements AccessTokenStore {
           // Primary item (jti-keyed) — the load-bearing one for exists/validate.
           table.putItem(
               buildItem(
-                  "AT#" + jti,
-                  "AT#" + jti,
+                  DynamoKeys.AT + jti,
+                  DynamoKeys.AT + jti,
                   jti,
                   userB64,
                   audience,
@@ -72,8 +72,8 @@ public final class DynamoDbAccessTokenStore implements AccessTokenStore {
           // User-index item — for deleteAllForUser fan-out.
           table.putItem(
               buildItem(
-                  "USER#" + userB64,
-                  "AT#" + jti,
+                  DynamoKeys.USER + userB64,
+                  DynamoKeys.AT + jti,
                   jti,
                   userB64,
                   audience,
@@ -93,7 +93,11 @@ public final class DynamoDbAccessTokenStore implements AccessTokenStore {
     return DynamoDbSupport.wrap(
         "access_tokens.exists",
         () ->
-            table.getItem(Key.builder().partitionValue("AT#" + jti).sortValue("AT#" + jti).build())
+            table.getItem(
+                    Key.builder()
+                        .partitionValue(DynamoKeys.AT + jti)
+                        .sortValue(DynamoKeys.AT + jti)
+                        .build())
                 != null);
   }
 
@@ -107,7 +111,10 @@ public final class DynamoDbAccessTokenStore implements AccessTokenStore {
         () -> {
           AccessTokenItem primary =
               table.getItem(
-                  Key.builder().partitionValue("AT#" + jti).sortValue("AT#" + jti).build());
+                  Key.builder()
+                      .partitionValue(DynamoKeys.AT + jti)
+                      .sortValue(DynamoKeys.AT + jti)
+                      .build());
           if (primary == null) {
             return false;
           }
@@ -119,13 +126,16 @@ public final class DynamoDbAccessTokenStore implements AccessTokenStore {
           }
           // Delete primary first — the load-bearing row for validation.
           table.deleteItem(
-              Key.builder().partitionValue("AT#" + jti).sortValue("AT#" + jti).build());
+              Key.builder()
+                  .partitionValue(DynamoKeys.AT + jti)
+                  .sortValue(DynamoKeys.AT + jti)
+                  .build());
           // Best-effort: delete the user-index pointer too. If this fails, native TTL or a
           // later deleteExpiredBefore will eventually clear it.
           table.deleteItem(
               Key.builder()
-                  .partitionValue("USER#" + primary.getUserHandleB64u())
-                  .sortValue("AT#" + jti)
+                  .partitionValue(DynamoKeys.USER + primary.getUserHandleB64u())
+                  .sortValue(DynamoKeys.AT + jti)
                   .build());
           return true;
         });
@@ -141,7 +151,10 @@ public final class DynamoDbAccessTokenStore implements AccessTokenStore {
           table
               .query(
                   QueryConditional.sortBeginsWith(
-                      Key.builder().partitionValue("USER#" + userB64).sortValue("AT#").build()))
+                      Key.builder()
+                          .partitionValue(DynamoKeys.USER + userB64)
+                          .sortValue(DynamoKeys.AT)
+                          .build()))
               .stream()
               .flatMap(page -> page.items().stream())
               .forEach(
@@ -149,7 +162,10 @@ public final class DynamoDbAccessTokenStore implements AccessTokenStore {
                     String jti = item.getJti();
                     // Delete primary jti-keyed item first (load-bearing for validation).
                     table.deleteItem(
-                        Key.builder().partitionValue("AT#" + jti).sortValue("AT#" + jti).build());
+                        Key.builder()
+                            .partitionValue(DynamoKeys.AT + jti)
+                            .sortValue(DynamoKeys.AT + jti)
+                            .build());
                     // Then the user-index pointer we found.
                     table.deleteItem(
                         Key.builder().partitionValue(item.getPk()).sortValue(item.getSk()).build());
@@ -169,19 +185,22 @@ public final class DynamoDbAccessTokenStore implements AccessTokenStore {
           long beforeEpoch = before.getEpochSecond();
           int[] removed = {0};
           table.scan().items().stream()
-              .filter(item -> "AT#".regionMatches(0, item.getPk(), 0, 3))
+              .filter(item -> DynamoKeys.AT.regionMatches(0, item.getPk(), 0, 3))
               .filter(item -> item.getPk().equals(item.getSk())) // primary items only
               .filter(item -> item.getTtl() != null && item.getTtl() < beforeEpoch)
               .forEach(
                   item -> {
                     String jti = item.getJti();
                     table.deleteItem(
-                        Key.builder().partitionValue("AT#" + jti).sortValue("AT#" + jti).build());
+                        Key.builder()
+                            .partitionValue(DynamoKeys.AT + jti)
+                            .sortValue(DynamoKeys.AT + jti)
+                            .build());
                     if (item.getUserHandleB64u() != null) {
                       table.deleteItem(
                           Key.builder()
-                              .partitionValue("USER#" + item.getUserHandleB64u())
-                              .sortValue("AT#" + jti)
+                              .partitionValue(DynamoKeys.USER + item.getUserHandleB64u())
+                              .sortValue(DynamoKeys.AT + jti)
                               .build());
                     }
                     removed[0]++;
@@ -207,8 +226,8 @@ public final class DynamoDbAccessTokenStore implements AccessTokenStore {
     item.setUserHandleB64u(userHandleB64u);
     item.setAudience(audience);
     item.setDeviceId(deviceId);
-    item.setIssuedAtIso(issuedAt.toString());
-    item.setExpiresAtIso(expiresAt.toString());
+    item.setIssuedAtIso(DynamoDbSupport.encodeInstant(issuedAt));
+    item.setExpiresAtIso(DynamoDbSupport.encodeInstant(expiresAt));
     item.setTtl(ttl);
     return item;
   }

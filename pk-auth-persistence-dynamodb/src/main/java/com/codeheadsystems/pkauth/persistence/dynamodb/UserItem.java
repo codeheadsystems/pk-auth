@@ -104,14 +104,14 @@ public final class UserItem {
   public static UserItem build(UserHandle handle, String username, String displayName) {
     String h = Base64Url.encode(handle.value());
     UserItem item = new UserItem();
-    item.setPk("USER#" + h);
+    item.setPk(DynamoKeys.USER + h);
     item.setSk("META");
     item.setUserHandle(h);
     item.setUsername(username);
     item.setDisplayName(displayName);
     item.setEmailVerified(false);
     item.setPhoneVerified(false);
-    item.setGsi1pk("USERNAME#" + username.toLowerCase(java.util.Locale.ROOT));
+    item.setGsi1pk(DynamoKeys.USERNAME + username.toLowerCase(java.util.Locale.ROOT));
     item.setGsi1sk("META");
     return item;
   }
