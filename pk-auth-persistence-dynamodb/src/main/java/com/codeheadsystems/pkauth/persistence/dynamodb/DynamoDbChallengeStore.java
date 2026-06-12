@@ -4,15 +4,12 @@ package com.codeheadsystems.pkauth.persistence.dynamodb;
 import com.codeheadsystems.pkauth.api.ChallengeId;
 import com.codeheadsystems.pkauth.spi.ChallengeRecord;
 import com.codeheadsystems.pkauth.spi.ChallengeStore;
-import com.codeheadsystems.pkauth.spi.PkAuthPersistenceException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Supplier;
-import software.amazon.awssdk.core.exception.SdkException;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedException;
@@ -42,7 +39,7 @@ public final class DynamoDbChallengeStore implements ChallengeStore {
     if (ttl.isZero() || ttl.isNegative()) {
       throw new IllegalArgumentException("ttl must be strictly positive, got " + ttl);
     }
-    wrap(
+    DynamoDbSupport.wrap(
         "challenges.put",
         () -> {
           ChallengeItem item = ChallengeItem.build(id, record);
@@ -64,7 +61,7 @@ public final class DynamoDbChallengeStore implements ChallengeStore {
 
   @Override
   public Optional<ChallengeRecord> takeOnce(ChallengeId id) {
-    return wrap(
+    return DynamoDbSupport.wrap(
         "challenges.takeOnce",
         () -> {
           Map<String, AttributeValue> key = new HashMap<>();
@@ -112,21 +109,5 @@ public final class DynamoDbChallengeStore implements ChallengeStore {
           item.setExpiresAt(Long.parseLong(attrs.get("expiresAt").n()));
           return Optional.of(item.toRecord());
         });
-  }
-
-  /**
-   * Runs {@code body} and wraps any {@link SdkException} in a {@link PkAuthPersistenceException} so
-   * adapter exception mappers can produce a uniform 503. Documented {@link
-   * ConditionalCheckFailedException} control-flow branches handled inside {@code body} never reach
-   * here.
-   */
-  private static <T> T wrap(String op, Supplier<T> body) {
-    try {
-      return body.get();
-    } catch (PkAuthPersistenceException already) {
-      throw already;
-    } catch (SdkException e) {
-      throw new PkAuthPersistenceException(op, e.getMessage(), e);
-    }
   }
 }

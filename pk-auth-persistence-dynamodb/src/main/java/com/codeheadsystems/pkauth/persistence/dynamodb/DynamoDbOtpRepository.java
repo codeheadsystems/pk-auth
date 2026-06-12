@@ -4,15 +4,12 @@ package com.codeheadsystems.pkauth.persistence.dynamodb;
 import com.codeheadsystems.pkauth.api.UserHandle;
 import com.codeheadsystems.pkauth.json.Base64Url;
 import com.codeheadsystems.pkauth.spi.OtpRepository;
-import com.codeheadsystems.pkauth.spi.PkAuthPersistenceException;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
-import java.util.function.Supplier;
-import software.amazon.awssdk.core.exception.SdkException;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
@@ -43,7 +40,7 @@ public final class DynamoDbOtpRepository implements OtpRepository {
 
   @Override
   public void save(StoredOtp otp) {
-    wrap(
+    DynamoDbSupport.wrap(
         "otp.save",
         () -> {
           table.putItem(OtpItem.fromRecord(otp));
@@ -53,7 +50,7 @@ public final class DynamoDbOtpRepository implements OtpRepository {
 
   @Override
   public Optional<StoredOtp> findLatestActive(UserHandle userHandle, String phoneE164) {
-    return wrap(
+    return DynamoDbSupport.wrap(
         "otp.findLatestActive",
         () -> {
           String userB64 = Base64Url.encode(userHandle.value());
@@ -72,7 +69,7 @@ public final class DynamoDbOtpRepository implements OtpRepository {
 
   @Override
   public OptionalInt incrementAttempts(UserHandle userHandle, String otpId) {
-    return wrap(
+    return DynamoDbSupport.wrap(
         "otp.incrementAttempts",
         () -> {
           // Atomic counter increment on the exact (pk, sk). No read, no scan. Two concurrent
@@ -110,7 +107,7 @@ public final class DynamoDbOtpRepository implements OtpRepository {
 
   @Override
   public boolean consume(UserHandle userHandle, String otpId) {
-    return wrap(
+    return DynamoDbSupport.wrap(
         "otp.consume",
         () -> {
           // Like backup-code consume, two concurrent verifies must NOT both succeed. The
@@ -143,7 +140,7 @@ public final class DynamoDbOtpRepository implements OtpRepository {
 
   @Override
   public int deleteByUserHandle(UserHandle userHandle) {
-    return wrap(
+    return DynamoDbSupport.wrap(
         "otp.deleteByUserHandle",
         () -> {
           String userB64 = Base64Url.encode(userHandle.value());
@@ -166,7 +163,7 @@ public final class DynamoDbOtpRepository implements OtpRepository {
 
   @Override
   public int countSince(UserHandle userHandle, String phoneE164, Instant since) {
-    return wrap(
+    return DynamoDbSupport.wrap(
         "otp.countSince",
         () -> {
           String userB64 = Base64Url.encode(userHandle.value());
@@ -184,21 +181,5 @@ public final class DynamoDbOtpRepository implements OtpRepository {
                   .filter(i -> !Instant.parse(i.getCreatedAt()).isBefore(since))
                   .count();
         });
-  }
-
-  /**
-   * Runs {@code body} and wraps any {@link SdkException} in a {@link PkAuthPersistenceException} so
-   * adapter exception mappers can produce a uniform 503. Documented {@link
-   * ConditionalCheckFailedException} control-flow branches handled inside {@code body} never reach
-   * here.
-   */
-  private static <T> T wrap(String op, Supplier<T> body) {
-    try {
-      return body.get();
-    } catch (PkAuthPersistenceException already) {
-      throw already;
-    } catch (SdkException e) {
-      throw new PkAuthPersistenceException(op, e.getMessage(), e);
-    }
   }
 }

@@ -3,7 +3,6 @@ package com.codeheadsystems.pkauth.persistence.jdbi;
 
 import com.codeheadsystems.pkauth.api.UserHandle;
 import com.codeheadsystems.pkauth.spi.BackupCodeRepository;
-import com.codeheadsystems.pkauth.spi.PkAuthPersistenceException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
@@ -12,10 +11,8 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Supplier;
 import org.jdbi.v3.core.Handle;
 import org.jdbi.v3.core.Jdbi;
-import org.jdbi.v3.core.JdbiException;
 import org.jdbi.v3.core.mapper.RowMapper;
 import org.jdbi.v3.core.statement.Update;
 import org.jspecify.annotations.Nullable;
@@ -37,7 +34,7 @@ public final class JdbiBackupCodeRepository implements BackupCodeRepository {
 
   @Override
   public void save(StoredBackupCode code) {
-    wrap(
+    JdbiSupport.wrap(
         "backupCodes.save",
         () -> {
           jdbi.useHandle(h -> insertBackupCode(h, code));
@@ -81,7 +78,7 @@ public final class JdbiBackupCodeRepository implements BackupCodeRepository {
   /** Returns only active (not yet revoked) codes for the given user handle. */
   @Override
   public List<StoredBackupCode> findByUserHandle(UserHandle userHandle) {
-    return wrap(
+    return JdbiSupport.wrap(
         "backupCodes.findByUserHandle",
         () ->
             jdbi.withHandle(
@@ -105,7 +102,7 @@ public final class JdbiBackupCodeRepository implements BackupCodeRepository {
    */
   @Override
   public boolean consume(UserHandle userHandle, String codeId, Instant consumedAt) {
-    return wrap(
+    return JdbiSupport.wrap(
         "backupCodes.consume",
         () ->
             jdbi.withHandle(
@@ -131,7 +128,7 @@ public final class JdbiBackupCodeRepository implements BackupCodeRepository {
    * @param userHandle the user whose code was attempted, or {@code null} if unknown
    */
   public void recordVerifyFailure(String codeId, UserHandle userHandle) {
-    wrap(
+    JdbiSupport.wrap(
         "backupCodes.recordVerifyFailure",
         () -> {
           insertAuditEvent(
@@ -149,7 +146,7 @@ public final class JdbiBackupCodeRepository implements BackupCodeRepository {
    */
   @Override
   public void deleteByUserHandle(UserHandle userHandle) {
-    wrap(
+    JdbiSupport.wrap(
         "backupCodes.deleteByUserHandle",
         () -> {
           jdbi.useHandle(
@@ -173,7 +170,7 @@ public final class JdbiBackupCodeRepository implements BackupCodeRepository {
    */
   @Override
   public void replaceAll(UserHandle userHandle, List<StoredBackupCode> records) {
-    wrap(
+    JdbiSupport.wrap(
         "backupCodes.replaceAll",
         () -> {
           jdbi.useTransaction(
@@ -195,21 +192,6 @@ public final class JdbiBackupCodeRepository implements BackupCodeRepository {
   // -------------------------------------------------------------------------
   // Internal helpers
   // -------------------------------------------------------------------------
-
-  /**
-   * Runs {@code body} and wraps any {@link JdbiException} in a {@link PkAuthPersistenceException}
-   * so adapter exception mappers can produce a uniform 503. Existing {@link
-   * PkAuthPersistenceException} instances are re-thrown unchanged.
-   */
-  private static <T> T wrap(String op, Supplier<T> body) {
-    try {
-      return body.get();
-    } catch (PkAuthPersistenceException already) {
-      throw already;
-    } catch (JdbiException e) {
-      throw new PkAuthPersistenceException(op, e.getMessage(), e);
-    }
-  }
 
   private void insertAuditEvent(
       String eventType, byte[] userHandle, String subjectId, String detail) {

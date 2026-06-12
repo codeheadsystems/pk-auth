@@ -4,15 +4,12 @@ package com.codeheadsystems.pkauth.persistence.dynamodb;
 import com.codeheadsystems.pkauth.api.UserHandle;
 import com.codeheadsystems.pkauth.json.Base64Url;
 import com.codeheadsystems.pkauth.spi.BackupCodeRepository;
-import com.codeheadsystems.pkauth.spi.PkAuthPersistenceException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Supplier;
-import software.amazon.awssdk.core.exception.SdkException;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
@@ -45,7 +42,7 @@ public final class DynamoDbBackupCodeRepository implements BackupCodeRepository 
 
   @Override
   public void save(StoredBackupCode code) {
-    wrap(
+    DynamoDbSupport.wrap(
         "backupCodes.save",
         () -> {
           table.putItem(BackupCodeItem.fromRecord(code));
@@ -55,7 +52,7 @@ public final class DynamoDbBackupCodeRepository implements BackupCodeRepository 
 
   @Override
   public List<StoredBackupCode> findByUserHandle(UserHandle userHandle) {
-    return wrap(
+    return DynamoDbSupport.wrap(
         "backupCodes.findByUserHandle",
         () -> {
           String userB64 = Base64Url.encode(userHandle.value());
@@ -72,7 +69,7 @@ public final class DynamoDbBackupCodeRepository implements BackupCodeRepository 
 
   @Override
   public boolean consume(UserHandle userHandle, String codeId, Instant consumedAt) {
-    return wrap(
+    return DynamoDbSupport.wrap(
         "backupCodes.consume",
         () -> {
           // Single conditional UpdateItem against the exact (pk, sk). No read, no scan. The
@@ -110,7 +107,7 @@ public final class DynamoDbBackupCodeRepository implements BackupCodeRepository 
 
   @Override
   public void deleteByUserHandle(UserHandle userHandle) {
-    wrap(
+    DynamoDbSupport.wrap(
         "backupCodes.deleteByUserHandle",
         () -> {
           String userB64 = Base64Url.encode(userHandle.value());
@@ -129,22 +126,6 @@ public final class DynamoDbBackupCodeRepository implements BackupCodeRepository 
                               .build()));
           return null;
         });
-  }
-
-  /**
-   * Runs {@code body} and wraps any {@link SdkException} in a {@link PkAuthPersistenceException} so
-   * adapter exception mappers can produce a uniform 503. Documented {@link
-   * ConditionalCheckFailedException} control-flow branches handled inside {@code body} never reach
-   * here.
-   */
-  private static <T> T wrap(String op, Supplier<T> body) {
-    try {
-      return body.get();
-    } catch (PkAuthPersistenceException already) {
-      throw already;
-    } catch (SdkException e) {
-      throw new PkAuthPersistenceException(op, e.getMessage(), e);
-    }
   }
 
   /**

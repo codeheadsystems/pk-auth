@@ -7,7 +7,6 @@ import com.codeheadsystems.pkauth.refresh.RefreshTokenConfig;
 import com.codeheadsystems.pkauth.refresh.RefreshTokenRecord;
 import com.codeheadsystems.pkauth.refresh.RevokeReason;
 import com.codeheadsystems.pkauth.refresh.spi.RefreshTokenRepository;
-import com.codeheadsystems.pkauth.spi.PkAuthPersistenceException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
@@ -16,8 +15,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Supplier;
-import software.amazon.awssdk.core.exception.SdkException;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 import software.amazon.awssdk.enhanced.dynamodb.Expression;
@@ -87,7 +84,7 @@ public final class DynamoDbRefreshTokenRepository implements RefreshTokenReposit
   @Override
   public void create(RefreshTokenRecord record) {
     Objects.requireNonNull(record, "record");
-    wrap(
+    DynamoDbSupport.wrap(
         "refresh_tokens.create",
         () -> {
           putAllItems(record, /*requirePrimaryAbsent*/ true);
@@ -97,7 +94,7 @@ public final class DynamoDbRefreshTokenRepository implements RefreshTokenReposit
 
   @Override
   public Optional<RefreshTokenRecord> findByRefreshId(String refreshId) {
-    return wrap(
+    return DynamoDbSupport.wrap(
         "refresh_tokens.findByRefreshId",
         () -> {
           RefreshTokenItem item =
@@ -116,7 +113,7 @@ public final class DynamoDbRefreshTokenRepository implements RefreshTokenReposit
     Objects.requireNonNull(parentRefreshId, "parentRefreshId");
     Objects.requireNonNull(now, "now");
     Objects.requireNonNull(successor, "successor");
-    return wrap(
+    return DynamoDbSupport.wrap(
         "refresh_tokens.rotateAtomically",
         () -> {
           // Mark the parent's primary item used via a conditional UpdateItem that touches ONLY
@@ -194,7 +191,7 @@ public final class DynamoDbRefreshTokenRepository implements RefreshTokenReposit
 
   @Override
   public int revokeFamily(String familyId, Instant now, RevokeReason reason) {
-    return wrap(
+    return DynamoDbSupport.wrap(
         "refresh_tokens.revokeFamily",
         () -> {
           // Query the family-index for every member, then mutate the primary item of each (the
@@ -245,7 +242,7 @@ public final class DynamoDbRefreshTokenRepository implements RefreshTokenReposit
 
   @Override
   public int revokeAllForUser(UserHandle userHandle, Instant now, RevokeReason reason) {
-    return wrap(
+    return DynamoDbSupport.wrap(
         "refresh_tokens.revokeAllForUser",
         () -> {
           String userB64 = Base64Url.encode(userHandle.value());
@@ -293,7 +290,7 @@ public final class DynamoDbRefreshTokenRepository implements RefreshTokenReposit
 
   @Override
   public List<RefreshTokenRecord> findByUserHandle(UserHandle userHandle) {
-    return wrap(
+    return DynamoDbSupport.wrap(
         "refresh_tokens.findByUserHandle",
         () -> {
           String userB64 = Base64Url.encode(userHandle.value());
@@ -327,7 +324,7 @@ public final class DynamoDbRefreshTokenRepository implements RefreshTokenReposit
 
   @Override
   public List<RefreshTokenRecord> findByFamilyId(String familyId) {
-    return wrap(
+    return DynamoDbSupport.wrap(
         "refresh_tokens.findByFamilyId",
         () -> {
           Map<String, RefreshTokenRecord> byId = new LinkedHashMap<>();
@@ -358,7 +355,7 @@ public final class DynamoDbRefreshTokenRepository implements RefreshTokenReposit
 
   @Override
   public int deleteExpiredBefore(Instant cutoff) {
-    return wrap(
+    return DynamoDbSupport.wrap(
         "refresh_tokens.deleteExpiredBefore",
         () -> {
           long cutoffEpoch = cutoff.getEpochSecond();
@@ -489,16 +486,6 @@ public final class DynamoDbRefreshTokenRepository implements RefreshTokenReposit
       return List.of("user");
     }
     return List.of(stored.split(","));
-  }
-
-  private static <T> T wrap(String op, Supplier<T> body) {
-    try {
-      return body.get();
-    } catch (PkAuthPersistenceException already) {
-      throw already;
-    } catch (SdkException e) {
-      throw new PkAuthPersistenceException(op, e.getMessage(), e);
-    }
   }
 
   // Defensive: silence unused-import warnings on classes pulled in for the TransactWrite path.

@@ -3,7 +3,6 @@ package com.codeheadsystems.pkauth.persistence.jdbi;
 
 import com.codeheadsystems.pkauth.api.UserHandle;
 import com.codeheadsystems.pkauth.spi.OtpRepository;
-import com.codeheadsystems.pkauth.spi.PkAuthPersistenceException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
@@ -12,9 +11,7 @@ import java.time.ZoneOffset;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
-import java.util.function.Supplier;
 import org.jdbi.v3.core.Jdbi;
-import org.jdbi.v3.core.JdbiException;
 import org.jdbi.v3.core.mapper.RowMapper;
 
 /** {@link OtpRepository} backed by the {@code otp_codes} table (Flyway V4). */
@@ -28,7 +25,7 @@ public final class JdbiOtpRepository implements OtpRepository {
 
   @Override
   public void save(StoredOtp otp) {
-    wrap(
+    JdbiSupport.wrap(
         "otp.save",
         () -> {
           jdbi.useHandle(
@@ -54,7 +51,7 @@ public final class JdbiOtpRepository implements OtpRepository {
 
   @Override
   public Optional<StoredOtp> findLatestActive(UserHandle userHandle, String phoneE164) {
-    return wrap(
+    return JdbiSupport.wrap(
         "otp.findLatestActive",
         () ->
             jdbi.withHandle(
@@ -71,7 +68,7 @@ public final class JdbiOtpRepository implements OtpRepository {
 
   @Override
   public OptionalInt incrementAttempts(UserHandle userHandle, String otpId) {
-    return wrap(
+    return JdbiSupport.wrap(
         "otp.incrementAttempts",
         () ->
             jdbi.withHandle(
@@ -102,7 +99,7 @@ public final class JdbiOtpRepository implements OtpRepository {
 
   @Override
   public boolean consume(UserHandle userHandle, String otpId) {
-    return wrap(
+    return JdbiSupport.wrap(
         "otp.consume",
         () ->
             jdbi.withHandle(
@@ -119,7 +116,7 @@ public final class JdbiOtpRepository implements OtpRepository {
 
   @Override
   public int countSince(UserHandle userHandle, String phoneE164, Instant since) {
-    return wrap(
+    return JdbiSupport.wrap(
         "otp.countSince",
         () ->
             jdbi.withHandle(
@@ -136,7 +133,7 @@ public final class JdbiOtpRepository implements OtpRepository {
 
   @Override
   public int deleteByUserHandle(UserHandle userHandle) {
-    return wrap(
+    return JdbiSupport.wrap(
         "otp.deleteByUserHandle",
         () ->
             jdbi.withHandle(
@@ -144,21 +141,6 @@ public final class JdbiOtpRepository implements OtpRepository {
                     h.createUpdate("DELETE FROM otp_codes WHERE user_handle = :uh")
                         .bind("uh", userHandle.value())
                         .execute()));
-  }
-
-  /**
-   * Runs {@code body} and wraps any {@link JdbiException} in a {@link PkAuthPersistenceException}
-   * so adapter exception mappers can produce a uniform 503. Existing {@link
-   * PkAuthPersistenceException} instances are re-thrown unchanged.
-   */
-  private static <T> T wrap(String op, Supplier<T> body) {
-    try {
-      return body.get();
-    } catch (PkAuthPersistenceException already) {
-      throw already;
-    } catch (JdbiException e) {
-      throw new PkAuthPersistenceException(op, e.getMessage(), e);
-    }
   }
 
   private static final RowMapper<StoredOtp> MAPPER = (rs, ctx) -> readRow(rs);

@@ -7,15 +7,12 @@ import com.codeheadsystems.pkauth.credential.CredentialRecord;
 import com.codeheadsystems.pkauth.json.Base64Url;
 import com.codeheadsystems.pkauth.spi.CredentialRepository;
 import com.codeheadsystems.pkauth.spi.DuplicateCredentialException;
-import com.codeheadsystems.pkauth.spi.PkAuthPersistenceException;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Supplier;
-import software.amazon.awssdk.core.exception.SdkException;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbIndex;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
@@ -44,7 +41,7 @@ public final class DynamoDbCredentialRepository implements CredentialRepository 
 
   @Override
   public void save(CredentialRecord record) {
-    wrap(
+    DynamoDbSupport.wrap(
         "credentials.save",
         () -> {
           try {
@@ -65,7 +62,7 @@ public final class DynamoDbCredentialRepository implements CredentialRepository 
 
   @Override
   public Optional<CredentialRecord> findByCredentialId(CredentialId credentialId) {
-    return wrap(
+    return DynamoDbSupport.wrap(
         "credentials.findByCredentialId",
         () -> {
           String credIdB64 = credentialId.b64url();
@@ -82,7 +79,7 @@ public final class DynamoDbCredentialRepository implements CredentialRepository 
 
   @Override
   public List<CredentialRecord> findByUserHandle(UserHandle userHandle) {
-    return wrap(
+    return DynamoDbSupport.wrap(
         "credentials.findByUserHandle",
         () -> {
           String userB64 = Base64Url.encode(userHandle.value());
@@ -99,7 +96,7 @@ public final class DynamoDbCredentialRepository implements CredentialRepository 
 
   @Override
   public void updateSignCount(CredentialId credentialId, long newCount, Instant lastUsedAt) {
-    wrap(
+    DynamoDbSupport.wrap(
         "credentials.updateSignCount",
         () -> {
           // Retry loop: @DynamoDbVersionAttribute provides optimistic concurrency — if a concurrent
@@ -151,7 +148,7 @@ public final class DynamoDbCredentialRepository implements CredentialRepository 
 
   @Override
   public void updateLabel(UserHandle userHandle, CredentialId credentialId, String label) {
-    wrap(
+    DynamoDbSupport.wrap(
         "credentials.updateLabel",
         () -> {
           // Retry loop: guards against concurrent field updates clobbering each other via the
@@ -183,7 +180,7 @@ public final class DynamoDbCredentialRepository implements CredentialRepository 
 
   @Override
   public void delete(UserHandle userHandle, CredentialId credentialId) {
-    wrap(
+    DynamoDbSupport.wrap(
         "credentials.delete",
         () -> {
           lookupItem(credentialId)
@@ -201,7 +198,7 @@ public final class DynamoDbCredentialRepository implements CredentialRepository 
 
   @Override
   public int deleteByUserHandle(UserHandle userHandle) {
-    return wrap(
+    return DynamoDbSupport.wrap(
         "credentials.deleteByUserHandle",
         () -> {
           String userB64 = Base64Url.encode(userHandle.value());
@@ -239,22 +236,5 @@ public final class DynamoDbCredentialRepository implements CredentialRepository 
     key.put("pk", AttributeValue.fromS(pk));
     key.put("sk", AttributeValue.fromS(sk));
     return key;
-  }
-
-  /**
-   * Runs {@code body} and wraps any {@link SdkException} in a {@link PkAuthPersistenceException} so
-   * adapter exception mappers can produce a uniform 503. {@link PkAuthPersistenceException}
-   * subclasses (including {@link DuplicateCredentialException}) are re-thrown unchanged. Documented
-   * {@link ConditionalCheckFailedException} control-flow branches handled inside {@code body} never
-   * reach here.
-   */
-  private static <T> T wrap(String op, Supplier<T> body) {
-    try {
-      return body.get();
-    } catch (PkAuthPersistenceException already) {
-      throw already;
-    } catch (SdkException e) {
-      throw new PkAuthPersistenceException(op, e.getMessage(), e);
-    }
   }
 }

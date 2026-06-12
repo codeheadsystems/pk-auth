@@ -5,7 +5,6 @@ import com.codeheadsystems.pkauth.api.UserHandle;
 import com.codeheadsystems.pkauth.refresh.RefreshTokenRecord;
 import com.codeheadsystems.pkauth.refresh.RevokeReason;
 import com.codeheadsystems.pkauth.refresh.spi.RefreshTokenRepository;
-import com.codeheadsystems.pkauth.spi.PkAuthPersistenceException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
@@ -15,10 +14,8 @@ import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Supplier;
 import org.jdbi.v3.core.Handle;
 import org.jdbi.v3.core.Jdbi;
-import org.jdbi.v3.core.JdbiException;
 import org.jdbi.v3.core.mapper.RowMapper;
 import org.jdbi.v3.core.statement.Update;
 import org.jspecify.annotations.Nullable;
@@ -41,7 +38,7 @@ public final class JdbiRefreshTokenRepository implements RefreshTokenRepository 
 
   @Override
   public void create(RefreshTokenRecord record) {
-    wrap(
+    JdbiSupport.wrap(
         "refresh_tokens.create",
         () -> {
           jdbi.useHandle(h -> insert(h, record));
@@ -51,7 +48,7 @@ public final class JdbiRefreshTokenRepository implements RefreshTokenRepository 
 
   @Override
   public Optional<RefreshTokenRecord> findByRefreshId(String refreshId) {
-    return wrap(
+    return JdbiSupport.wrap(
         "refresh_tokens.findByRefreshId",
         () ->
             jdbi.withHandle(
@@ -68,7 +65,7 @@ public final class JdbiRefreshTokenRepository implements RefreshTokenRepository 
     Objects.requireNonNull(parentRefreshId, "parentRefreshId");
     Objects.requireNonNull(now, "now");
     Objects.requireNonNull(successor, "successor");
-    return wrap(
+    return JdbiSupport.wrap(
         "refresh_tokens.rotateAtomically",
         () ->
             jdbi.inTransaction(
@@ -96,7 +93,7 @@ public final class JdbiRefreshTokenRepository implements RefreshTokenRepository 
 
   @Override
   public int revokeFamily(String familyId, Instant now, RevokeReason reason) {
-    return wrap(
+    return JdbiSupport.wrap(
         "refresh_tokens.revokeFamily",
         () ->
             jdbi.withHandle(
@@ -113,7 +110,7 @@ public final class JdbiRefreshTokenRepository implements RefreshTokenRepository 
 
   @Override
   public int revokeAllForUser(UserHandle userHandle, Instant now, RevokeReason reason) {
-    return wrap(
+    return JdbiSupport.wrap(
         "refresh_tokens.revokeAllForUser",
         () ->
             jdbi.withHandle(
@@ -130,7 +127,7 @@ public final class JdbiRefreshTokenRepository implements RefreshTokenRepository 
 
   @Override
   public List<RefreshTokenRecord> findByUserHandle(UserHandle userHandle) {
-    return wrap(
+    return JdbiSupport.wrap(
         "refresh_tokens.findByUserHandle",
         () ->
             jdbi.withHandle(
@@ -145,7 +142,7 @@ public final class JdbiRefreshTokenRepository implements RefreshTokenRepository 
 
   @Override
   public List<RefreshTokenRecord> findByFamilyId(String familyId) {
-    return wrap(
+    return JdbiSupport.wrap(
         "refresh_tokens.findByFamilyId",
         () ->
             jdbi.withHandle(
@@ -160,7 +157,7 @@ public final class JdbiRefreshTokenRepository implements RefreshTokenRepository 
 
   @Override
   public int deleteExpiredBefore(Instant cutoff) {
-    return wrap(
+    return JdbiSupport.wrap(
         "refresh_tokens.deleteExpiredBefore",
         () ->
             jdbi.withHandle(
@@ -219,16 +216,6 @@ public final class JdbiRefreshTokenRepository implements RefreshTokenRepository 
       update.bindNull(name, sqlType);
     } else {
       update.bind(name, value);
-    }
-  }
-
-  private static <T> T wrap(String op, Supplier<T> body) {
-    try {
-      return body.get();
-    } catch (PkAuthPersistenceException already) {
-      throw already;
-    } catch (JdbiException e) {
-      throw new PkAuthPersistenceException(op, e.getMessage(), e);
     }
   }
 

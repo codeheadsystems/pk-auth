@@ -2,15 +2,12 @@
 package com.codeheadsystems.pkauth.persistence.jdbi;
 
 import com.codeheadsystems.pkauth.api.UserHandle;
-import com.codeheadsystems.pkauth.spi.PkAuthPersistenceException;
 import com.codeheadsystems.pkauth.spi.UserLookup;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Supplier;
 import org.jdbi.v3.core.Jdbi;
-import org.jdbi.v3.core.JdbiException;
 import org.jdbi.v3.core.mapper.RowMapper;
 
 /**
@@ -28,7 +25,7 @@ public final class JdbiUserLookup implements UserLookup {
 
   @Override
   public Optional<UserHandle> findHandleByUsername(String username) {
-    return wrap(
+    return JdbiSupport.wrap(
         "users.findHandleByUsername",
         () ->
             jdbi.withHandle(
@@ -42,7 +39,7 @@ public final class JdbiUserLookup implements UserLookup {
 
   @Override
   public Optional<UserView> findViewByHandle(UserHandle handle) {
-    return wrap(
+    return JdbiSupport.wrap(
         "users.findViewByHandle",
         () ->
             jdbi.withHandle(
@@ -57,7 +54,7 @@ public final class JdbiUserLookup implements UserLookup {
   public UserHandle getOrCreateHandle(String username) {
     Objects.requireNonNull(username, "username");
     UserHandle candidate = UserHandle.random();
-    return wrap(
+    return JdbiSupport.wrap(
         "users.getOrCreateHandle",
         () ->
             jdbi.withHandle(
@@ -81,7 +78,7 @@ public final class JdbiUserLookup implements UserLookup {
   /** Pre-registers a user with the supplied display name (test fixture support). */
   public UserHandle register(String username, String displayName) {
     UserHandle handle = UserHandle.random();
-    wrap(
+    JdbiSupport.wrap(
         "users.register",
         () -> {
           jdbi.useHandle(
@@ -96,20 +93,6 @@ public final class JdbiUserLookup implements UserLookup {
           return null;
         });
     return handle;
-  }
-
-  /**
-   * Runs {@code body} and wraps any {@link JdbiException} in a {@link PkAuthPersistenceException}
-   * so adapter exception mappers can produce a uniform 503.
-   */
-  private static <T> T wrap(String op, Supplier<T> body) {
-    try {
-      return body.get();
-    } catch (PkAuthPersistenceException already) {
-      throw already;
-    } catch (JdbiException e) {
-      throw new PkAuthPersistenceException(op, e.getMessage(), e);
-    }
   }
 
   private static final RowMapper<UserView> VIEW_MAPPER = (rs, ctx) -> readView(rs);
