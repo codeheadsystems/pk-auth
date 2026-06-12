@@ -85,6 +85,35 @@ class CeremonyWireMapperTest {
   }
 
   @Test
+  void registrationAttestationRejectedIs400WithReason() {
+    CeremonyResponse r =
+        CeremonyWireMapper.forRegistration(
+            new RegistrationResult.AttestationRejected("untrusted root"));
+    assertThat(r.status()).isEqualTo(400);
+    assertThat(r.body())
+        .containsEntry("outcome", "attestation_rejected")
+        .containsEntry("reason", "untrusted root");
+  }
+
+  @Test
+  void registrationInvalidPayloadIs400WithDetail() {
+    CeremonyResponse r =
+        CeremonyWireMapper.forRegistration(new RegistrationResult.InvalidPayload("bad CBOR"));
+    assertThat(r.status()).isEqualTo(400);
+    assertThat(r.body())
+        .containsEntry("outcome", "invalid_payload")
+        .containsEntry("detail", "bad CBOR");
+  }
+
+  @Test
+  void registrationRateLimitedIs429() {
+    CeremonyResponse r =
+        CeremonyWireMapper.forRegistration(new RegistrationResult.RateLimited("register"));
+    assertThat(r.status()).isEqualTo(429);
+    assertThat(r.body()).containsEntry("outcome", "rate_limited");
+  }
+
+  @Test
   void assertionSuccessIncludesToken() {
     AssertionResult.Success success =
         new AssertionResult.Success(USER, CRED_ID_VALUE, 42L, AssertionResult.CounterStatus.OK);
@@ -129,6 +158,43 @@ class CeremonyWireMapperTest {
   }
 
   @Test
+  void assertionInvalidChallengeIs400WithDetail() {
+    CeremonyResponse r =
+        CeremonyWireMapper.forAssertionError(new AssertionResult.InvalidChallenge("expired"));
+    assertThat(r.status()).isEqualTo(400);
+    assertThat(r.body())
+        .containsEntry("outcome", "invalid_challenge")
+        .containsEntry("detail", "expired");
+  }
+
+  @Test
+  void assertionOriginMismatchIs400WithExpectedAndActual() {
+    CeremonyResponse r =
+        CeremonyWireMapper.forAssertionError(
+            new AssertionResult.OriginMismatch("https://expected", "https://attacker"));
+    assertThat(r.status()).isEqualTo(400);
+    assertThat(r.body())
+        .containsEntry("outcome", "origin_mismatch")
+        .containsEntry("expected", "https://expected")
+        .containsEntry("actual", "https://attacker");
+  }
+
+  @Test
+  void assertionRateLimitedIs429() {
+    CeremonyResponse r =
+        CeremonyWireMapper.forAssertionError(new AssertionResult.RateLimited("authenticate"));
+    assertThat(r.status()).isEqualTo(429);
+    assertThat(r.body()).containsEntry("outcome", "rate_limited");
+  }
+
+  @Test
+  void startCeremonyRateLimitedIs429() {
+    CeremonyResponse r = CeremonyWireMapper.rateLimited();
+    assertThat(r.status()).isEqualTo(429);
+    assertThat(r.body()).containsEntry("outcome", "rate_limited");
+  }
+
+  @Test
   void assertionUserVerificationRequiredIs401() {
     CeremonyResponse r =
         CeremonyWireMapper.forAssertionError(new AssertionResult.UserVerificationRequired());
@@ -158,5 +224,51 @@ class CeremonyWireMapperTest {
         CeremonyWireMapper.forAssertionError(new AssertionResult.InvalidSignature());
     assertThatThrownBy(() -> r.body().put("hacked", "yes"))
         .isInstanceOf(UnsupportedOperationException.class);
+  }
+
+  /**
+   * Tripwire: if a new {@link RegistrationResult} variant is added, this fails until the variant is
+   * both wired in {@link CeremonyWireMapper#forRegistration} and covered by a test above. The
+   * {@code switch} in the mapper is already compile-time exhaustive; this guards the *test*
+   * coverage.
+   */
+  @Test
+  void everyRegistrationVariantIsCoveredByATest() {
+    assertThat(simpleNamesOfPermittedSubclasses(RegistrationResult.class))
+        .containsExactlyInAnyOrder(
+            "Success",
+            "InvalidChallenge",
+            "OriginMismatch",
+            "AttestationRejected",
+            "DuplicateCredential",
+            "InvalidPayload",
+            "RateLimited");
+  }
+
+  /**
+   * Tripwire: if a new {@link AssertionResult} variant is added, this fails until the variant is
+   * both wired in {@link CeremonyWireMapper#forAssertionError} (or {@code forAssertionSuccess}) and
+   * covered by a test above.
+   */
+  @Test
+  void everyAssertionVariantIsCoveredByATest() {
+    assertThat(simpleNamesOfPermittedSubclasses(AssertionResult.class))
+        .containsExactlyInAnyOrder(
+            "Success",
+            "UnknownCredential",
+            "InvalidChallenge",
+            "OriginMismatch",
+            "CounterRegression",
+            "UserVerificationRequired",
+            "InvalidSignature",
+            "RateLimited");
+  }
+
+  private static Set<String> simpleNamesOfPermittedSubclasses(Class<?> sealed) {
+    Class<?>[] permitted = sealed.getPermittedSubclasses();
+    assertThat(permitted).as("expected a sealed type").isNotNull();
+    return java.util.Arrays.stream(permitted)
+        .map(Class::getSimpleName)
+        .collect(java.util.stream.Collectors.toSet());
   }
 }
