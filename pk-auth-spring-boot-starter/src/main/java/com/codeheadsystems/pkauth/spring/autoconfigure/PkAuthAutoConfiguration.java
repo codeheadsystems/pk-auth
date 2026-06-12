@@ -1,15 +1,11 @@
 // SPDX-License-Identifier: MIT
 package com.codeheadsystems.pkauth.spring.autoconfigure;
 
-import com.codeheadsystems.pkauth.api.AttestationConveyance;
-import com.codeheadsystems.pkauth.api.ResidentKeyRequirement;
-import com.codeheadsystems.pkauth.api.UserVerificationRequirement;
 import com.codeheadsystems.pkauth.backupcodes.BackupCodeService;
 import com.codeheadsystems.pkauth.ceremony.InMemoryCeremonyRateLimiter;
 import com.codeheadsystems.pkauth.ceremony.PasskeyAuthenticationService;
 import com.codeheadsystems.pkauth.composition.PkAuthComposition;
 import com.codeheadsystems.pkauth.config.CeremonyConfig;
-import com.codeheadsystems.pkauth.config.CounterRegressionPolicy;
 import com.codeheadsystems.pkauth.config.RelyingPartyConfig;
 import com.codeheadsystems.pkauth.jwt.AccessTokenStore;
 import com.codeheadsystems.pkauth.jwt.AccessTokenStoreDeletionListener;
@@ -117,12 +113,16 @@ public class PkAuthAutoConfiguration {
   @Bean
   @ConditionalOnMissingBean
   public CeremonyConfig pkAuthCeremonyConfig(PkAuthProperties props) {
+    PkAuthProperties.Ceremony c = props.ceremony();
+    CeremonyConfig defaults = CeremonyConfig.defaults();
+    // Every knob falls back to the framework-neutral core defaults (UV=REQUIRED, counter=REJECT),
+    // not weaker adapter-local values — a host must opt in explicitly to relax any of them.
     return new CeremonyConfig(
-        props.ceremony().challengeTtl(),
-        UserVerificationRequirement.PREFERRED,
-        ResidentKeyRequirement.PREFERRED,
-        AttestationConveyance.NONE,
-        CounterRegressionPolicy.REJECT);
+        c.challengeTtl() == null ? defaults.challengeTtl() : c.challengeTtl(),
+        c.userVerification() == null ? defaults.userVerification() : c.userVerification(),
+        c.residentKey() == null ? defaults.residentKey() : c.residentKey(),
+        c.attestation() == null ? defaults.attestationConveyance() : c.attestation(),
+        c.counterRegression() == null ? defaults.counterRegression() : c.counterRegression());
   }
 
   /**

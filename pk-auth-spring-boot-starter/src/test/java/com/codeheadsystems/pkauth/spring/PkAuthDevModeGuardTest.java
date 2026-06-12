@@ -3,8 +3,10 @@ package com.codeheadsystems.pkauth.spring;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.codeheadsystems.pkauth.api.UserVerificationRequirement;
 import com.codeheadsystems.pkauth.backupcodes.BackupCodeService;
 import com.codeheadsystems.pkauth.ceremony.PasskeyAuthenticationService;
+import com.codeheadsystems.pkauth.config.CeremonyConfig;
 import com.codeheadsystems.pkauth.magiclink.MagicLinkService;
 import com.codeheadsystems.pkauth.otp.OtpService;
 import com.codeheadsystems.pkauth.spi.BackupCodeRepository;
@@ -80,6 +82,31 @@ class PkAuthDevModeGuardTest {
                     .hasSingleBean(ChallengeStore.class)
                     .hasSingleBean(BackupCodeRepository.class)
                     .hasSingleBean(OtpRepository.class));
+  }
+
+  /**
+   * Security default: with no ceremony overrides, the CeremonyConfig bean must default to {@code
+   * userVerification=REQUIRED} (the framework-neutral core default), not the weaker PREFERRED the
+   * Spring adapter previously hardcoded.
+   */
+  @Test
+  void ceremonyConfigDefaultsToRequiredUserVerification() {
+    runner
+        .withPropertyValues("pkauth.dev-mode=true")
+        .run(
+            ctx ->
+                assertThat(ctx.getBean(CeremonyConfig.class).userVerification())
+                    .isEqualTo(UserVerificationRequirement.REQUIRED));
+  }
+
+  @Test
+  void ceremonyConfigHonorsUserVerificationOverride() {
+    runner
+        .withPropertyValues("pkauth.dev-mode=true", "pkauth.ceremony.user-verification=preferred")
+        .run(
+            ctx ->
+                assertThat(ctx.getBean(CeremonyConfig.class).userVerification())
+                    .isEqualTo(UserVerificationRequirement.PREFERRED));
   }
 
   /**

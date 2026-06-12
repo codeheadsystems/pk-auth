@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: MIT
 package com.codeheadsystems.pkauth.spring.config;
 
+import com.codeheadsystems.pkauth.api.AttestationConveyance;
+import com.codeheadsystems.pkauth.api.ResidentKeyRequirement;
+import com.codeheadsystems.pkauth.api.UserVerificationRequirement;
+import com.codeheadsystems.pkauth.config.CounterRegressionPolicy;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Set;
@@ -86,14 +90,29 @@ public record PkAuthProperties(
       @Nullable Map<String, Duration> ttlsByAudience) {}
 
   /**
-   * Ceremony tunables forwarded to {@code CeremonyConfig}.
+   * Ceremony tunables forwarded to {@code CeremonyConfig}. Every field is optional; any left unset
+   * falls back to {@link com.codeheadsystems.pkauth.config.CeremonyConfig#defaults()} — notably
+   * {@code userVerification} defaults to {@code REQUIRED} and {@code counterRegression} to {@code
+   * REJECT}, matching the framework-neutral core defaults (and the Micronaut/Dropwizard adapters).
+   * These are security-load-bearing; relaxing them (e.g. {@code user-verification: preferred} for
+   * UV-less security keys) must be an explicit, deliberate host choice.
    *
-   * @param challengeTtl how long an issued challenge remains valid
+   * @param challengeTtl how long an issued challenge remains valid (default 5 minutes)
+   * @param userVerification WebAuthn UV requirement (default {@code REQUIRED})
+   * @param residentKey discoverable-credential requirement (default {@code PREFERRED})
+   * @param attestation attestation conveyance preference (default {@code NONE})
+   * @param counterRegression signature-counter regression policy (default {@code REJECT})
+   * @since 1.3.1
    */
-  public record Ceremony(Duration challengeTtl) {
+  public record Ceremony(
+      @Nullable Duration challengeTtl,
+      @Nullable UserVerificationRequirement userVerification,
+      @Nullable ResidentKeyRequirement residentKey,
+      @Nullable AttestationConveyance attestation,
+      @Nullable CounterRegressionPolicy counterRegression) {
 
     public static Ceremony defaults() {
-      return new Ceremony(Duration.ofMinutes(5));
+      return new Ceremony(Duration.ofMinutes(5), null, null, null, null);
     }
   }
 
