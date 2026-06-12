@@ -183,12 +183,12 @@ public final class OtpService {
 
     Optional<StoredOtp> activeOpt = repository.findLatestActive(user, phoneE164);
     if (activeOpt.isEmpty()) {
-      // Run a throwaway HMAC + constant-time compare so the no-active-OTP branch takes
-      // approximately the same wall-clock time as the matching/mismatching branches below.
-      // Mirrors the dummy-Argon2 pattern in BackupCodeService.verify.
-      String dummyHash = hmacHash(candidate);
-      MessageDigest.isEqual(
-          dummyHash.getBytes(StandardCharsets.UTF_8), dummyHash.getBytes(StandardCharsets.UTF_8));
+      // Run a throwaway HMAC so the no-active-OTP branch takes approximately the same wall-clock
+      // time as the matching/mismatching branches below — the HMAC dominates the cost, so the
+      // response can't leak (via timing) whether an OTP exists for (user, phone). Mirrors the
+      // dummy-Argon2 verify in BackupCodeService.verify. The subsequent constant-time compare is
+      // negligible by comparison and deliberately omitted here.
+      hmacHash(candidate);
       return new VerifyResult.NoActiveOtp();
     }
     StoredOtp active = activeOpt.get();
