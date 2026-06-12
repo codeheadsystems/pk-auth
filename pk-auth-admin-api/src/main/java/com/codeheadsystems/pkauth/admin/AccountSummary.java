@@ -4,7 +4,11 @@ package com.codeheadsystems.pkauth.admin;
 import com.codeheadsystems.pkauth.api.UserHandle;
 import java.util.Objects;
 
-/** Wire-shape returned by {@code GET /auth/admin/account}. */
+/**
+ * Wire-shape returned by {@code GET /auth/admin/account}.
+ *
+ * @since 0.9.0
+ */
 public record AccountSummary(
     UserHandle userHandle,
     String username,

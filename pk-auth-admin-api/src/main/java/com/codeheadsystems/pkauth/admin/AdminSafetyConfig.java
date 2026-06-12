@@ -8,6 +8,7 @@ package com.codeheadsystems.pkauth.admin;
  *
  * @param allowDeleteWithoutBackupCodes when true, callers can delete the last credential even when
  *     no backup codes remain. The brief recommends keeping this {@code false}.
+ * @since 0.9.0
  */
 public record AdminSafetyConfig(boolean allowDeleteWithoutBackupCodes) {
 

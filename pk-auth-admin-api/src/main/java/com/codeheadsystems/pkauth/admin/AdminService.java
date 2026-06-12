@@ -9,6 +9,8 @@ import java.util.List;
  * Framework-neutral admin operations on a user's pk-auth account (brief §6.9). All authenticated
  * methods take an {@code actor} which the adapter resolves from the JWT subject and apply the
  * configured {@link AdminAuthorizer} before touching the underlying SPIs.
+ *
+ * @since 0.9.0
  */
 public interface AdminService {
 

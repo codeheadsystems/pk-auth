@@ -9,6 +9,8 @@ import java.util.Optional;
  * Single-use challenge store. Implementations must enforce atomic single-use semantics in {@link
  * #takeOnce} — reading a challenge MUST remove it from the store in the same operation to prevent
  * replay.
+ *
+ * @since 0.9.0
  */
 public interface ChallengeStore {
 

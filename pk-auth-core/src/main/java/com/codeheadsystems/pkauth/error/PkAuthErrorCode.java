@@ -12,6 +12,8 @@ package com.codeheadsystems.pkauth.error;
  * {@link #INVALID_SIGNATURE}) are intentionally reserved as part of the wire contract — the library
  * may begin emitting them in a future release. Consumers should treat the full enum as the source
  * of truth, not the subset currently observable in production traffic.
+ *
+ * @since 0.9.0
  */
 public enum PkAuthErrorCode {
   /** Internal misconfiguration detected at startup or during a ceremony. */

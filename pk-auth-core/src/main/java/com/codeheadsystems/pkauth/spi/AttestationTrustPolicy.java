@@ -20,6 +20,8 @@ import org.jspecify.annotations.Nullable;
  * verification) MUST request {@link AttestationConveyance#DIRECT} (or stricter) via {@code
  * RelyingPartyConfig} so the underlying WebAuthn manager runs the format-specific verifier. Until
  * that happens, treat {@code format} as untrusted metadata.
+ *
+ * @since 0.9.0
  */
 public interface AttestationTrustPolicy {
 

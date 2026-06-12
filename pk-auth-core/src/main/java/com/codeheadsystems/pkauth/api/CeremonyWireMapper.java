@@ -29,6 +29,8 @@ import org.jspecify.annotations.Nullable;
  *   <li>Start ceremony rate-limit refusal (a {@code CeremonyRateLimitedException} escaping the
  *       service) → 429; adapters call {@link #rateLimited()} to shape the response.
  * </ul>
+ *
+ * @since 0.9.0
  */
 public final class CeremonyWireMapper {
 

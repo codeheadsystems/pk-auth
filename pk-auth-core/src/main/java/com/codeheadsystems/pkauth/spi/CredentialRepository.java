@@ -11,6 +11,8 @@ import java.util.Optional;
 /**
  * Persistent storage for passkey credentials. Implemented by the JDBI and DynamoDB persistence
  * modules (and by {@code InMemoryEverything} in the testkit).
+ *
+ * @since 0.9.0
  */
 public interface CredentialRepository {
 

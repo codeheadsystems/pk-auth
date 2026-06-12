@@ -7,6 +7,8 @@ import java.time.Instant;
 /**
  * Indirection over {@link Clock} so ceremony logic stays testable. Adapters wire either the default
  * system clock or a controllable test clock.
+ *
+ * @since 0.9.0
  */
 @FunctionalInterface
 public interface ClockProvider {

@@ -10,6 +10,7 @@ import java.util.Objects;
  * AdminResultMapper}.
  *
  * @param <T> the payload type for {@link Success}.
+ * @since 0.9.0
  */
 public sealed interface AdminResult<T> {
 

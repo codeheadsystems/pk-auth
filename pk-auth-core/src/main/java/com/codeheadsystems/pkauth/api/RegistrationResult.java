@@ -8,6 +8,8 @@ import java.util.Objects;
 /**
  * Closed sum of outcomes from {@code PasskeyAuthenticationService.finishRegistration}. Mapped to
  * HTTP responses by adapter modules.
+ *
+ * @since 0.9.0
  */
 public sealed interface RegistrationResult {
 

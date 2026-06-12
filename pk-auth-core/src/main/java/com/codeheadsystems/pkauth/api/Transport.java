@@ -9,6 +9,8 @@ import org.jspecify.annotations.Nullable;
  * WebAuthn {@code AuthenticatorTransport} values, per the Level 3 spec §5.8.4. Each constant knows
  * its wire-string form via {@link #wireName()}; parsing from the wire is done with {@link
  * #fromWire(String)}.
+ *
+ * @since 0.9.0
  */
 public enum Transport {
   USB("usb"),

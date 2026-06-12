@@ -13,6 +13,8 @@ import java.util.Objects;
  * mutate the stored value. {@code equals} and {@code hashCode} are content-based, which the default
  * record implementation does not provide for array-valued components. This makes {@code
  * CredentialId} safe to use as a {@link java.util.Map} or {@link java.util.Set} key.
+ *
+ * @since 0.9.0
  */
 public record CredentialId(byte[] value) {
 

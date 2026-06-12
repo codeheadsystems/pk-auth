@@ -19,6 +19,8 @@ import org.jspecify.annotations.Nullable;
  * <p>No exceptions cross this boundary for ceremony-flow failures — every failure mode is a variant
  * of the relevant {@code *Result} sealed interface. Methods may still throw on programmer errors
  * (null inputs, unconfigured RP, etc.).
+ *
+ * @since 0.9.0
  */
 public interface PasskeyAuthenticationService {
 

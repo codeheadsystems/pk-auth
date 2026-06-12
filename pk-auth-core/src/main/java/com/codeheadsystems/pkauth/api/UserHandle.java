@@ -12,6 +12,8 @@ import java.util.Objects;
  * <p>The byte array is defensively copied on construction and on {@link #value()} so callers cannot
  * mutate the stored value. {@code equals} and {@code hashCode} are content-based, which the default
  * record implementation does not provide for array-valued components.
+ *
+ * @since 0.9.0
  */
 public record UserHandle(byte[] value) {
 

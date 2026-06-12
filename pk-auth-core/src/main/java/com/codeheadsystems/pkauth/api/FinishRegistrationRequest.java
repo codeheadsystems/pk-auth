@@ -9,6 +9,8 @@ import org.jspecify.annotations.Nullable;
  * Host-app input for finishing a registration ceremony. The {@code challengeId} ties this request
  * back to the {@link PublicKeyCredentialCreationOptionsJson} previously issued by {@code
  * startRegistration}.
+ *
+ * @since 0.9.0
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record FinishRegistrationRequest(

@@ -28,6 +28,7 @@ import org.jspecify.annotations.Nullable;
  * @param backupState authenticator-reported BS flag
  * @param createdAt when the credential was registered
  * @param lastUsedAt when the credential was last used in a successful assertion; null if never
+ * @since 0.9.0
  */
 public record CredentialRecord(
     CredentialId credentialId,

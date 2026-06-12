@@ -10,6 +10,7 @@ import java.util.Set;
  * @param id the RP ID (eTLD+1, e.g. {@code "example.com"})
  * @param name human-readable RP name shown to the user during ceremonies
  * @param origins the set of acceptable client-reported origins ({@code https://example.com}, …)
+ * @since 0.9.0
  */
 public record RelyingPartyConfig(String id, String name, Set<String> origins) {
 
