@@ -78,4 +78,20 @@ class RefreshTtlPolicyTest {
     assertThatThrownBy(() -> RefreshTtlPolicy.fixed(Duration.ofDays(1), nullKey))
         .isInstanceOf(NullPointerException.class);
   }
+
+  @Test
+  void fromNullOrEmptyOverridesYieldsSinglePolicy() {
+    assertThat(RefreshTtlPolicy.from(Duration.ofDays(14), null).knownAudiences()).isEmpty();
+    assertThat(RefreshTtlPolicy.from(Duration.ofDays(14), Map.of()).refreshTtl("web"))
+        .isEqualTo(Duration.ofDays(14));
+  }
+
+  @Test
+  void fromNonEmptyOverridesYieldsFixedPolicy() {
+    RefreshTtlPolicy policy =
+        RefreshTtlPolicy.from(Duration.ofDays(14), Map.of("cli", Duration.ofDays(90)));
+    assertThat(policy.knownAudiences()).containsExactly("cli");
+    assertThat(policy.refreshTtl("cli")).isEqualTo(Duration.ofDays(90));
+    assertThat(policy.refreshTtl("web")).isEqualTo(Duration.ofDays(14));
+  }
 }

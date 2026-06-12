@@ -3,8 +3,10 @@ package com.codeheadsystems.pkauth.jwt;
 
 import java.time.Duration;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Configuration for pk-auth's JWT issuance and validation.
@@ -91,6 +93,37 @@ public record JwtConfig(
         issuer,
         audience,
         TokenTtlPolicy.single(DEFAULT_TOKEN_TTL),
+        DEFAULT_NBF_SKEW,
+        DEFAULT_CLOCK_SKEW);
+  }
+
+  /**
+   * Builds a {@link JwtConfig} from host configuration with the documented skew defaults ({@link
+   * #DEFAULT_NBF_SKEW} / {@link #DEFAULT_CLOCK_SKEW}). A {@code null} {@code defaultTtl} falls back
+   * to {@link #DEFAULT_TOKEN_TTL}; {@code ttlsByAudience} that is {@code null} or empty yields a
+   * single-TTL policy, otherwise a per-audience policy (see {@link TokenTtlPolicy#from}).
+   *
+   * <p>This is the host-config-to-domain-config translation every framework adapter performs.
+   * Centralizing it ensures all adapters issue tokens with identical skew windows — a divergence
+   * here would be a silent, security-relevant inconsistency.
+   *
+   * @param issuer the {@code iss} claim value.
+   * @param audience the default audience.
+   * @param defaultTtl the access-token TTL, or {@code null} for {@link #DEFAULT_TOKEN_TTL}.
+   * @param ttlsByAudience per-audience TTL overrides, or {@code null}/empty for a uniform TTL.
+   * @return the assembled config.
+   * @since 1.3.1
+   */
+  public static JwtConfig from(
+      String issuer,
+      String audience,
+      @Nullable Duration defaultTtl,
+      @Nullable Map<String, Duration> ttlsByAudience) {
+    Duration ttl = defaultTtl == null ? DEFAULT_TOKEN_TTL : defaultTtl;
+    return new JwtConfig(
+        issuer,
+        audience,
+        TokenTtlPolicy.from(ttl, ttlsByAudience),
         DEFAULT_NBF_SKEW,
         DEFAULT_CLOCK_SKEW);
   }

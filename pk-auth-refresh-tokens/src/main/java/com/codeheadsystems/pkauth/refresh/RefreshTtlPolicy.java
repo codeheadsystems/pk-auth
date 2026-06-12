@@ -6,6 +6,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Per-audience TTL lookup used by {@link RefreshTokenService} when issuing refresh tokens.
@@ -36,6 +37,23 @@ public interface RefreshTtlPolicy {
    */
   default Set<String> knownAudiences() {
     return Set.of();
+  }
+
+  /**
+   * Builds a policy from optional host configuration: {@link #single(Duration)} when {@code
+   * overrides} is {@code null} or empty, otherwise {@link #fixed(Duration, Map)}. This is the
+   * single-vs-fixed dispatch every adapter performs; centralizing it keeps the JDBI/DynamoDB-backed
+   * hosts identical on the refresh-TTL decision.
+   *
+   * @param defaultTtl the fallback TTL for any audience not in {@code overrides}.
+   * @param overrides per-audience TTL overrides, or {@code null}/empty for a uniform TTL.
+   * @return the resolved policy.
+   * @since 1.3.1
+   */
+  static RefreshTtlPolicy from(Duration defaultTtl, @Nullable Map<String, Duration> overrides) {
+    return overrides == null || overrides.isEmpty()
+        ? single(defaultTtl)
+        : fixed(defaultTtl, overrides);
   }
 
   /** Returns a policy dispatching by audience with a default-TTL fallback. */

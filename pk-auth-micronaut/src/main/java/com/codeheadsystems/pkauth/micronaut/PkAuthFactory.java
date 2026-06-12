@@ -14,7 +14,6 @@ import com.codeheadsystems.pkauth.jwt.JwtSecretResolver;
 import com.codeheadsystems.pkauth.jwt.PkAuthJwtIssuer;
 import com.codeheadsystems.pkauth.jwt.PkAuthJwtValidator;
 import com.codeheadsystems.pkauth.jwt.RevocationCheck;
-import com.codeheadsystems.pkauth.jwt.TokenTtlPolicy;
 import com.codeheadsystems.pkauth.lifecycle.BackupCodeRepositoryDeletionListener;
 import com.codeheadsystems.pkauth.lifecycle.CredentialRepositoryDeletionListener;
 import com.codeheadsystems.pkauth.lifecycle.OtpRepositoryDeletionListener;
@@ -30,7 +29,6 @@ import com.codeheadsystems.pkauth.otp.SmsSender;
 import com.codeheadsystems.pkauth.refresh.RefreshTokenConfig;
 import com.codeheadsystems.pkauth.refresh.RefreshTokenService;
 import com.codeheadsystems.pkauth.refresh.RefreshTokenServiceDeletionListener;
-import com.codeheadsystems.pkauth.refresh.RefreshTtlPolicy;
 import com.codeheadsystems.pkauth.refresh.spi.RefreshTokenRepository;
 import com.codeheadsystems.pkauth.refresh.web.RefreshHandler;
 import com.codeheadsystems.pkauth.spi.BackupCodeRepository;
@@ -43,11 +41,9 @@ import com.codeheadsystems.pkauth.spi.UserLookup;
 import io.micronaut.context.annotation.Factory;
 import io.micronaut.context.annotation.Requires;
 import jakarta.inject.Singleton;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -108,15 +104,7 @@ public class PkAuthFactory {
           "pkauth.jwt.{issuer,audience} are required. Set them explicitly in configuration —"
               + " there are no defaults.");
     }
-    Duration defaultTtl =
-        jwt.getDefaultTtl() == null ? JwtConfig.DEFAULT_TOKEN_TTL : jwt.getDefaultTtl();
-    Map<String, Duration> overrides = jwt.getTtlsByAudience();
-    TokenTtlPolicy ttlPolicy =
-        overrides == null || overrides.isEmpty()
-            ? TokenTtlPolicy.single(defaultTtl)
-            : TokenTtlPolicy.fixed(defaultTtl, overrides);
-    return new JwtConfig(
-        issuer, audience, ttlPolicy, JwtConfig.DEFAULT_NBF_SKEW, JwtConfig.DEFAULT_CLOCK_SKEW);
+    return JwtConfig.from(issuer, audience, jwt.getDefaultTtl(), jwt.getTtlsByAudience());
   }
 
   @Singleton
@@ -194,24 +182,8 @@ public class PkAuthFactory {
   @Singleton
   RefreshTokenConfig refreshTokenConfig(PkAuthConfiguration config) {
     PkAuthConfiguration.Refresh refresh = config.getRefresh();
-    Duration defaultTtl =
-        refresh.getDefaultTtl() == null
-            ? RefreshTokenConfig.DEFAULT_REFRESH_TTL
-            : refresh.getDefaultTtl();
-    Map<String, Duration> overrides = refresh.getTtlsByAudience();
-    RefreshTtlPolicy policy =
-        overrides == null || overrides.isEmpty()
-            ? RefreshTtlPolicy.single(defaultTtl)
-            : RefreshTtlPolicy.fixed(defaultTtl, overrides);
-    Duration retention =
-        refresh.getCleanupRetention() == null
-            ? RefreshTokenConfig.DEFAULT_CLEANUP_RETENTION
-            : refresh.getCleanupRetention();
-    return new RefreshTokenConfig(
-        policy,
-        RefreshTokenConfig.DEFAULT_SECRET_BYTES,
-        RefreshTokenConfig.DEFAULT_REFRESH_ID_BYTES,
-        retention);
+    return RefreshTokenConfig.from(
+        refresh.getDefaultTtl(), refresh.getTtlsByAudience(), refresh.getCleanupRetention());
   }
 
   @Singleton

@@ -64,4 +64,21 @@ class TokenTtlPolicyTest {
     assertThatThrownBy(() -> TokenTtlPolicy.fixed(Duration.ofHours(1), nullValue))
         .isInstanceOf(NullPointerException.class);
   }
+
+  @Test
+  void fromNullOrEmptyOverridesYieldsSinglePolicy() {
+    assertThat(TokenTtlPolicy.from(Duration.ofMinutes(10), null).knownAudiences()).isEmpty();
+    assertThat(TokenTtlPolicy.from(Duration.ofMinutes(10), Map.of()).knownAudiences()).isEmpty();
+    assertThat(TokenTtlPolicy.from(Duration.ofMinutes(10), null).accessTtl("web"))
+        .isEqualTo(Duration.ofMinutes(10));
+  }
+
+  @Test
+  void fromNonEmptyOverridesYieldsFixedPolicy() {
+    TokenTtlPolicy policy =
+        TokenTtlPolicy.from(Duration.ofHours(1), Map.of("web", Duration.ofMinutes(15)));
+    assertThat(policy.knownAudiences()).containsExactly("web");
+    assertThat(policy.accessTtl("web")).isEqualTo(Duration.ofMinutes(15));
+    assertThat(policy.accessTtl("other")).isEqualTo(Duration.ofHours(1));
+  }
 }
