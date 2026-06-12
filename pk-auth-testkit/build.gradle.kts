@@ -34,24 +34,3 @@ dependencies {
 
     testRuntimeOnly(libs.logback.classic)
 }
-
-tasks.named<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
-    violationRules {
-        rule {
-            limit {
-                counter = "LINE"
-                // Adapter-tier threshold from brief §11 — testkit is adapter-flavored: complex
-                // crypto wiring that's mostly exercised via the end-to-end ceremony test.
-                minimum = "0.70".toBigDecimal()
-            }
-            limit {
-                counter = "BRANCH"
-                minimum = "0.55".toBigDecimal()
-            }
-        }
-    }
-}
-
-tasks.named("check") {
-    dependsOn("jacocoTestCoverageVerification")
-}

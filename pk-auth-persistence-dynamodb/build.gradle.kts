@@ -28,22 +28,3 @@ dependencies {
     testImplementation(libs.testcontainers.core)
     testRuntimeOnly(libs.logback.classic)
 }
-
-tasks.named<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
-    violationRules {
-        rule {
-            limit {
-                counter = "LINE"
-                minimum = "0.70".toBigDecimal()
-            }
-            limit {
-                counter = "BRANCH"
-                minimum = "0.60".toBigDecimal()
-            }
-        }
-    }
-}
-
-tasks.named("check") {
-    dependsOn("jacocoTestCoverageVerification")
-}

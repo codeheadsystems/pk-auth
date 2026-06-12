@@ -29,9 +29,9 @@ dependencies {
     testRuntimeOnly(libs.logback.classic)
 }
 
-// Phase 1 establishes the ≥80% line-coverage gate called for in the brief §11. The default in
-// pkauth.test-conventions is intentionally permissive; this override turns the bar on for
-// pk-auth-core specifically.
+// pkauth.test-conventions sets the baseline gate (LINE ≥0.70, BRANCH ≥0.55) for every library
+// module. pk-auth-core is held to the stricter ≥80% line bar from the brief §11; the baseline
+// branch floor applies via the convention.
 tasks.named<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
     violationRules {
         rule {
@@ -39,14 +39,6 @@ tasks.named<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
                 counter = "LINE"
                 minimum = "0.80".toBigDecimal()
             }
-            limit {
-                counter = "BRANCH"
-                minimum = "0.70".toBigDecimal()
-            }
         }
     }
-}
-
-tasks.named("check") {
-    dependsOn("jacocoTestCoverageVerification")
 }

@@ -31,9 +31,32 @@ tasks.named<JacocoReport>("jacocoTestReport") {
     }
 }
 
-// Per-module coverage gates (≥80% on pk-auth-core, ≥70% on adapters) are wired in each module's
-// build.gradle.kts via JacocoCoverageVerification, not centrally here.
-
 tasks.named("check") {
     dependsOn(tasks.named("jacocoTestReport"))
+}
+
+// Baseline coverage gate for published library modules: LINE ≥70%, BRANCH ≥55%. Keyed off
+// `java-library` (applied by pkauth.library-conventions) so it covers every library module but
+// NOT the example apps, which apply test-conventions only for the JaCoCo report. A module may
+// layer on a STRICTER rule in its own build.gradle.kts — Gradle enforces all rules, so a module
+// override need only state the limits it raises, never restate this floor. Floors are static:
+// bump them as coverage improves (jacocoTestReport's HTML shows current numbers).
+plugins.withId("java-library") {
+    tasks.named<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
+        violationRules {
+            rule {
+                limit {
+                    counter = "LINE"
+                    minimum = "0.70".toBigDecimal()
+                }
+                limit {
+                    counter = "BRANCH"
+                    minimum = "0.55".toBigDecimal()
+                }
+            }
+        }
+    }
+    tasks.named("check") {
+        dependsOn(tasks.named("jacocoTestCoverageVerification"))
+    }
 }

@@ -25,21 +25,16 @@ dependencies {
     testRuntimeOnly(libs.logback.classic)
 }
 
+// Raises only BRANCH above the pkauth.test-conventions baseline (LINE ≥0.70, BRANCH ≥0.55):
+// family-based replay defense is branch-heavy and already well-covered, so the bar is pinned near
+// current.
 tasks.named<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
     violationRules {
         rule {
-            limit {
-                counter = "LINE"
-                minimum = "0.70".toBigDecimal()
-            }
             limit {
                 counter = "BRANCH"
                 minimum = "0.80".toBigDecimal()
             }
         }
     }
-}
-
-tasks.named("check") {
-    dependsOn("jacocoTestCoverageVerification")
 }

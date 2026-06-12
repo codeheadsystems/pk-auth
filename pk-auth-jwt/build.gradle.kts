@@ -20,6 +20,9 @@ dependencies {
     testRuntimeOnly(libs.logback.classic)
 }
 
+// Stricter than the pkauth.test-conventions baseline (LINE ≥0.70, BRANCH ≥0.55): JWT issuance +
+// validation is security-critical and already well-covered, so the bar is pinned near its current
+// level.
 tasks.named<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
     violationRules {
         rule {
@@ -33,8 +36,4 @@ tasks.named<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
             }
         }
     }
-}
-
-tasks.named("check") {
-    dependsOn("jacocoTestCoverageVerification")
 }

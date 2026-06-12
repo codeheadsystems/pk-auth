@@ -32,11 +32,20 @@ Remove the SonarQube Cloud integration and enforce coverage directly with JaCoCo
 
 - Drop the `org.sonarqube` Gradle plugin and its `sonar { }` block from the root build, the version
   catalog entry, the `sonar` CI job, and the SonarCloud README badges.
-- Extend each module's existing `jacocoTestCoverageVerification` rule to gate **both `LINE` and
-  `BRANCH`** counters (previously line only). Branch floors are set per module a few points below the
-  current measured branch coverage, locking in today's level and failing the build on regression.
-  Line floors are unchanged (≥80% on `pk-auth-core`/`pk-auth-jwt`/`pk-auth-admin-api`, ≥70%
-  elsewhere). These gates run under `check`, which the `build` CI job already invokes.
+- Gate **both `LINE` and `BRANCH`** counters (previously line only), via a **hybrid** of one central
+  baseline plus a few per-module overrides:
+  - **Baseline** lives in `pkauth.test-conventions` and applies to every published library module:
+    `LINE` ≥70%, `BRANCH` ≥55%. It is keyed off the `java-library` plugin (applied by
+    `pkauth.library-conventions`) so it covers the libraries but **not** the `examples/*` demos,
+    which apply `test-conventions` only for the JaCoCo report and are intentionally ungated.
+  - **Overrides** stay in a module's own `build.gradle.kts` and raise only the limits above the
+    baseline (Gradle enforces all rules, so an override never restates the floor): `pk-auth-core` /
+    `pk-auth-jwt` / `pk-auth-admin-api` keep the ≥80% line bar from the brief §11; `pk-auth-jwt`,
+    `pk-auth-backup-codes`, `pk-auth-otp`, and `pk-auth-refresh-tokens` pin `BRANCH` near their
+    current (high) coverage. Every other module rides the baseline.
+  - Branch floors are static — set below current measured coverage to lock in today's level and fail
+    on regression; raise them as coverage improves. These gates run under `check`, which the `build`
+    CI job already invokes.
 
 ## Consequences
 
