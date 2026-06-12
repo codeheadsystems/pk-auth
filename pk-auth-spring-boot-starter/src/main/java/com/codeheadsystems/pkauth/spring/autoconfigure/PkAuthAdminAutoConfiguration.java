@@ -11,6 +11,7 @@ import com.codeheadsystems.pkauth.otp.OtpService;
 import com.codeheadsystems.pkauth.spi.CredentialRepository;
 import com.codeheadsystems.pkauth.spi.UserLookup;
 import com.codeheadsystems.pkauth.spring.admin.PkAuthAdminController;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -35,18 +36,28 @@ public class PkAuthAdminAutoConfiguration {
     return AdminAuthorizer.subjectScoped();
   }
 
+  /**
+   * Wires the admin service. The three alt-flow services are injected via {@link ObjectProvider} so
+   * a passkey-only host — one that wired no backup-code / OTP / magic-link feature — still gets a
+   * working admin service for credential management; the absent flows surface as {@code
+   * ValidationFailed("… is not configured")} (see {@link DefaultAdminService.Dependencies}).
+   */
   @Bean
   @ConditionalOnMissingBean
   public AdminService pkAuthAdminService(
       CredentialRepository credentialRepository,
       UserLookup userLookup,
-      BackupCodeService backupCodeService,
-      MagicLinkService magicLinkService,
-      OtpService otpService,
+      ObjectProvider<BackupCodeService> backupCodeService,
+      ObjectProvider<MagicLinkService> magicLinkService,
+      ObjectProvider<OtpService> otpService,
       AdminAuthorizer authorizer) {
     return DefaultAdminService.create(
         new DefaultAdminService.Dependencies(
-            credentialRepository, userLookup, backupCodeService, magicLinkService, otpService),
+            credentialRepository,
+            userLookup,
+            backupCodeService.getIfAvailable(),
+            magicLinkService.getIfAvailable(),
+            otpService.getIfAvailable()),
         new DefaultAdminService.Config(authorizer, AdminSafetyConfig.defaults()));
   }
 

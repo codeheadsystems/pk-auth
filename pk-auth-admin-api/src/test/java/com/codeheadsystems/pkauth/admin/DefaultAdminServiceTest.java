@@ -318,7 +318,7 @@ class DefaultAdminServiceTest {
   // -- Dependencies record --
 
   @Test
-  void dependenciesRejectsNullInputs() {
+  void dependenciesRejectsNullRequiredCollaborators() {
     org.junit.jupiter.api.Assertions.assertAll(
         () ->
             org.junit.jupiter.api.Assertions.assertThrows(
@@ -331,25 +331,93 @@ class DefaultAdminServiceTest {
                 NullPointerException.class,
                 () ->
                     new DefaultAdminService.Dependencies(
-                        credentials, null, backupCodeService, magicLink, otpService)),
-        () ->
-            org.junit.jupiter.api.Assertions.assertThrows(
-                NullPointerException.class,
-                () ->
-                    new DefaultAdminService.Dependencies(
-                        credentials, users, null, magicLink, otpService)),
-        () ->
-            org.junit.jupiter.api.Assertions.assertThrows(
-                NullPointerException.class,
-                () ->
-                    new DefaultAdminService.Dependencies(
-                        credentials, users, backupCodeService, null, otpService)),
-        () ->
-            org.junit.jupiter.api.Assertions.assertThrows(
-                NullPointerException.class,
-                () ->
-                    new DefaultAdminService.Dependencies(
-                        credentials, users, backupCodeService, magicLink, null)));
+                        credentials, null, backupCodeService, magicLink, otpService)));
+  }
+
+  @Test
+  void dependenciesAllowNullAltFlowServices() {
+    // The three alt-flow services are optional (passkey-only hosts pass null); the record must
+    // accept that without throwing.
+    org.junit.jupiter.api.Assertions.assertDoesNotThrow(
+        () -> new DefaultAdminService.Dependencies(credentials, users, null, null, null));
+    org.junit.jupiter.api.Assertions.assertDoesNotThrow(
+        () -> DefaultAdminService.Dependencies.passkeyOnly(credentials, users));
+  }
+
+  // -- Passkey-only deployment (no alt-flow services wired) --
+
+  @org.junit.jupiter.api.Nested
+  class PasskeyOnly {
+
+    private DefaultAdminService passkeyOnly;
+
+    @BeforeEach
+    void setUp() {
+      passkeyOnly =
+          DefaultAdminService.create(
+              DefaultAdminService.Dependencies.passkeyOnly(credentials, users));
+    }
+
+    @Test
+    void getAccountWorksAndReportsZeroBackupCodes() {
+      saveCredential(alice, new byte[] {1});
+      AdminResult<AccountSummary> result = passkeyOnly.getAccount(alice, alice);
+      assertThat(result)
+          .isInstanceOfSatisfying(
+              AdminResult.Success.class,
+              s -> {
+                AccountSummary summary = (AccountSummary) s.value();
+                assertThat(summary.credentialCount()).isEqualTo(1);
+                assertThat(summary.remainingBackupCodes()).isZero();
+              });
+    }
+
+    @Test
+    void credentialManagementStillWorks() {
+      saveCredential(alice, new byte[] {1});
+      assertThat(passkeyOnly.listCredentials(alice, alice)).isInstanceOf(AdminResult.Success.class);
+    }
+
+    @Test
+    void deletingLastCredentialIsBlockedFailClosed() {
+      saveCredential(alice, new byte[] {1});
+      // No backup-code service configured -> remaining treated as 0 -> last-credential delete
+      // blocked.
+      assertThat(passkeyOnly.deleteCredential(alice, alice, CredentialId.of(new byte[] {1})))
+          .isInstanceOf(AdminResult.Conflict.class);
+    }
+
+    @Test
+    void backupCodeOperationsReportNotConfigured() {
+      assertThat(passkeyOnly.regenerateBackupCodes(alice, alice))
+          .isInstanceOf(AdminResult.ValidationFailed.class);
+      assertThat(passkeyOnly.remainingBackupCodes(alice, alice))
+          .isInstanceOf(AdminResult.ValidationFailed.class);
+    }
+
+    @Test
+    void emailVerificationReportsNotConfigured() {
+      assertThat(passkeyOnly.startEmailVerification(alice, alice, "alice@example.com"))
+          .isInstanceOf(AdminResult.ValidationFailed.class);
+      assertThat(passkeyOnly.finishEmailVerification("any-token"))
+          .isInstanceOf(AdminResult.ValidationFailed.class);
+    }
+
+    @Test
+    void phoneVerificationReportsNotConfigured() {
+      assertThat(passkeyOnly.startPhoneVerification(alice, alice, "+15551234567"))
+          .isInstanceOf(AdminResult.ValidationFailed.class);
+      assertThat(passkeyOnly.finishPhoneVerification(alice, alice, "+15551234567", "123456"))
+          .isInstanceOf(AdminResult.ValidationFailed.class);
+    }
+
+    @Test
+    void authorizationStillPrecedesNotConfigured() {
+      UserHandle bob = users.register("bob", "Bob");
+      // A forbidden actor must get Forbidden, not a "not configured" disclosure.
+      assertThat(passkeyOnly.regenerateBackupCodes(alice, bob))
+          .isInstanceOf(AdminResult.Forbidden.class);
+    }
   }
 
   // -- helpers --
