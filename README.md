@@ -151,10 +151,13 @@ tests and Playwright end-to-end suites:
 ## Status
 
 1.0.0 cut the stable baseline; the current development line is
-**1.1.0-SNAPSHOT**, which adds per-audience JWT TTLs, the
+**1.3.1-SNAPSHOT** (see `gradle.properties` for the authoritative
+version). The 1.1 line added per-audience JWT TTLs, the
 `AccessTokenStore` (stateful access tokens), the
 `UserDeletionService` fan-out, and the `pk-auth-refresh-tokens`
-module (rotating refresh tokens with family-based replay defense).
+module (rotating refresh tokens with family-based replay defense);
+1.2–1.3 followed with per-framework admin toggles and supply-chain
+hardening.
 See [`CHANGELOG.md`](./CHANGELOG.md) for the full delta and
 [`docs/stability.md`](./docs/stability.md) for the versioning policy
 and the list of SPI surfaces. The full build and end-to-end suites
