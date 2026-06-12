@@ -65,6 +65,8 @@ jobs:
         working-directory: clients/passkeys-browser
 
       - name: SonarQube scan
+        # SONAR_TOKEN is unavailable to PRs from forks; skip there to avoid a hard failure.
+        if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
         uses: sonarsource/sonarqube-scan-action@713881670b6b3676cda39549040e2d88c70d582e # v8.2.0
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
