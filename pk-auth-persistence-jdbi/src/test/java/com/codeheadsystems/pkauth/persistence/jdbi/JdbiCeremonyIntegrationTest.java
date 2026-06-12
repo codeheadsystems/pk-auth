@@ -76,6 +76,24 @@ class JdbiCeremonyIntegrationTest {
   }
 
   @Test
+  void tamperedAssertionRejectedAgainstPostgres() {
+    new CeremonyScenarios(service, authenticator, credentialRepository, userLookup)
+        .tamperedAssertionSignatureIsRejected();
+  }
+
+  @Test
+  void tamperedRegistrationRejectedAgainstPostgres() {
+    new CeremonyScenarios(service, authenticator, credentialRepository, userLookup)
+        .tamperedRegistrationPayloadIsRejected();
+  }
+
+  @Test
+  void replayedAssertionRejectedAgainstPostgres() {
+    new CeremonyScenarios(service, authenticator, credentialRepository, userLookup)
+        .replayedAssertionChallengeIsRejected();
+  }
+
+  @Test
   void challengeStoreTakeOnceConsumesAtomically() {
     challengeStore.put(
         new com.codeheadsystems.pkauth.api.ChallengeId("ch-1"),

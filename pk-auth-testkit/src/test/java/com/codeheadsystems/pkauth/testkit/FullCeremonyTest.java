@@ -34,6 +34,35 @@ class FullCeremonyTest {
   }
 
   @Test
+  void tamperedAssertionSignatureIsRejected() {
+    InMemoryEverything env = InMemoryEverything.defaults();
+    CeremonyScenarios scenarios =
+        new CeremonyScenarios(env.service, env.authenticator, env.credentials, env.users);
+
+    scenarios.tamperedAssertionSignatureIsRejected();
+
+    assertThat(env.challenges.size()).isZero(); // challenge still consumed on rejection
+  }
+
+  @Test
+  void tamperedRegistrationPayloadIsRejected() {
+    InMemoryEverything env = InMemoryEverything.defaults();
+    CeremonyScenarios scenarios =
+        new CeremonyScenarios(env.service, env.authenticator, env.credentials, env.users);
+
+    scenarios.tamperedRegistrationPayloadIsRejected();
+  }
+
+  @Test
+  void replayedAssertionChallengeIsRejected() {
+    InMemoryEverything env = InMemoryEverything.defaults();
+    CeremonyScenarios scenarios =
+        new CeremonyScenarios(env.service, env.authenticator, env.credentials, env.users);
+
+    scenarios.replayedAssertionChallengeIsRejected();
+  }
+
+  @Test
   void duplicateRegistrationIsRejectedOnSecondAttempt() {
     InMemoryEverything env = InMemoryEverything.defaults();
     CeremonyScenarios scenarios =

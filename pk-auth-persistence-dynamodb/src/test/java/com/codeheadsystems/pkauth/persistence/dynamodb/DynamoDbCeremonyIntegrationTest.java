@@ -88,6 +88,24 @@ class DynamoDbCeremonyIntegrationTest {
   }
 
   @Test
+  void tamperedAssertionRejectedAgainstDynamoDb() {
+    new CeremonyScenarios(service, authenticator, credentialRepository, userLookup)
+        .tamperedAssertionSignatureIsRejected();
+  }
+
+  @Test
+  void tamperedRegistrationRejectedAgainstDynamoDb() {
+    new CeremonyScenarios(service, authenticator, credentialRepository, userLookup)
+        .tamperedRegistrationPayloadIsRejected();
+  }
+
+  @Test
+  void replayedAssertionRejectedAgainstDynamoDb() {
+    new CeremonyScenarios(service, authenticator, credentialRepository, userLookup)
+        .replayedAssertionChallengeIsRejected();
+  }
+
+  @Test
   void challengeTakeOnceIsSingleUse() {
     ChallengeId id = new ChallengeId("ch-" + UUID.randomUUID());
     challengeStore.put(

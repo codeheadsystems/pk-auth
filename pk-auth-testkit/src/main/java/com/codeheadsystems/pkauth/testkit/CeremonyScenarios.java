@@ -112,6 +112,101 @@ public final class CeremonyScenarios {
     return ((RegistrationResult.Success) result).credential().userHandle();
   }
 
+  /**
+   * Anti-forgery: a single tampered byte in the assertion signature must be rejected as {@link
+   * AssertionResult.InvalidSignature} — driven end-to-end through real WebAuthn4J verification, not
+   * an injected exception. The credential's stored sign-count must be unchanged afterwards (a
+   * failed assertion does not advance the counter).
+   */
+  public void tamperedAssertionSignatureIsRejected() {
+    UserHandle handle = register();
+    long before = singleCredentialFor(handle).orElseThrow().signCount();
+
+    StartAuthenticationResponse start =
+        service.startAuthentication(new StartAuthenticationRequest(USERNAME, null));
+    AuthenticationResponseJson resp = authenticator.createAssertionResponse(start, handle);
+    AssertionResult result =
+        service.finishAuthentication(
+            new FinishAuthenticationRequest(start.challengeId(), tamperSignature(resp)));
+
+    assertThat(result).isInstanceOf(AssertionResult.InvalidSignature.class);
+    assertThat(singleCredentialFor(handle).orElseThrow().signCount()).isEqualTo(before);
+  }
+
+  /**
+   * Anti-tamper: a single corrupted byte in the registration attestation object must be rejected as
+   * {@link RegistrationResult.InvalidPayload} (the parse/verify path), and no credential is
+   * persisted.
+   */
+  public void tamperedRegistrationPayloadIsRejected() {
+    StartRegistrationResponse start =
+        service.startRegistration(new StartRegistrationRequest(USERNAME, DISPLAY_NAME, null, null));
+    RegistrationResponseJson resp = authenticator.createRegistrationResponse(start);
+    RegistrationResult result =
+        service.finishRegistration(
+            new FinishRegistrationRequest(
+                start.challengeId(), USERNAME, LABEL, tamperAttestation(resp)));
+
+    assertThat(result).isInstanceOf(RegistrationResult.InvalidPayload.class);
+    UserHandle handle = users.getOrCreateHandle(USERNAME);
+    assertThat(credentials.findByUserHandle(handle)).isEmpty();
+  }
+
+  /**
+   * Anti-replay: replaying an already-consumed assertion (the same challengeId + response submitted
+   * a second time) must be rejected as {@link AssertionResult.InvalidChallenge}. Challenges are
+   * single-use via {@code ChallengeStore.takeOnce}; this proves that contract end-to-end rather
+   * than at the SPI seam.
+   */
+  public void replayedAssertionChallengeIsRejected() {
+    UserHandle handle = register();
+
+    StartAuthenticationResponse start =
+        service.startAuthentication(new StartAuthenticationRequest(USERNAME, null));
+    AuthenticationResponseJson resp = authenticator.createAssertionResponse(start, handle);
+
+    AssertionResult first =
+        service.finishAuthentication(new FinishAuthenticationRequest(start.challengeId(), resp));
+    assertThat(first).isInstanceOf(AssertionResult.Success.class);
+
+    AssertionResult replay =
+        service.finishAuthentication(new FinishAuthenticationRequest(start.challengeId(), resp));
+    assertThat(replay).isInstanceOf(AssertionResult.InvalidChallenge.class);
+  }
+
+  private static AuthenticationResponseJson tamperSignature(AuthenticationResponseJson resp) {
+    AuthenticationResponseJson.AuthenticatorAssertionResponseJson r = resp.response();
+    byte[] signature = r.signature();
+    signature[signature.length - 1] ^= 0x01;
+    return new AuthenticationResponseJson(
+        resp.id(),
+        resp.rawId(),
+        new AuthenticationResponseJson.AuthenticatorAssertionResponseJson(
+            r.clientDataJSON(), r.authenticatorData(), signature, r.userHandle()),
+        resp.authenticatorAttachment(),
+        resp.clientExtensionResults(),
+        resp.type());
+  }
+
+  private static RegistrationResponseJson tamperAttestation(RegistrationResponseJson resp) {
+    RegistrationResponseJson.AuthenticatorAttestationResponseJson r = resp.response();
+    byte[] attestation = r.attestationObject();
+    attestation[0] ^= 0x01;
+    return new RegistrationResponseJson(
+        resp.id(),
+        resp.rawId(),
+        new RegistrationResponseJson.AuthenticatorAttestationResponseJson(
+            r.clientDataJSON(),
+            attestation,
+            r.transports(),
+            r.authenticatorData(),
+            r.publicKey(),
+            r.publicKeyAlgorithm()),
+        resp.authenticatorAttachment(),
+        resp.clientExtensionResults(),
+        resp.type());
+  }
+
   /** Runs a single assertion for the registered username. */
   public AssertionResult assertOnce(UserHandle handle) {
     StartAuthenticationResponse start =
