@@ -298,15 +298,17 @@ public class PkAuthAutoConfiguration {
     return new CredentialRepositoryDeletionListener(repository);
   }
 
-  /** Listener: deletes every backup code owned by the user. */
+  /** Listener: deletes every backup code owned by the user — only when a repository is wired. */
   @Bean
+  @ConditionalOnBean(BackupCodeRepository.class)
   public UserDeletionListener pkAuthBackupCodeRepositoryDeletionListener(
       BackupCodeRepository repository) {
     return new BackupCodeRepositoryDeletionListener(repository);
   }
 
-  /** Listener: deletes every OTP row owned by the user. */
+  /** Listener: deletes every OTP row owned by the user — only when a repository is wired. */
   @Bean
+  @ConditionalOnBean(OtpRepository.class)
   public UserDeletionListener pkAuthOtpRepositoryDeletionListener(OtpRepository repository) {
     return new OtpRepositoryDeletionListener(repository);
   }
@@ -396,9 +398,10 @@ public class PkAuthAutoConfiguration {
    * magic-link token or OTP code — to the application log. Gating them behind {@code
    * pkauth.dev-mode=true} prevents an accidental production deploy from silently leaking single-use
    * credentials to log aggregation systems. A host without a real {@code EmailSender} / {@code
-   * SmsSender} bean and without {@code dev-mode=true} fails to start (no bean for the downstream
-   * {@code MagicLinkService} / {@code OtpService} factory parameters), which is the intended
-   * fail-fast behaviour.
+   * SmsSender} bean (and without {@code dev-mode=true}) simply does not get the downstream {@code
+   * MagicLinkService} / {@code OtpService} beans — those are {@link ConditionalOnBean} on their
+   * sender/repository — so a passkey-only host boots cleanly. The admin service then reports those
+   * flows as "not configured" rather than the application failing to start.
    */
   @Bean
   @ConditionalOnMissingBean
@@ -422,6 +425,7 @@ public class PkAuthAutoConfiguration {
 
   @Bean
   @ConditionalOnMissingBean
+  @ConditionalOnBean(BackupCodeRepository.class)
   public BackupCodeService pkAuthBackupCodeService(
       BackupCodeRepository repo, ClockProvider clockProvider) {
     return BackupCodeService.create(BackupCodeService.Dependencies.of(repo, clockProvider));
@@ -429,6 +433,7 @@ public class PkAuthAutoConfiguration {
 
   @Bean
   @ConditionalOnMissingBean
+  @ConditionalOnBean(EmailSender.class)
   public MagicLinkService pkAuthMagicLinkService(
       PkAuthJwtIssuer issuer,
       PkAuthJwtValidator validator,
@@ -446,6 +451,7 @@ public class PkAuthAutoConfiguration {
 
   @Bean
   @ConditionalOnMissingBean
+  @ConditionalOnBean({OtpRepository.class, SmsSender.class})
   public OtpService pkAuthOtpService(
       OtpRepository repo,
       SmsSender smsSender,

@@ -16,6 +16,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,9 +27,9 @@ public final class DefaultAdminService implements AdminService {
 
   private final CredentialRepository credentialRepository;
   private final UserLookup userLookup;
-  private final BackupCodeService backupCodeService;
-  private final MagicLinkService magicLinkService;
-  private final OtpService otpService;
+  private final @Nullable BackupCodeService backupCodeService;
+  private final @Nullable MagicLinkService magicLinkService;
+  private final @Nullable OtpService otpService;
   private final AdminAuthorizer authorizer;
   private final AdminSafetyConfig safetyConfig;
 
@@ -72,7 +73,7 @@ public final class DefaultAdminService implements AdminService {
     Optional<UserLookup.UserView> view = userLookup.findViewByHandle(target);
     if (view.isEmpty()) return new AdminResult.NotFound<>();
     int credentialCount = credentialRepository.findByUserHandle(target).size();
-    int remaining = backupCodeService.remainingCount(target);
+    int remaining = remainingBackupCodeCount(target);
     UserLookup.UserView v = view.get();
     return new AdminResult.Success<>(
         new AccountSummary(
@@ -122,7 +123,10 @@ public final class DefaultAdminService implements AdminService {
     if (!safetyConfig.allowDeleteWithoutBackupCodes()) {
       List<CredentialRecord> all = credentialRepository.findByUserHandle(target);
       boolean lastOne = all.size() == 1 && all.get(0).credentialId().equals(credentialId);
-      if (lastOne && backupCodeService.remainingCount(target) == 0) {
+      // remainingBackupCodeCount() returns 0 when the backup-code feature is not configured, so the
+      // anti-lockout guard stays fail-closed: deleting the last credential is still blocked unless
+      // the host opts in via AdminSafetyConfig.allowDeleteWithoutBackupCodes().
+      if (lastOne && remainingBackupCodeCount(target) == 0) {
         return new AdminResult.Conflict<>(
             "Cannot delete the last credential while no backup codes remain.");
       }
@@ -143,6 +147,7 @@ public final class DefaultAdminService implements AdminService {
   public AdminResult<BackupCodesGenerated> regenerateBackupCodes(
       UserHandle actor, UserHandle target) {
     if (!authorize(actor, target)) return new AdminResult.Forbidden<>();
+    if (backupCodeService == null) return notConfigured("backup codes");
     List<String> plaintext = backupCodeService.regenerateBackupCodes(target);
     return new AdminResult.Success<>(new BackupCodesGenerated(plaintext));
   }
@@ -150,6 +155,7 @@ public final class DefaultAdminService implements AdminService {
   @Override
   public AdminResult<Integer> remainingBackupCodes(UserHandle actor, UserHandle target) {
     if (!authorize(actor, target)) return new AdminResult.Forbidden<>();
+    if (backupCodeService == null) return notConfigured("backup codes");
     return new AdminResult.Success<>(backupCodeService.remainingCount(target));
   }
 
@@ -162,6 +168,7 @@ public final class DefaultAdminService implements AdminService {
     if (email == null || email.isBlank()) {
       return new AdminResult.ValidationFailed<>("email must be non-blank");
     }
+    if (magicLinkService == null) return notConfigured("email verification");
     SendResult send = magicLinkService.startEmailVerification(target, email);
     if (send instanceof SendResult.RateLimited) {
       return new AdminResult.RateLimited<>(Duration.ofHours(1));
@@ -179,6 +186,7 @@ public final class DefaultAdminService implements AdminService {
     if (token == null || token.isBlank()) {
       return new AdminResult.ValidationFailed<>("token must be non-blank");
     }
+    if (magicLinkService == null) return notConfigured("email verification");
     ConsumeResult result = magicLinkService.finishVerification(token);
     if (result instanceof ConsumeResult.Success success) {
       // Host apps own the users table; we report success and let the adapter persist the
@@ -201,6 +209,7 @@ public final class DefaultAdminService implements AdminService {
     if (phoneE164 == null || !phoneE164.startsWith("+")) {
       return new AdminResult.ValidationFailed<>("phone must be E.164 format");
     }
+    if (otpService == null) return notConfigured("phone verification");
     OtpService.SendResult send = otpService.startVerification(target, phoneE164);
     if (send instanceof OtpService.SendResult.RateLimited) {
       return new AdminResult.RateLimited<>(Duration.ofMinutes(15));
@@ -216,6 +225,7 @@ public final class DefaultAdminService implements AdminService {
     if (phoneE164 == null || code == null) {
       return new AdminResult.ValidationFailed<>("phone and code are required");
     }
+    if (otpService == null) return notConfigured("phone verification");
     OtpService.VerifyResult result = otpService.finishVerification(target, phoneE164, code);
     return new AdminResult.Success<>(
         switch (result) {
@@ -238,25 +248,53 @@ public final class DefaultAdminService implements AdminService {
   }
 
   /**
-   * Canonical holder of the five required collaborators for {@link DefaultAdminService}.
+   * Backup-code count for {@code target}, or {@code 0} when the backup-code feature is not
+   * configured. Returning 0 (rather than throwing) keeps the {@code deleteCredential} anti-lockout
+   * guard fail-closed for passkey-only hosts.
+   */
+  private int remainingBackupCodeCount(UserHandle target) {
+    return backupCodeService == null ? 0 : backupCodeService.remainingCount(target);
+  }
+
+  private static <T> AdminResult<T> notConfigured(String feature) {
+    return new AdminResult.ValidationFailed<>(feature + " is not configured on this deployment");
+  }
+
+  /**
+   * Holder of the {@link DefaultAdminService} collaborators. {@code credentialRepository} and
+   * {@code userLookup} are always required; the three alt-flow services ({@code backupCodeService},
+   * {@code magicLinkService}, {@code otpService}) are <b>optional</b> — pass {@code null} for any
+   * feature a passkey-only host does not run. Admin operations for an absent feature return {@link
+   * AdminResult.ValidationFailed} ("… is not configured"), and the {@code deleteCredential}
+   * anti-lockout guard treats an absent backup-code service as zero remaining codes (fail-closed).
    *
-   * <p>Pass an instance to {@link #create(Dependencies)} (or the overloads that accept an optional
-   * {@link AdminAuthorizer} / {@link AdminSafetyConfig}) to construct a service. Using a record
-   * keeps construction sites concise and self-documenting through Java's named component syntax.
+   * <p>Pass an instance to {@link #create(Dependencies)} (or the {@link #create(Dependencies,
+   * Config)} overload) to construct a service. Using a record keeps construction sites concise and
+   * self-documenting through Java's named component syntax.
+   *
+   * @since 1.3.1
    */
   public record Dependencies(
       CredentialRepository credentialRepository,
       UserLookup userLookup,
-      BackupCodeService backupCodeService,
-      MagicLinkService magicLinkService,
-      OtpService otpService) {
-    /** Compact constructor — enforces non-null on all required collaborators. */
+      @Nullable BackupCodeService backupCodeService,
+      @Nullable MagicLinkService magicLinkService,
+      @Nullable OtpService otpService) {
+    /** Compact constructor — enforces non-null on the two always-required collaborators. */
     public Dependencies {
       Objects.requireNonNull(credentialRepository, "credentialRepository");
       Objects.requireNonNull(userLookup, "userLookup");
-      Objects.requireNonNull(backupCodeService, "backupCodeService");
-      Objects.requireNonNull(magicLinkService, "magicLinkService");
-      Objects.requireNonNull(otpService, "otpService");
+    }
+
+    /**
+     * Convenience for a passkey-only deployment: credentials and user lookup only, with every
+     * alt-flow service absent.
+     *
+     * @since 1.3.1
+     */
+    public static Dependencies passkeyOnly(
+        CredentialRepository credentialRepository, UserLookup userLookup) {
+      return new Dependencies(credentialRepository, userLookup, null, null, null);
     }
   }
 

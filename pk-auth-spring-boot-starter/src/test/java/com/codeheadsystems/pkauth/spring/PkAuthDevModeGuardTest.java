@@ -3,12 +3,19 @@ package com.codeheadsystems.pkauth.spring;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.codeheadsystems.pkauth.backupcodes.BackupCodeService;
+import com.codeheadsystems.pkauth.ceremony.PasskeyAuthenticationService;
+import com.codeheadsystems.pkauth.magiclink.MagicLinkService;
+import com.codeheadsystems.pkauth.otp.OtpService;
 import com.codeheadsystems.pkauth.spi.BackupCodeRepository;
 import com.codeheadsystems.pkauth.spi.ChallengeStore;
 import com.codeheadsystems.pkauth.spi.CredentialRepository;
 import com.codeheadsystems.pkauth.spi.OtpRepository;
 import com.codeheadsystems.pkauth.spi.UserLookup;
 import com.codeheadsystems.pkauth.spring.autoconfigure.PkAuthAutoConfiguration;
+import com.codeheadsystems.pkauth.testkit.InMemoryChallengeStore;
+import com.codeheadsystems.pkauth.testkit.InMemoryCredentialRepository;
+import com.codeheadsystems.pkauth.testkit.InMemoryUserLookup;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.UnsatisfiedDependencyException;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -73,5 +80,28 @@ class PkAuthDevModeGuardTest {
                     .hasSingleBean(ChallengeStore.class)
                     .hasSingleBean(BackupCodeRepository.class)
                     .hasSingleBean(OtpRepository.class));
+  }
+
+  /**
+   * Passkey-only host: the three required core SPIs are provided but no backup-code / OTP / email
+   * SPI is wired and dev-mode is off. The context must start (the alt-flow services are {@link
+   * org.springframework.boot.autoconfigure.condition.ConditionalOnBean} on their backing SPI)
+   * rather than forcing the host to wire those SPIs or flip dev-mode (which would log plaintext
+   * credentials).
+   */
+  @Test
+  void passkeyOnlyHostBootsWithoutAltFlowSpisOrDevMode() {
+    runner
+        .withBean(CredentialRepository.class, InMemoryCredentialRepository::new)
+        .withBean(UserLookup.class, InMemoryUserLookup::new)
+        .withBean(ChallengeStore.class, InMemoryChallengeStore::new)
+        .run(
+            ctx ->
+                assertThat(ctx)
+                    .hasNotFailed()
+                    .hasSingleBean(PasskeyAuthenticationService.class)
+                    .doesNotHaveBean(BackupCodeService.class)
+                    .doesNotHaveBean(OtpService.class)
+                    .doesNotHaveBean(MagicLinkService.class));
   }
 }
