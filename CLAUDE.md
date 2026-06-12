@@ -49,7 +49,7 @@ Feature modules (`pk-auth-backup-codes`, `pk-auth-magic-link`, `pk-auth-otp`, `p
 ## Conventions (enforced — `./gradlew check` fails otherwise)
 
 - **SPDX header** `// SPDX-License-Identifier: MIT` on every Java file (Spotless adds/checks it).
-- **`@since X.Y.Z`** Javadoc on every new/modified public API element across the library modules (current in-flight target `@since 1.3.0`-line; check `gradle.properties` for the active version). Full policy in `CONTRIBUTING.md` §7.
+- **`@since X.Y.Z`** Javadoc on every new/modified public API element across the library modules (the in-flight target is the active version in `gradle.properties` with the `-SNAPSHOT` suffix dropped — always check `gradle.properties` rather than trusting a hardcoded number here). Full policy in `CONTRIBUTING.md` §7.
 - **JSpecify null discipline** — `@NonNull`/`@Nullable` on every public param and return; Error Prone enforces it. Compilation runs `-Xlint:all` with strict Error Prone.
 - **Records for DTOs/configs/result variants; sealed interfaces for closed sums.** Public API sealed via `module-info.java` exports.
 - **Conventional commits** (`feat(core):`, `fix(jdbi):`, `docs(adr):`, `build:`, `ci:`). Small, atomic.

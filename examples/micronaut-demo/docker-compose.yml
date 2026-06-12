@@ -1,0 +1,16 @@
+# Local infrastructure for hands-on poking at the Micronaut demo with non-default persistence.
+# Not needed for the default in-memory profile — the demo runs out of the box without these.
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: pkauth
+      POSTGRES_PASSWORD: pkauth
+      POSTGRES_DB: pkauth
+    ports:
+      - "5432:5432"
+  dynamodb-local:
+    image: amazon/dynamodb-local:latest
+    command: ["-jar", "DynamoDBLocal.jar", "-sharedDb"]
+    ports:
+      - "8000:8000"

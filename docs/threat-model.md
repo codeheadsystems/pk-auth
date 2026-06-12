@@ -44,6 +44,7 @@ Boundaries cross-checked in this model:
 | Attacker forges a JWT | HS256 signature with ≥ 32-byte secret. JWT verification enforces issuer, audience, expiry. |
 | Attacker spoofs the relying party | RP ID and origin are checked server-side on every `finish` call — config-driven allow-list (`pkauth.relying-party.origins`). Cross-origin attempts are rejected with `origin_mismatch`. |
 | Attacker reuses a backup code | Backup codes are Argon2id-hashed, single-use, and atomically claimed inside the SPI (`atomic claim or fail`). |
+| Attacker presents a passkey the legitimate user never consciously authorized (lost/borrowed device with a key already enrolled, or a key with no user-presence factor) | User Verification defaults to `REQUIRED` (`CeremonyConfig.defaults()`), so WebAuthn4J enforces the asserted `flagUV` on every ceremony — the authenticator must prove a per-ceremony biometric or PIN, making the passkey a genuine "something you have **and** something you are/know" factor. Relaxing UV to `PREFERRED` or `DISCOURAGED` removes that guarantee: a present-but-unverified authenticator (mere user-presence, no biometric/PIN) is accepted, so a passkey degrades to "something you have" alone. Do not relax UV unless a deployment specifically needs UV-incapable hardware security keys, and understand it weakens the factor for everyone. |
 
 ### Tampering
 
@@ -66,7 +67,7 @@ Boundaries cross-checked in this model:
 |---|---|
 | Disclose a credential's public key | Public keys are public. Their disclosure leaks no authentication material. |
 | Disclose backup codes | Backup codes are returned plaintext **exactly once** at regeneration time. The server only retains Argon2id hashes. |
-| Disclose magic-link tokens | Magic-link tokens are random 32-byte values stored hashed; the plaintext only exists on the dispatcher path. Use a real email sender in production. |
+| Disclose magic-link tokens | A magic-link token is a signed single-use HS256 JWT (it carries a `pkauth.purpose` claim and is bound by the HS256 signature — not a random value stored hashed). It is never persisted: single-use is enforced by recording its JTI in a `ConsumedJtiStore` after redemption (JWT TTL 15m, consumed-JTI TTL 30m). The token only exists in the outbound email on the dispatcher path. Use a real email sender in production, and inject a shared `ConsumedJtiStore` for multi-replica deployments so a token can't be replayed across replicas. |
 | Disclose JWT secret via logs | The starter never logs `pkauth.jwt.secret`. Other secrets (Argon2 pepper, RP origins) are bound only via env vars; do not echo them in `--debug` traces. |
 | Enumerate usernames | `/auth/passkeys/registration/start` returns the same shape for any username (a fresh user handle is created); `/auth/passkeys/authentication/start` does not leak existence — it returns an `allowCredentials` list that an unknown user would receive empty. Avoid mounting routes that surface user existence (e.g. "/users/exists"). |
 
@@ -75,7 +76,8 @@ Boundaries cross-checked in this model:
 | Threat | Mitigation |
 |---|---|
 | Flood challenges | Challenges expire in 5 minutes by default and are stored by `ChallengeId`. pk-auth ships a `CeremonyRateLimiter` SPI (with an in-memory Caffeine-backed default) keyed on client IP and username; the `start*` / `finish*` endpoints short-circuit with `429 Retry-After` when the limiter denies. For multi-replica deployments, replace the default with a shared-store implementation. Heavy floods should still be filtered at the host's WAF / API gateway upstream of the adapter. |
-| Hash-burn via repeated OTP / backup-code attempts | Argon2id is intentionally CPU-heavy. The SPIs ship per-credential attempt counters; the magic-link and backup-code modules also ship per-user sliding-window rate limiters (in-memory defaults, override for multi-replica). |
+| Hash-burn via repeated backup-code attempts | Backup codes are Argon2id-hashed (intentionally CPU-heavy), so a wrong code costs the attacker as much as a right one. The SPIs ship per-credential attempt counters; the magic-link and backup-code modules also ship per-user sliding-window rate limiters (in-memory defaults, override for multi-replica). |
+| Brute-force / flood of OTP attempts | OTP codes are hashed with cheap HMAC-SHA256, **not** a CPU-heavy KDF — the 10^6 code space makes hash cost pointless, so the hash burn argument does **not** apply here. The defence is instead the per-credential attempt cap (default 5 verifies per code, enforced atomically in the repository) plus the per-(user, phone) send rate limiter (default 3 codes per 15-minute window). A wrong code is cheap to check but exhausts the cap quickly, and the rate limiter bounds how many fresh codes an attacker can mint. |
 | Exhaust DB connections | Connection pooling is the host's responsibility. Recommend HikariCP for JDBI, the AWS SDK's default for DynamoDB. |
 
 ### Elevation of Privilege

@@ -107,7 +107,7 @@ Skip them and the feature isn't exposed.
 |---|---|---|
 | `pk-auth-backup-codes` | View-once Argon2id-hashed backup codes for account recovery. | Users will lose their phones; backup codes are the documented recovery path before "talk to support." |
 | `pk-auth-magic-link` | Single-use email magic-link tokens. JWTs on the wire; consumed-JTI tracking via a swappable SPI. | Email verification, or a passwordless login alternative for users without a passkey-capable device. |
-| `pk-auth-otp` | 6-digit SMS OTPs with attempt caps and Argon2id-hashed storage. | Phone verification. |
+| `pk-auth-otp` | 6-digit SMS OTPs with attempt caps; codes are hashed with HMAC-SHA256 using a server-side pepper. | Phone verification. |
 | `pk-auth-refresh-tokens` | Rotating refresh tokens with family-based replay defense. Adds `POST /auth/refresh`; on success returns a new refresh token + a fresh access JWT, on replay scorches the entire token family. Requires a `RefreshTokenRepository` SPI (JDBI / DynamoDB impls ship). See [ADR 0013](./docs/adr/0013-refresh-tokens-family-rotation.md). | When you need sessions longer than the access-token TTL without re-running a WebAuthn ceremony. |
 | `pk-auth-admin-api` | Adds the `/auth/admin/**` endpoints (rename / delete passkeys, regenerate backup codes, account summary, email & phone verification). | Almost always — without it the UI can't manage credentials. |
 
