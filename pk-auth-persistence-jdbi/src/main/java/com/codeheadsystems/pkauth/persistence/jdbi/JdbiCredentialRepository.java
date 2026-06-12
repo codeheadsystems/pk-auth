@@ -7,7 +7,6 @@ import com.codeheadsystems.pkauth.api.UserHandle;
 import com.codeheadsystems.pkauth.credential.CredentialRecord;
 import com.codeheadsystems.pkauth.spi.CredentialRepository;
 import com.codeheadsystems.pkauth.spi.DuplicateCredentialException;
-import com.codeheadsystems.pkauth.spi.PkAuthPersistenceException;
 import java.sql.Array;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -22,9 +21,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.function.Supplier;
 import org.jdbi.v3.core.Jdbi;
-import org.jdbi.v3.core.JdbiException;
 import org.jdbi.v3.core.mapper.RowMapper;
 import org.jdbi.v3.core.statement.Update;
 import org.jspecify.annotations.Nullable;
@@ -55,7 +52,7 @@ public final class JdbiCredentialRepository implements CredentialRepository {
       transportWire[i++] = t.wireName();
     }
     int inserted =
-        wrap(
+        JdbiSupport.wrap(
             "credentials.save",
             () ->
                 jdbi.withHandle(
@@ -101,7 +98,7 @@ public final class JdbiCredentialRepository implements CredentialRepository {
 
   @Override
   public Optional<CredentialRecord> findByCredentialId(CredentialId credentialId) {
-    return wrap(
+    return JdbiSupport.wrap(
         "credentials.findByCredentialId",
         () ->
             jdbi.withHandle(
@@ -114,7 +111,7 @@ public final class JdbiCredentialRepository implements CredentialRepository {
 
   @Override
   public List<CredentialRecord> findByUserHandle(UserHandle userHandle) {
-    return wrap(
+    return JdbiSupport.wrap(
         "credentials.findByUserHandle",
         () ->
             jdbi.withHandle(
@@ -133,7 +130,7 @@ public final class JdbiCredentialRepository implements CredentialRepository {
     // Guard against concurrent racing assertions overwriting a higher stored counter with a
     // lower one — that would silently defeat WebAuthn's clone-detection invariant. Only advance
     // the counter when the new value strictly exceeds the stored one.
-    wrap(
+    JdbiSupport.wrap(
         "credentials.updateSignCount",
         () -> {
           jdbi.useHandle(
@@ -151,7 +148,7 @@ public final class JdbiCredentialRepository implements CredentialRepository {
 
   @Override
   public void updateLabel(UserHandle userHandle, CredentialId credentialId, String label) {
-    wrap(
+    JdbiSupport.wrap(
         "credentials.updateLabel",
         () -> {
           jdbi.useHandle(
@@ -175,7 +172,7 @@ public final class JdbiCredentialRepository implements CredentialRepository {
   @Override
   public void delete(UserHandle userHandle, CredentialId credentialId) {
     byte[] credIdBytes = credentialId.value();
-    wrap(
+    JdbiSupport.wrap(
         "credentials.delete",
         () -> {
           jdbi.useHandle(
@@ -191,7 +188,7 @@ public final class JdbiCredentialRepository implements CredentialRepository {
 
   @Override
   public int deleteByUserHandle(UserHandle userHandle) {
-    return wrap(
+    return JdbiSupport.wrap(
         "credentials.deleteByUserHandle",
         () ->
             jdbi.withHandle(
@@ -217,22 +214,6 @@ public final class JdbiCredentialRepository implements CredentialRepository {
       update.bindNull(name, sqlType);
     } else {
       update.bind(name, value);
-    }
-  }
-
-  /**
-   * Runs {@code body} and wraps any {@link JdbiException} (or other unchecked JDBC exception) in a
-   * {@link PkAuthPersistenceException} so adapter exception mappers can produce a uniform 503.
-   * {@link PkAuthPersistenceException} (including {@link DuplicateCredentialException}) is
-   * re-thrown unchanged so the duplicate-credential branch reaches the caller intact.
-   */
-  private static <T> T wrap(String op, Supplier<T> body) {
-    try {
-      return body.get();
-    } catch (PkAuthPersistenceException already) {
-      throw already;
-    } catch (JdbiException e) {
-      throw new PkAuthPersistenceException(op, e.getMessage(), e);
     }
   }
 

@@ -3,15 +3,12 @@ package com.codeheadsystems.pkauth.persistence.jdbi;
 
 import com.codeheadsystems.pkauth.api.UserHandle;
 import com.codeheadsystems.pkauth.jwt.AccessTokenStore;
-import com.codeheadsystems.pkauth.spi.PkAuthPersistenceException;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Supplier;
 import org.jdbi.v3.core.Jdbi;
-import org.jdbi.v3.core.JdbiException;
 
 /**
  * {@link AccessTokenStore} backed by the {@code access_tokens} table (Flyway V8). Inserts on issue,
@@ -41,7 +38,7 @@ public final class JdbiAccessTokenStore implements AccessTokenStore {
     Objects.requireNonNull(deviceId, "deviceId");
     Objects.requireNonNull(issuedAt, "issuedAt");
     Objects.requireNonNull(expiresAt, "expiresAt");
-    wrap(
+    JdbiSupport.wrap(
         "access_tokens.record",
         () -> {
           // ON CONFLICT DO UPDATE so re-recording the same jti (e.g. an issuer retry after a
@@ -76,7 +73,7 @@ public final class JdbiAccessTokenStore implements AccessTokenStore {
     if (jti == null) {
       return false;
     }
-    return wrap(
+    return JdbiSupport.wrap(
         "access_tokens.exists",
         () ->
             jdbi.withHandle(
@@ -93,7 +90,7 @@ public final class JdbiAccessTokenStore implements AccessTokenStore {
     if (jti == null) {
       return false;
     }
-    return wrap(
+    return JdbiSupport.wrap(
         "access_tokens.delete",
         () ->
             jdbi.withHandle(
@@ -109,7 +106,7 @@ public final class JdbiAccessTokenStore implements AccessTokenStore {
 
   @Override
   public int deleteAllForUser(UserHandle userHandle) {
-    return wrap(
+    return JdbiSupport.wrap(
         "access_tokens.deleteAllForUser",
         () ->
             jdbi.withHandle(
@@ -121,7 +118,7 @@ public final class JdbiAccessTokenStore implements AccessTokenStore {
 
   @Override
   public int deleteExpiredBefore(Instant before) {
-    return wrap(
+    return JdbiSupport.wrap(
         "access_tokens.deleteExpiredBefore",
         () ->
             jdbi.withHandle(
@@ -129,15 +126,5 @@ public final class JdbiAccessTokenStore implements AccessTokenStore {
                     h.createUpdate("DELETE FROM access_tokens WHERE expires_at < :before")
                         .bind("before", OffsetDateTime.ofInstant(before, ZoneOffset.UTC))
                         .execute()));
-  }
-
-  private static <T> T wrap(String op, Supplier<T> body) {
-    try {
-      return body.get();
-    } catch (PkAuthPersistenceException already) {
-      throw already;
-    } catch (JdbiException e) {
-      throw new PkAuthPersistenceException(op, e.getMessage(), e);
-    }
   }
 }

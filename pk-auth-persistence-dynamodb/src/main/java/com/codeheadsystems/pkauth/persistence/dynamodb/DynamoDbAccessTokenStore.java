@@ -4,12 +4,9 @@ package com.codeheadsystems.pkauth.persistence.dynamodb;
 import com.codeheadsystems.pkauth.api.UserHandle;
 import com.codeheadsystems.pkauth.json.Base64Url;
 import com.codeheadsystems.pkauth.jwt.AccessTokenStore;
-import com.codeheadsystems.pkauth.spi.PkAuthPersistenceException;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Supplier;
-import software.amazon.awssdk.core.exception.SdkException;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
@@ -55,7 +52,7 @@ public final class DynamoDbAccessTokenStore implements AccessTokenStore {
     Objects.requireNonNull(deviceId, "deviceId");
     Objects.requireNonNull(issuedAt, "issuedAt");
     Objects.requireNonNull(expiresAt, "expiresAt");
-    wrap(
+    DynamoDbSupport.wrap(
         "access_tokens.record",
         () -> {
           String userB64 = Base64Url.encode(userHandle.value());
@@ -93,7 +90,7 @@ public final class DynamoDbAccessTokenStore implements AccessTokenStore {
     if (jti == null) {
       return false;
     }
-    return wrap(
+    return DynamoDbSupport.wrap(
         "access_tokens.exists",
         () ->
             table.getItem(Key.builder().partitionValue("AT#" + jti).sortValue("AT#" + jti).build())
@@ -105,7 +102,7 @@ public final class DynamoDbAccessTokenStore implements AccessTokenStore {
     if (jti == null) {
       return false;
     }
-    return wrap(
+    return DynamoDbSupport.wrap(
         "access_tokens.delete",
         () -> {
           AccessTokenItem primary =
@@ -136,7 +133,7 @@ public final class DynamoDbAccessTokenStore implements AccessTokenStore {
 
   @Override
   public int deleteAllForUser(UserHandle userHandle) {
-    return wrap(
+    return DynamoDbSupport.wrap(
         "access_tokens.deleteAllForUser",
         () -> {
           String userB64 = Base64Url.encode(userHandle.value());
@@ -166,7 +163,7 @@ public final class DynamoDbAccessTokenStore implements AccessTokenStore {
   public int deleteExpiredBefore(Instant before) {
     // DynamoDB's native TTL handles this asynchronously; the synchronous scan is for tests and
     // operator cleanup flows that need immediate, predictable removal.
-    return wrap(
+    return DynamoDbSupport.wrap(
         "access_tokens.deleteExpiredBefore",
         () -> {
           long beforeEpoch = before.getEpochSecond();
@@ -214,15 +211,5 @@ public final class DynamoDbAccessTokenStore implements AccessTokenStore {
     item.setExpiresAtIso(expiresAt.toString());
     item.setTtl(ttl);
     return item;
-  }
-
-  private static <T> T wrap(String op, Supplier<T> body) {
-    try {
-      return body.get();
-    } catch (PkAuthPersistenceException already) {
-      throw already;
-    } catch (SdkException e) {
-      throw new PkAuthPersistenceException(op, e.getMessage(), e);
-    }
   }
 }

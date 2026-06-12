@@ -3,13 +3,10 @@ package com.codeheadsystems.pkauth.persistence.dynamodb;
 
 import com.codeheadsystems.pkauth.api.UserHandle;
 import com.codeheadsystems.pkauth.json.Base64Url;
-import com.codeheadsystems.pkauth.spi.PkAuthPersistenceException;
 import com.codeheadsystems.pkauth.spi.UserLookup;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Supplier;
-import software.amazon.awssdk.core.exception.SdkException;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbIndex;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
@@ -34,7 +31,7 @@ public final class DynamoDbUserLookup implements UserLookup {
 
   @Override
   public Optional<UserHandle> findHandleByUsername(String username) {
-    return wrap(
+    return DynamoDbSupport.wrap(
         "users.findHandleByUsername",
         () ->
             lookupByUsername(username)
@@ -43,7 +40,7 @@ public final class DynamoDbUserLookup implements UserLookup {
 
   @Override
   public Optional<UserView> findViewByHandle(UserHandle handle) {
-    return wrap(
+    return DynamoDbSupport.wrap(
         "users.findViewByHandle",
         () -> {
           String h = Base64Url.encode(handle.value());
@@ -55,7 +52,7 @@ public final class DynamoDbUserLookup implements UserLookup {
 
   @Override
   public UserHandle getOrCreateHandle(String username) {
-    return wrap(
+    return DynamoDbSupport.wrap(
         "users.getOrCreateHandle",
         () -> {
           Optional<UserItem> existing = lookupByUsername(username);
@@ -82,7 +79,7 @@ public final class DynamoDbUserLookup implements UserLookup {
   /** Pre-registers a user (test fixture support). */
   public UserHandle register(String username, String displayName) {
     UserHandle handle = UserHandle.random();
-    wrap(
+    DynamoDbSupport.wrap(
         "users.register",
         () -> {
           table.putItem(UserItem.build(handle, username, displayName));
@@ -100,21 +97,5 @@ public final class DynamoDbUserLookup implements UserLookup {
         .stream()
         .flatMap(page -> page.items().stream())
         .findFirst();
-  }
-
-  /**
-   * Runs {@code body} and wraps any {@link SdkException} in a {@link PkAuthPersistenceException} so
-   * adapter exception mappers can produce a uniform 503. Documented {@link
-   * ConditionalCheckFailedException} control-flow branches handled inside {@code body} never reach
-   * here.
-   */
-  private static <T> T wrap(String op, Supplier<T> body) {
-    try {
-      return body.get();
-    } catch (PkAuthPersistenceException already) {
-      throw already;
-    } catch (SdkException e) {
-      throw new PkAuthPersistenceException(op, e.getMessage(), e);
-    }
   }
 }
