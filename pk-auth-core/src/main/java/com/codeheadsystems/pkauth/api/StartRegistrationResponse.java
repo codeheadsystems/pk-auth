@@ -10,6 +10,8 @@ import java.util.Objects;
  * <p>The browser only consumes {@code publicKey} (which the JS SDK passes to {@code
  * navigator.credentials.create({ publicKey })}). pk-auth's TS SDK additionally remembers the
  * sibling {@code challengeId} and includes it in the {@code FinishRegistrationRequest}.
+ *
+ * @since 0.9.0
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record StartRegistrationResponse(

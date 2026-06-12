@@ -6,6 +6,8 @@ package com.codeheadsystems.pkauth.config;
  *
  * <p>Synced passkeys (iCloud Keychain, Google Password Manager, …) typically report a counter of
  * zero across all devices, so counter regression is normal for those credentials.
+ *
+ * @since 0.9.0
  */
 public enum CounterRegressionPolicy {
   /** Reject the assertion (cloning risk). Default for hardware-token-heavy deployments. */

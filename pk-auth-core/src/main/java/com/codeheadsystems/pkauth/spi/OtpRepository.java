@@ -7,7 +7,11 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
 
-/** Persistent storage for SMS-OTP records (brief §6.5). */
+/**
+ * Persistent storage for SMS-OTP records (brief §6.5).
+ *
+ * @since 0.9.0
+ */
 public interface OtpRepository {
 
   /**

@@ -5,7 +5,11 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 
-/** Host-app input for starting a registration ceremony. */
+/**
+ * Host-app input for starting a registration ceremony.
+ *
+ * @since 0.9.0
+ */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record StartRegistrationRequest(
     String username,

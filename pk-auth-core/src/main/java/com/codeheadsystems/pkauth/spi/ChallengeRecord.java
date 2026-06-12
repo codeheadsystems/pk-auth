@@ -15,6 +15,7 @@ import org.jspecify.annotations.Nullable;
  * @param userHandle the user this challenge is bound to; nullable for usernameless flows where the
  *     user is only known at finish
  * @param expiresAt absolute expiration; consumers should treat past-due records as missing
+ * @since 0.9.0
  */
 public record ChallengeRecord(
     byte[] challenge, Purpose purpose, @Nullable UserHandle userHandle, Instant expiresAt) {

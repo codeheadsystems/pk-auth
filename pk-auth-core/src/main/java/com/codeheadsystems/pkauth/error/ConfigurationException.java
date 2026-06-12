@@ -3,7 +3,11 @@ package com.codeheadsystems.pkauth.error;
 
 import org.jspecify.annotations.Nullable;
 
-/** Thrown when pk-auth is misconfigured (missing RP id, no origins, etc.). */
+/**
+ * Thrown when pk-auth is misconfigured (missing RP id, no origins, etc.).
+ *
+ * @since 0.9.0
+ */
 public class ConfigurationException extends PkAuthException {
 
   private static final long serialVersionUID = 1L;

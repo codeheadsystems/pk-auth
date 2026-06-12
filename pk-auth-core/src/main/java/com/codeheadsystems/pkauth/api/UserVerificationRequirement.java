@@ -3,7 +3,11 @@ package com.codeheadsystems.pkauth.api;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-/** WebAuthn {@code UserVerificationRequirement} enumeration (Level 3 §5.10.6). */
+/**
+ * WebAuthn {@code UserVerificationRequirement} enumeration (Level 3 §5.10.6).
+ *
+ * @since 0.9.0
+ */
 public enum UserVerificationRequirement {
   @JsonProperty("required")
   REQUIRED,

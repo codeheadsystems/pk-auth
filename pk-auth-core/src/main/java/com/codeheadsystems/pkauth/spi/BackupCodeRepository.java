@@ -7,7 +7,11 @@ import java.util.List;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 
-/** Persistent storage for backup-code hashes (brief §6.3). One row per issued code. */
+/**
+ * Persistent storage for backup-code hashes (brief §6.3). One row per issued code.
+ *
+ * @since 0.9.0
+ */
 public interface BackupCodeRepository {
 
   /** Stored representation of a single backup code. The plaintext is never persisted. */

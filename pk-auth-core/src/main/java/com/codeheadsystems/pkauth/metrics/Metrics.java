@@ -8,6 +8,8 @@ import java.util.Objects;
  * Tiny metrics facade with two implementations: a no-op default and a Micrometer-backed factory
  * activated only when {@code io.micrometer:micrometer-core} is on the runtime classpath. Phase 1
  * defines the shape; Phase 2 wires concrete counters in the ceremony service.
+ *
+ * @since 0.9.0
  */
 public interface Metrics {
 

@@ -3,7 +3,11 @@ package com.codeheadsystems.pkauth.api;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-/** WebAuthn {@code ResidentKeyRequirement} enumeration (Level 3 §5.4.6). */
+/**
+ * WebAuthn {@code ResidentKeyRequirement} enumeration (Level 3 §5.4.6).
+ *
+ * @since 0.9.0
+ */
 public enum ResidentKeyRequirement {
   @JsonProperty("required")
   REQUIRED,

@@ -7,6 +7,8 @@ import org.jspecify.annotations.Nullable;
 /**
  * Base unchecked exception for pk-auth programmer errors. Ceremony-flow failures are returned as
  * variants of {@code *Result} sealed interfaces, not thrown.
+ *
+ * @since 0.9.0
  */
 public abstract class PkAuthException extends RuntimeException {
 

@@ -1,7 +1,11 @@
 // SPDX-License-Identifier: MIT
 package com.codeheadsystems.pkauth.admin;
 
-/** Returned from {@code POST /auth/admin/phone/complete-verification}. */
+/**
+ * Returned from {@code POST /auth/admin/phone/complete-verification}.
+ *
+ * @since 0.9.0
+ */
 public sealed interface PhoneVerificationResult {
 
   /** Code matched and the user's {@code phoneVerified} flag is now true. */

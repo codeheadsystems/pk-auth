@@ -9,6 +9,8 @@ import org.jspecify.annotations.Nullable;
 /**
  * Browser-returned payload for an authentication ceremony. Mirrors WebAuthn JSON Spec §5.1.4
  * "AuthenticationResponseJSON".
+ *
+ * @since 0.9.0
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record AuthenticationResponseJson(

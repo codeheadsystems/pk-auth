@@ -20,7 +20,11 @@ import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Default {@link AdminService} composition over the Phase 5/6 SPIs and services. */
+/**
+ * Default {@link AdminService} composition over the Phase 5/6 SPIs and services.
+ *
+ * @since 0.9.0
+ */
 public final class DefaultAdminService implements AdminService {
 
   private static final Logger LOG = LoggerFactory.getLogger(DefaultAdminService.class);

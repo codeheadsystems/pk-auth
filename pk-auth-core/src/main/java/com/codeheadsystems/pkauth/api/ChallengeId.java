@@ -4,7 +4,11 @@ package com.codeheadsystems.pkauth.api;
 import java.util.Objects;
 import java.util.UUID;
 
-/** Opaque identifier for an in-flight WebAuthn challenge in the {@code ChallengeStore}. */
+/**
+ * Opaque identifier for an in-flight WebAuthn challenge in the {@code ChallengeStore}.
+ *
+ * @since 0.9.0
+ */
 public record ChallengeId(String value) {
 
   public ChallengeId {

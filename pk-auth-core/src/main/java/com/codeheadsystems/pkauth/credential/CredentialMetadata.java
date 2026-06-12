@@ -10,7 +10,11 @@ import java.util.Set;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 
-/** Read-only credential projection without the COSE public key. Suitable for listing endpoints. */
+/**
+ * Read-only credential projection without the COSE public key. Suitable for listing endpoints.
+ *
+ * @since 0.9.0
+ */
 public record CredentialMetadata(
     CredentialId credentialId,
     String label,

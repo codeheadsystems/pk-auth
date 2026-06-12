@@ -34,6 +34,8 @@ import tools.jackson.databind.module.SimpleModule;
  *
  * <p>Jackson 3 mappers are immutable; each call returns a fresh builder so adapter modules may
  * apply additional configuration before {@code build()}.
+ *
+ * @since 0.9.0
  */
 public final class PkAuthObjectMappers {
 

@@ -8,6 +8,8 @@ import java.util.Optional;
 /**
  * Host-app integration point that maps usernames to pk-auth user handles. pk-auth does not own the
  * users table; the host application is the source of truth.
+ *
+ * @since 0.9.0
  */
 public interface UserLookup {
 

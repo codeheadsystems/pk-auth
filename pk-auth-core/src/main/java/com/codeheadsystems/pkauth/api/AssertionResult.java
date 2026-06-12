@@ -6,6 +6,8 @@ import java.util.Objects;
 /**
  * Closed sum of outcomes from {@code PasskeyAuthenticationService.finishAuthentication}. Mapped to
  * HTTP responses by adapter modules.
+ *
+ * @since 0.9.0
  */
 public sealed interface AssertionResult {
 

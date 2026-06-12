@@ -8,6 +8,8 @@ import java.util.Objects;
  * Predicate over the client-reported origin. The default implementation is a strict allow-list
  * match against {@link RelyingPartyConfig#origins()}. Custom implementations may accept additional
  * origins (e.g., embedded webviews) — at their own risk.
+ *
+ * @since 0.9.0
  */
 @FunctionalInterface
 public interface OriginValidator {

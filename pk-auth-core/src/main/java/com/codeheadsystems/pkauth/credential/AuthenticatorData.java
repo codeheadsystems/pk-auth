@@ -17,6 +17,7 @@ import java.util.Objects;
  * @param attestedCredentialDataIncluded {@code AT} flag
  * @param extensionDataIncluded {@code ED} flag
  * @param signCount the authenticator's signature counter
+ * @since 0.9.0
  */
 public record AuthenticatorData(
     byte[] raw,

@@ -7,7 +7,11 @@ import com.codeheadsystems.pkauth.api.UserVerificationRequirement;
 import java.time.Duration;
 import java.util.Objects;
 
-/** Ceremony-level policy knobs. Brief §7 documents the security-relevant defaults. */
+/**
+ * Ceremony-level policy knobs. Brief §7 documents the security-relevant defaults.
+ *
+ * @since 0.9.0
+ */
 public record CeremonyConfig(
     Duration challengeTtl,
     UserVerificationRequirement userVerification,

@@ -23,6 +23,8 @@ import org.jspecify.annotations.Nullable;
 /**
  * Public entry point for constructing a {@link PasskeyAuthenticationService}. Hides the internal
  * implementation class while still letting callers wire each SPI explicitly.
+ *
+ * @since 0.9.0
  */
 public final class PasskeyAuthenticationServices {
 
