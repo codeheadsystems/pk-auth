@@ -81,9 +81,10 @@ jobs:
       - name: SonarQube scan
         # JavaScript/browser-SDK static analysis only. SonarQube was dropped for the JVM modules
         # (ADR 0018, native JaCoCo gates) but retained here for the TypeScript SDK.
-        # SONAR_TOKEN is unavailable to PRs from forks; skip there to avoid a hard failure.
-        # Manual (workflow_dispatch) and push runs always have the secret available.
-        if: github.event_name == 'workflow_dispatch' || github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+        # Needs SONAR_TOKEN, which GitHub withholds from fork PRs AND from Dependabot-triggered
+        # runs — skip in both cases so the scan doesn't hard-fail without a token. Manual
+        # (workflow_dispatch) and push runs always have the secret available.
+        if: github.actor != 'dependabot[bot]' && (github.event_name == 'workflow_dispatch' || github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository)
         uses: sonarsource/sonarqube-scan-action@713881670b6b3676cda39549040e2d88c70d582e # v8.2.0
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -91,6 +92,10 @@ jobs:
           projectBaseDir: clients/passkeys-browser
 
       - name: Run Stryker mutation tests
+        # Skip on Dependabot PRs: the dashboard reporter needs STRYKER_DASHBOARD_API_KEY, which is
+        # withheld from Dependabot-triggered runs, and mutation testing a dependency bump adds no
+        # signal. The vitest suite above still runs and gates the PR.
+        if: github.actor != 'dependabot[bot]'
         run: npm exec --no-install -- stryker run
         working-directory: clients/passkeys-browser
         env:
