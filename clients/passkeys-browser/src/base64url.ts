@@ -15,12 +15,16 @@ export function encode(input: ArrayBuffer | Uint8Array | ArrayBufferView): Base6
   for (let i = 0; i < bytes.length; i++) {
     s += String.fromCharCode(bytes[i]!);
   }
-  return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  // base64url per RFC 4648 §5: map +/ to -_ and strip padding. Using replaceAll with
+  // string literals (no regexes) keeps this linear — it avoids the ReDoS shape
+  // SonarQube flags on `/=+$/`. `=` only ever appears as trailing base64 padding, so
+  // removing all of it is equivalent to stripping the trailing run.
+  return btoa(s).replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
 }
 
 export function decode(input: Base64Url): Uint8Array {
   const pad = "=".repeat((4 - (input.length % 4)) % 4);
-  const normalized = input.replace(/-/g, "+").replace(/_/g, "/") + pad;
+  const normalized = input.replaceAll("-", "+").replaceAll("_", "/") + pad;
   const binary = atob(normalized);
   const bytes = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i++) {
