@@ -1,6 +1,9 @@
 name: CI
 
 on:
+  # Manual on-demand runs (e.g. to re-trigger the browser-SDK SonarQube scan
+  # against a chosen ref without pushing a commit): gh workflow run ci.yml --ref main
+  workflow_dispatch:
   push:
     branches: [ "main" ]
   pull_request:
@@ -79,7 +82,8 @@ jobs:
         # JavaScript/browser-SDK static analysis only. SonarQube was dropped for the JVM modules
         # (ADR 0018, native JaCoCo gates) but retained here for the TypeScript SDK.
         # SONAR_TOKEN is unavailable to PRs from forks; skip there to avoid a hard failure.
-        if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+        # Manual (workflow_dispatch) and push runs always have the secret available.
+        if: github.event_name == 'workflow_dispatch' || github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
         uses: sonarsource/sonarqube-scan-action@713881670b6b3676cda39549040e2d88c70d582e # v8.2.0
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
