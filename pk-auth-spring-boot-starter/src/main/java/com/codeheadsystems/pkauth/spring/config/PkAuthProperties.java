@@ -102,7 +102,7 @@ public record PkAuthProperties(
    * @param residentKey discoverable-credential requirement (default {@code PREFERRED})
    * @param attestation attestation conveyance preference (default {@code NONE})
    * @param counterRegression signature-counter regression policy (default {@code REJECT})
-   * @since 1.3.1
+   * @since 2.0.0
    */
   public record Ceremony(
       @Nullable Duration challengeTtl,

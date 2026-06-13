@@ -279,7 +279,7 @@ public final class DefaultAdminService implements AdminService {
    * Config)} overload) to construct a service. Using a record keeps construction sites concise and
    * self-documenting through Java's named component syntax.
    *
-   * @since 1.3.1
+   * @since 2.0.0
    */
   public record Dependencies(
       CredentialRepository credentialRepository,
@@ -297,7 +297,7 @@ public final class DefaultAdminService implements AdminService {
      * Convenience for a passkey-only deployment: credentials and user lookup only, with every
      * alt-flow service absent.
      *
-     * @since 1.3.1
+     * @since 2.0.0
      */
     public static Dependencies passkeyOnly(
         CredentialRepository credentialRepository, UserLookup userLookup) {

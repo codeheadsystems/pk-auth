@@ -13,7 +13,7 @@ import org.jspecify.annotations.Nullable;
  * <p>The comma separator is safe because {@code RefreshTokenRecord} rejects any {@code amr} entry
  * containing a {@code ','} at construction time, so a round-trip is lossless.
  *
- * @since 1.3.1
+ * @since 2.0.0
  */
 public final class Amr {
 
@@ -27,7 +27,7 @@ public final class Amr {
    *
    * @param amr the non-empty, comma-free references from a {@code RefreshTokenRecord}.
    * @return the comma-joined storage form.
-   * @since 1.3.1
+   * @since 2.0.0
    */
   public static String encode(List<String> amr) {
     return String.join(",", amr);
@@ -40,7 +40,7 @@ public final class Amr {
    *
    * @param stored the stored comma-separated value, possibly {@code null} or blank.
    * @return the decoded references, never empty.
-   * @since 1.3.1
+   * @since 2.0.0
    */
   public static List<String> decode(@Nullable String stored) {
     if (stored == null || stored.isBlank()) {

@@ -112,7 +112,7 @@ public record JwtConfig(
    * @param defaultTtl the access-token TTL, or {@code null} for {@link #DEFAULT_TOKEN_TTL}.
    * @param ttlsByAudience per-audience TTL overrides, or {@code null}/empty for a uniform TTL.
    * @return the assembled config.
-   * @since 1.3.1
+   * @since 2.0.0
    */
   public static JwtConfig from(
       String issuer,

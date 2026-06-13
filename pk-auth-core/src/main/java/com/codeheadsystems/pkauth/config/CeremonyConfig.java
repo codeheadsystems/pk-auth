@@ -63,7 +63,7 @@ public record CeremonyConfig(
    * @param attestationConveyance attestation conveyance, or null for the default.
    * @param counterRegression counter-regression policy, or null for the default.
    * @return the resolved ceremony config.
-   * @since 1.3.1
+   * @since 2.0.0
    */
   public static CeremonyConfig from(
       @Nullable Duration challengeTtl,

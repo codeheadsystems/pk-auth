@@ -9,6 +9,90 @@ The 0.x line is treated as a single pre-stable development series — see
 1.0.0 stabilisation cut; for 0.x history consult `git log` against the relevant
 tags.
 
+## [2.0.0] — 2026-06-13
+
+The first 2.x release. The bulk of the work is correctness, hardening, and
+maintainability; the major-version bump is driven by **one breaking change to
+the embedded Java API** — the `start*` ceremony methods (described under
+Changed). The HTTP `/auth/**` wire contract (request/response bodies and status
+codes) is unchanged, so deployments that integrate through the Spring /
+Dropwizard / Micronaut adapters and the JSON API need no code changes.
+
+### Changed
+
+- **Breaking (embedded API only): `start*` ceremonies now return sealed result
+  sums.** `PasskeyAuthenticationService.startRegistration` /
+  `startAuthentication` return `StartRegistrationResult` /
+  `StartAuthenticationResult` (`Started | RateLimited`) instead of the bare
+  response envelope, mirroring the `finish*` ceremonies, and the
+  `CeremonyRateLimitedException` type is removed. A rate-limit refusal is now a
+  value every adapter pattern-matches (compile-checked exhaustiveness) rather
+  than an exception thrown across the boundary. Hosts using the Spring /
+  Dropwizard / Micronaut adapters are unaffected; only code calling
+  `PasskeyAuthenticationService` directly must switch on the result. The
+  `200` / `429` wire responses are identical to before.
+- **Host→domain config translation is centralized.** `RelyingPartyConfig.from(…)`
+  and `CeremonyConfig.from(…)` carry the shared validation and conservative
+  default-coalescing (UV `REQUIRED`, counter-regression `REJECT`) the three
+  adapter factories previously duplicated; an unset knob can only resolve to the
+  secure default.
+- **The persistence-failure response envelope is centralized** in
+  `PkAuthPersistenceResponse` (HTTP `503`, body
+  `{"error":"persistence_failure","operation":…}`), so all three adapters emit a
+  byte-identical body and a backend outage cannot leak a framework-default 500.
+- **Build / CI.** SonarQube Cloud was dropped for the JVM modules in favour of
+  native JaCoCo line + branch coverage gates (ADR 0018); it is retained for the
+  TypeScript browser SDK. CI now fails if `PKAUTH_SKIP_TESTCONTAINERS=1` leaks
+  into the gate, adds a `workflow_dispatch` trigger for on-demand runs, and skips
+  the secret-dependent SonarQube / Stryker steps on Dependabot PRs.
+
+### Added
+
+- **Passkey-only hosts can boot without the alt-flow SPIs** (backup-codes / OTP /
+  magic-link), in the admin API and Spring starter.
+- **Config range validation** on the OTP, backup-code, and magic-link `Config`
+  records — non-positive TTLs, attempt caps, and rate limits are rejected at
+  construction instead of producing never-verifiable or instantly-expired codes.
+- **Concurrent consume-once acceptance scenarios** for OTP and backup codes in
+  the testkit (`OtpRepositoryScenarios`, `BackupCodeRepositoryScenarios`), run
+  against real Postgres and DynamoDB Local — the atomic single-use guarantee is
+  now proven for those flows, not just refresh tokens.
+
+### Fixed
+
+- **DynamoDB refresh-token rotation no longer scorches a token family on a
+  transient error.** A `TransactionCanceledException` is treated as a
+  replay/race (revoking the family) only when the parent's freshness condition
+  actually failed (`ConditionalCheckFailed`); throughput / transaction-conflict /
+  validation cancellations are rethrown as a retryable 5xx, and an
+  indeterminable reason fails closed.
+- **Ceremony user-verification now defaults to `REQUIRED`,** and the UV /
+  resident-key / attestation / counter-regression knobs are surfaced through the
+  Spring properties.
+- **DynamoDB maintenance scans** (`deleteExpiredBefore`) are constrained with a
+  server-side `begins_with(pk, …)` filter instead of reading the whole shared
+  single table.
+- **OTP no-active-OTP branch** drops a misleading constant-time self-compare; the
+  throwaway HMAC that equalizes response timing is kept.
+- **Admin phone-verification** maps the `SendResult` sum with an exhaustive
+  switch instead of an unchecked downcast.
+- Hardened CBOR / converter robustness and added end-to-end forged / replayed
+  ceremony coverage.
+
+### Security
+
+- **esbuild forced to ≥ 0.28.1** to clear GHSA-gv7w-rqvm-qjhr (HIGH). It is a
+  build-time, dev-only transitive dependency of the browser SDK (never shipped in
+  the published bundle), and the advisory targets esbuild's Deno module, so the
+  practical exposure was low — but the bump clears the advisory at the source.
+- **Browser SDK base64url** no longer uses a ReDoS-shaped regex (SonarQube
+  S5852 / CWE-1333); `encode` / `decode` use `replaceAll` with string literals,
+  byte-identical output.
+- **Documentation corrections to security-relevant behaviour.** OTP codes are
+  hashed with HMAC-SHA256 + a server-side pepper (not Argon2id); the
+  `userVerification = REQUIRED` default and the ≥ 16-byte OTP pepper requirement
+  are now documented in the threat model and operator guide.
+
 ## [1.3.1] — 2026-06-06
 
 Patch release: a browser-SDK build fix, a Micronaut admin toggle, and

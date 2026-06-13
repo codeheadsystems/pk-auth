@@ -14,7 +14,7 @@ import java.util.Map;
  * every adapter, instead of one accidentally leaking a framework-default 500 with a stack trace.
  * Each adapter keeps only its framework-specific glue (response type, logging).
  *
- * @since 1.3.1
+ * @since 2.0.0
  */
 public final class PkAuthPersistenceResponse {
 
@@ -32,7 +32,7 @@ public final class PkAuthPersistenceResponse {
    *
    * @param exception the persistence failure to render.
    * @return an insertion-ordered map with {@code error} and {@code operation} keys.
-   * @since 1.3.1
+   * @since 2.0.0
    */
   public static Map<String, String> body(PkAuthPersistenceException exception) {
     Map<String, String> body = new LinkedHashMap<>();

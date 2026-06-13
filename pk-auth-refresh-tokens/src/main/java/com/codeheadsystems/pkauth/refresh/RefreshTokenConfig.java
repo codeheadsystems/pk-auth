@@ -74,7 +74,7 @@ public record RefreshTokenConfig(
    * @param cleanupRetention forensic retention window, or {@code null} for {@link
    *     #DEFAULT_CLEANUP_RETENTION}.
    * @return the assembled config.
-   * @since 1.3.1
+   * @since 2.0.0
    */
   public static RefreshTokenConfig from(
       @Nullable Duration defaultTtl,
