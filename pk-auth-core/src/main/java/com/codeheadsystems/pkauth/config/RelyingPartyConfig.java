@@ -42,7 +42,7 @@ public record RelyingPartyConfig(String id, String name, Set<String> origins) {
    * @param name human-readable RP name, or null/blank if unset.
    * @param origins acceptable client-reported origins, or null/empty if unset; copied defensively.
    * @return the validated relying-party config.
-   * @since 1.3.1
+   * @since 2.0.0
    */
   public static RelyingPartyConfig from(
       @Nullable String id, @Nullable String name, @Nullable Collection<String> origins) {

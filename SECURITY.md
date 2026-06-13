@@ -36,7 +36,7 @@ Use one of these private channels instead:
 
 Please include, as far as you can:
 
-- The affected module(s) and version (e.g. `pk-auth-core 1.3.0`).
+- The affected module(s) and version (e.g. `pk-auth-core 2.0.0`).
 - A description of the issue and its impact (what an attacker can do).
 - Steps to reproduce — a minimal proof of concept, failing test, or request
   sequence is ideal.

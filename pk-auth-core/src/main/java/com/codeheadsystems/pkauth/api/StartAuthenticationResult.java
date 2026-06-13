@@ -15,7 +15,7 @@ import java.util.Objects;
  *       any challenge was created; adapters map it to HTTP {@code 429}.
  * </ul>
  *
- * @since 1.3.1
+ * @since 2.0.0
  */
 public sealed interface StartAuthenticationResult
     permits StartAuthenticationResult.Started, StartAuthenticationResult.RateLimited {
@@ -24,7 +24,7 @@ public sealed interface StartAuthenticationResult
    * The limiter allowed the ceremony; {@code response} carries the WebAuthn request options.
    *
    * @param response the start-authentication envelope.
-   * @since 1.3.1
+   * @since 2.0.0
    */
   record Started(StartAuthenticationResponse response) implements StartAuthenticationResult {
     public Started {
@@ -36,7 +36,7 @@ public sealed interface StartAuthenticationResult
    * The configured rate limiter refused the call before any challenge was created.
    *
    * @param bucket which limiter bucket denied the call ({@code "ip"} or {@code "username"}).
-   * @since 1.3.1
+   * @since 2.0.0
    */
   record RateLimited(String bucket) implements StartAuthenticationResult {
     public RateLimited {
@@ -52,7 +52,7 @@ public sealed interface StartAuthenticationResult
    *
    * @return the start-authentication envelope.
    * @throws IllegalStateException if this result is {@link RateLimited}.
-   * @since 1.3.1
+   * @since 2.0.0
    */
   default StartAuthenticationResponse responseOrThrow() {
     if (this instanceof Started started) {

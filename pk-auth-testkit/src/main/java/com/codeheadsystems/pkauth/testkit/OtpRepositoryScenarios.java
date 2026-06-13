@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * one implementation while passing in another. Mirrors {@link RefreshTokenScenarios}'s concurrent
  * rotation race for the refresh-token path.
  *
- * @since 1.3.1
+ * @since 2.0.0
  */
 public final class OtpRepositoryScenarios {
 
@@ -43,7 +43,7 @@ public final class OtpRepositoryScenarios {
    * enabling OTP reuse.
    *
    * @throws Exception if a worker thread is interrupted.
-   * @since 1.3.1
+   * @since 2.0.0
    */
   public void concurrentConsumeYieldsExactlyOneWinner() throws Exception {
     UserHandle user = UserHandle.random();

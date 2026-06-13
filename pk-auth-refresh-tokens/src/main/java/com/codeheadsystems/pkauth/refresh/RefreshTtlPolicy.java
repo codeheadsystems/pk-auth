@@ -48,7 +48,7 @@ public interface RefreshTtlPolicy {
    * @param defaultTtl the fallback TTL for any audience not in {@code overrides}.
    * @param overrides per-audience TTL overrides, or {@code null}/empty for a uniform TTL.
    * @return the resolved policy.
-   * @since 1.3.1
+   * @since 2.0.0
    */
   static RefreshTtlPolicy from(Duration defaultTtl, @Nullable Map<String, Duration> overrides) {
     return overrides == null || overrides.isEmpty()
