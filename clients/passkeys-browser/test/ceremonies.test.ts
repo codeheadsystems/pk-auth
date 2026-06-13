@@ -12,6 +12,8 @@ import type {
   PublicKeyCredentialCreationOptionsJson,
   PublicKeyCredentialRequestOptionsJson,
 } from "../src/types";
+import {HttpHandler, HttpServer} from "./helpers/httpServer";
+import * as http from "node:http";
 
 const CREATE_OPTIONS_JSON: PublicKeyCredentialCreationOptionsJson = {
   rp: { id: "example.com", name: "Example" },
@@ -130,6 +132,40 @@ describe("encodeAuthenticationResponse", () => {
     } as unknown as AuthenticatorResponse);
     expect(encodeAuthenticationResponse(credential).response.userHandle).toBe(b64u.encode(handle));
   });
+});
+
+describe("PkAuthCeremonyClient http test", () => {
+  it("when startRegistration endpoint returns 500 then the client makes no attempt to create credential", async() => {
+    using server= await startHttpServer({
+      [startPath]: errorHttpHandler,
+    });
+    const credentialsContainer = noOpCredentialsContainer();
+    const client = new PkAuthCeremonyClient(
+      { apiBase: server.url },
+      { credentials: credentialsContainer },
+    );
+
+    await expect(client.register({ username: "alice", label: "key" })).rejects.toThrow("HTTP 500: unit test error from errorHttpHandler");
+    expect(credentialsContainer.create).not.toHaveBeenCalled(); // this proves the client did not attempt to create a credential upon failure to start registration
+  })
+
+  const startPath = "/auth/passkeys/registration/start";
+  //currently not used: const finishPath = "/auth/passkeys/registration/finish"
+
+  function noOpCredentialsContainer() : CredentialsContainer {
+    return { create: vi.fn(), get: vi.fn(), preventSilentAccess: vi.fn(), store: vi.fn()};
+  }
+
+  function errorHttpHandler(_: http.IncomingMessage, res: http.ServerResponse) : void {
+    res.writeHead(500)
+    res.end("unit test error from errorHttpHandler")
+  }
+
+  async function startHttpServer(routes: Record<string, HttpHandler>) : Promise<HttpServer> {
+    const server = new HttpServer(routes);
+    await server.listen();
+    return server
+  }
 });
 
 describe("PkAuthCeremonyClient.register (end-to-end with stubbed credentials)", () => {
