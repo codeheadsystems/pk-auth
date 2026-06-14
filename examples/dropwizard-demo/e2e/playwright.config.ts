@@ -27,7 +27,9 @@ export default defineConfig({
     : {
         // Dropwizard's run task starts with `server` arg; the persistence flavor is read from
         // the `pkauth.persistence` system property (see DemoApplication#persistenceFlavor).
-        command: `../../../gradlew :examples:dropwizard-demo:run -Dpkauth.persistence=${PERSISTENCE}`,
+        // `-p ../../..` roots Gradle at the repo (the webServer runs from this config's dir, so a
+        // bare `../../../gradlew` would otherwise take the e2e/ dir as the project dir and fail).
+        command: `../../../gradlew -p ../../.. :examples:dropwizard-demo:run -Dpkauth.persistence=${PERSISTENCE}`,
         url: BASE_URL,
         reuseExistingServer: !process.env.CI,
         timeout: 180_000,

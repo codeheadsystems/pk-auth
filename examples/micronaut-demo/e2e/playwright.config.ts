@@ -25,7 +25,9 @@ export default defineConfig({
   webServer: externallyManaged
     ? undefined
     : {
-        command: `../../../gradlew :examples:micronaut-demo:run -Dpkauth.persistence=${PERSISTENCE}`,
+        // `-p ../../..` roots Gradle at the repo (the webServer runs from this config's dir, so a
+        // bare `../../../gradlew` would otherwise take the e2e/ dir as the project dir and fail).
+        command: `../../../gradlew -p ../../.. :examples:micronaut-demo:run -Dpkauth.persistence=${PERSISTENCE}`,
         url: BASE_URL,
         reuseExistingServer: !process.env.CI,
         timeout: 180_000,
