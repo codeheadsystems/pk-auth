@@ -10,10 +10,11 @@ import {
 } from "../src/ceremonies";
 import type {
   PublicKeyCredentialCreationOptionsJson,
-  PublicKeyCredentialRequestOptionsJson,
+  PublicKeyCredentialRequestOptionsJson, StartRegistrationRequest, StartRegistrationResponse,
 } from "../src/types";
-import {HttpHandler, HttpServer} from "./helpers/httpServer";
+import {decodeJson, encodeJson, Handler, HttpHandler, HttpServer, newHttpHandler} from "./helpers/httpServer";
 import * as http from "node:http";
+import {RegistrationService} from "./helpers/registration";
 
 const CREATE_OPTIONS_JSON: PublicKeyCredentialCreationOptionsJson = {
   rp: { id: "example.com", name: "Example" },
@@ -134,6 +135,7 @@ describe("encodeAuthenticationResponse", () => {
   });
 });
 
+
 describe("PkAuthCeremonyClient http test", () => {
   it("when startRegistration endpoint returns 500 then the client makes no attempt to create credential", async() => {
     using server= await startHttpServer({
@@ -146,11 +148,59 @@ describe("PkAuthCeremonyClient http test", () => {
     );
 
     await expect(client.register({ username: "alice", label: "key" })).rejects.toThrow("HTTP 500: unit test error from errorHttpHandler");
-    expect(credentialsContainer.create).not.toHaveBeenCalled(); // this proves the client did not attempt to create a credential upon failure to start registration
+
+    expect(credentialsContainer.create).not.toHaveBeenCalled(); // this proves the client did not attempt to create a credential upon failure to start registration.ts
+  })
+
+  it("when start registration succeeds but no credential is created, then the client fails with credential cancellation", async() => {
+    const registration = new RegistrationService("localhost", "alice", "bob")
+    using server= await startHttpServer({
+      [startPath]: newStartHandler(registration),
+      [finishPath]: errorHttpHandler
+    });
+    const credentialsContainer = noOpCredentialsContainer();
+    const client = new PkAuthCeremonyClient(
+      { apiBase: server.url },
+      { credentials: credentialsContainer },
+    );
+
+    await expect(client.register({ username: "alice", label: "key" })).rejects.toThrow();
+
+    expect(credentialsContainer.create).toHaveBeenCalled(); // this proves the client did attempt to create a credential
+  })
+
+  it("when finish registration fails, the credential was still created", async() => {
+    const registration = new RegistrationService("localhost", "alice", "bob")
+    using server= await startHttpServer({
+      [startPath]: newStartHandler(registration),
+      [finishPath]: errorHttpHandler
+    });
+    const credentialsContainer = mockCredentialContainer();
+    const client = new PkAuthCeremonyClient(
+      { apiBase: server.url },
+      { credentials: credentialsContainer },
+    );
+
+    await expect(client.register({ username: "alice", label: "key" })).rejects.toThrow("HTTP 500: unit test error from errorHttpHandler");
+
+    expect(credentialsContainer.create).toHaveBeenCalled(); // this proves the client did attempt to create a credential
+    // TODO: wait for the finish handler to more strongly assert behavior of "finish" phase of client.register
   })
 
   const startPath = "/auth/passkeys/registration/start";
-  //currently not used: const finishPath = "/auth/passkeys/registration/finish"
+  const finishPath = "/auth/passkeys/registration/finish"
+
+  function mockCredentialContainer() : CredentialsContainer {
+    return {
+      create: vi.fn(async () =>
+        fakeCredential(new Uint8Array([7]), {
+          clientDataJSON: new Uint8Array([0]).buffer as ArrayBuffer,
+          attestationObject: new Uint8Array([0]).buffer as ArrayBuffer,
+        } as unknown as AuthenticatorResponse),
+      ),
+      get: vi.fn(),
+    } as unknown as CredentialsContainer;
+  }
 
   function noOpCredentialsContainer() : CredentialsContainer {
     return { create: vi.fn(), get: vi.fn(), preventSilentAccess: vi.fn(), store: vi.fn()};
@@ -159,6 +209,14 @@ describe("PkAuthCeremonyClient http test", () => {
   function errorHttpHandler(_: http.IncomingMessage, res: http.ServerResponse) : void {
     res.writeHead(500)
     res.end("unit test error from errorHttpHandler")
+  }
+
+  function newStartHandler(registration: RegistrationService) : HttpHandler{
+    const endpoint = async (req: StartRegistrationRequest) : Promise<StartRegistrationResponse> => {
+      return registration.start(req);
+    };
+    const handler = new Handler(decodeJson, endpoint, encodeJson);
+    return newHttpHandler(handler);
   }
 
   async function startHttpServer(routes: Record<string, HttpHandler>) : Promise<HttpServer> {
