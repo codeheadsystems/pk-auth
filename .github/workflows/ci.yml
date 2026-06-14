@@ -130,6 +130,53 @@ jobs:
           path: clients/passkeys-browser/reports/mutation/
           if-no-files-found: ignore
 
+  # Playwright end-to-end suites for the three example demos. Each demo carries a sibling `e2e/`
+  # Playwright project that drives the full passkey ceremony through Chrome's CDP virtual WebAuthn
+  # authenticator. These are wired into Gradle `check` as an OPT-IN task (skipped by default so the
+  # `build` job above stays fast and Chrome-free) — here we flip the switch with PK_RUN_E2E=1 and
+  # let the `e2eTest` task provision Chrome (PW_INSTALL_DEPS=1 → playwright install --with-deps) and
+  # boot the demo via its Gradle `run` task. One job per adapter (all three bind :8080).
+  e2e:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        demo: [ spring-boot-demo, dropwizard-demo, micronaut-demo ]
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: '20'
+
+      # The e2eTest task executes the wrapper jar (directly and again nested, when Playwright boots
+      # the demo via the Gradle `run` task) — validate it for the same reason the build job does.
+      - name: Validate Gradle wrapper
+        uses: gradle/actions/wrapper-validation@3f131e8634966bd73d06cc69884922b02e6faf92 # v6
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6
+
+      - name: Run ${{ matrix.demo }} e2e
+        run: ./gradlew :examples:${{ matrix.demo }}:e2eTest --stacktrace
+        env:
+          PK_RUN_E2E: '1'        # flip the opt-in e2eTest task on
+          PW_INSTALL_DEPS: '1'   # playwright install --with-deps chrome (needs the runner's apt deps)
+
+      - name: Upload Playwright traces
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: playwright-traces-${{ matrix.demo }}
+          path: examples/${{ matrix.demo }}/e2e/test-results/
+          if-no-files-found: ignore
+
   # Block PRs that introduce dependencies with known vulnerabilities or incompatible
   # licenses, before they merge. Uses the GitHub dependency graph; PR-only.
   dependency-review:
