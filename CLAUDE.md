@@ -23,7 +23,7 @@ JDK 21 is required (Gradle's toolchain fetches one if absent). Node ≥ 20 + npm
 ```
 
 - **Integration tests are ordinary `test` tasks** — the JDBI/DynamoDB persistence modules use Testcontainers (Postgres / DynamoDB Local), so `./gradlew :pk-auth-persistence-jdbi:test` needs **Docker** running. There is no separate `integrationTest` task or JUnit tag.
-- Playwright end-to-end suites live under the `examples/` demos and need **Chrome** (drives a CDP virtual WebAuthn authenticator).
+- Playwright end-to-end suites live under the `examples/` demos and need **Chrome** (drives a CDP virtual WebAuthn authenticator). They are wired into each demo's `check` via the `e2eTest` task (`pkauth.e2e-conventions`) but are **opt-in** — they only run when `PK_RUN_E2E=1` (or `-PrunE2e`) is set, so a default `./gradlew check` and the CI `build` job stay fast and Chrome-free. Run one with `PK_RUN_E2E=1 ./gradlew :examples:spring-boot-demo:e2eTest`; the task itself does `npm ci` + `npx playwright install chrome` and boots the demo via its Gradle `run` task. CI runs all three in the `e2e` matrix job (`.github/workflows/ci.yml`, with `PW_INSTALL_DEPS=1` so Chrome's OS deps are installed too).
 - The Gradle **build cache is disabled** on purpose (Spotless 8.x classloader bug) — see the comment in `gradle.properties`. Don't re-enable it.
 
 ## Architecture: three concentric rings

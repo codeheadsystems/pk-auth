@@ -1,6 +1,7 @@
 plugins {
     id("pkauth.java-conventions")
     id("pkauth.test-conventions")
+    id("pkauth.e2e-conventions")
     application
 }
 

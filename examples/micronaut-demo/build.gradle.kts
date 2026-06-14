@@ -1,6 +1,7 @@
 plugins {
     application
     id("pkauth.java-conventions")
+    id("pkauth.e2e-conventions")
 }
 
 description = "pk-auth Micronaut demo app."
@@ -62,6 +63,12 @@ tasks.named<JavaExec>("run") {
     systemProperty("pkauth.jwt.issuer", "pk-auth-micronaut-demo")
     systemProperty("pkauth.jwt.audience", "pk-auth-micronaut-demo-clients")
     systemProperty("pkauth.jwt.secret", "change-me-in-prod-use-a-32-byte-secret!!")
+    // dev-mode is also set in application.yml, but — like the relying-party keys above — it must be
+    // passed as a system property to reliably reach the bean conditions: the LoggingEmailSender /
+    // LoggingSmsSender beans in PkAuthFactory are @Requires(property = "pkauth.dev-mode", value =
+    // "true"), and without them the unconditional magicLinkService / otpService singletons fail to
+    // inject EmailSender / SmsSender at request time (a 500 the e2e suite exercises).
+    systemProperty("pkauth.dev-mode", "true")
 }
 
 tasks.named<Test>("test") {
