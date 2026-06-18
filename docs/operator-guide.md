@@ -194,6 +194,36 @@ leaves that line out.
 > (`NoClassDefFoundError` on the first ceremony request). The split keeps the
 > always-on factory free of any reference to the optional module.
 
-## 8. Threat model
+## 8. Transport security & post-quantum (harvest-now, decrypt-later)
+
+pk-auth's own primitives are post-quantum aware (see `docs/threat-model.md` →
+*Post-quantum readiness*), but the one genuine **harvest-now, decrypt-later** risk
+in a real deployment is **outside this library**: an adversary who records your
+**TLS** sessions today can decrypt them later once a cryptographically-relevant
+quantum computer (CRQC) breaks the classical key exchange that protected them. Those
+sessions carry pk-auth's bearer material in transit — access JWTs, refresh tokens,
+magic-link URLs, OTP codes. Unlike a WebAuthn assertion (challenge–response, nothing
+to harvest), a recorded ciphertext *is* harvestable.
+
+TLS is terminated at your edge — load balancer, reverse proxy, or CDN — **not** in
+pk-auth. So the mitigation is an **operator action**, not a library change:
+
+- **Enable a hybrid post-quantum key exchange at the TLS terminator / CDN.** The
+  current deployable standard is the hybrid group **`X25519MLKEM768`** (X25519 +
+  ML-KEM-768 / FIPS 203), which stays classically secure even if the PQC half is
+  later faulted, and is already supported by recent OpenSSL/BoringSSL, major CDNs,
+  and current browsers. Configure it wherever you terminate TLS:
+  - Nginx/OpenSSL 3.5+: include the hybrid group in `ssl_ecdh_curve` /
+    `Groups`/`Curves` (e.g. `X25519MLKEM768:X25519`).
+  - Behind a CDN (Cloudflare, etc.): enable post-quantum / hybrid key agreement in
+    the edge TLS settings.
+- **Keep token TTLs short.** A short access-token TTL (default 1 hour) and rotating
+  refresh tokens bound the value of any session an attacker does eventually decrypt.
+
+This does not change anything pk-auth signs or stores; it hardens the channel the
+tokens travel over. There is no pk-auth setting for it — it lives entirely in your
+TLS-terminating layer.
+
+## 9. Threat model
 
 See `docs/threat-model.md` for the formal STRIDE pass.

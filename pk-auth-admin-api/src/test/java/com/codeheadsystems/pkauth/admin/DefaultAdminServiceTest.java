@@ -21,6 +21,8 @@ import com.codeheadsystems.pkauth.testkit.InMemoryBackupCodeRepository;
 import com.codeheadsystems.pkauth.testkit.InMemoryCredentialRepository;
 import com.codeheadsystems.pkauth.testkit.InMemoryOtpRepository;
 import com.codeheadsystems.pkauth.testkit.InMemoryUserLookup;
+import com.webauthn4j.converter.util.ObjectConverter;
+import com.webauthn4j.data.attestation.authenticator.EC2COSEKey;
 import de.mkammerer.argon2.Argon2;
 import de.mkammerer.argon2.Argon2Factory;
 import java.security.SecureRandom;
@@ -146,6 +148,34 @@ class DefaultAdminServiceTest {
     AdminResult.Success<List<CredentialSummary>> success =
         (AdminResult.Success<List<CredentialSummary>>) result;
     assertThat(success.value()).hasSize(2);
+  }
+
+  @Test
+  void listCredentialsByAlgorithmReportsOnlyMatchingCredentials() {
+    // Both stored credentials use ES256 (COSE -7) — the only algorithm a virtual ES2 key produces.
+    saveCredentialWithEs256Key(alice, new byte[] {1});
+    saveCredentialWithEs256Key(alice, new byte[] {2});
+
+    AdminResult<List<CredentialSummary>> es256 = admin.listCredentialsByAlgorithm(alice, alice, -7);
+    @SuppressWarnings("unchecked")
+    AdminResult.Success<List<CredentialSummary>> hit =
+        (AdminResult.Success<List<CredentialSummary>>) es256;
+    assertThat(hit.value()).hasSize(2);
+
+    // RS256 (-257): no stored credential uses it → empty, ready for a re-enrollment campaign view.
+    AdminResult<List<CredentialSummary>> rs256 =
+        admin.listCredentialsByAlgorithm(alice, alice, -257);
+    @SuppressWarnings("unchecked")
+    AdminResult.Success<List<CredentialSummary>> miss =
+        (AdminResult.Success<List<CredentialSummary>>) rs256;
+    assertThat(miss.value()).isEmpty();
+  }
+
+  @Test
+  void listCredentialsByAlgorithmRequiresAuthorization() {
+    UserHandle bob = users.register("bob", "Bob");
+    assertThat(admin.listCredentialsByAlgorithm(alice, bob, -7))
+        .isInstanceOf(AdminResult.Forbidden.class);
   }
 
   @Test
@@ -438,5 +468,29 @@ class DefaultAdminServiceTest {
             null);
     credentials.save(record);
     return record;
+  }
+
+  /** Saves a credential whose stored COSE key is a real ES256 (COSE -7) public key. */
+  private void saveCredentialWithEs256Key(UserHandle user, byte[] credentialId) {
+    byte[] point = new byte[65];
+    point[0] = 0x04;
+    for (int i = 1; i < point.length; i++) {
+      point[i] = (byte) i;
+    }
+    EC2COSEKey key = EC2COSEKey.createFromUncompressedECCKey(point);
+    byte[] cose = new ObjectConverter().getCborMapper().writeValueAsBytes(key);
+    credentials.save(
+        new CredentialRecord(
+            CredentialId.of(credentialId),
+            user,
+            cose,
+            0L,
+            "ES256 key",
+            null,
+            Set.of(Transport.INTERNAL),
+            false,
+            false,
+            NOW,
+            null));
   }
 }
