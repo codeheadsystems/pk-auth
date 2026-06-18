@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: MIT
 package com.codeheadsystems.pkauth.dropwizard.config;
 
+import com.codeheadsystems.pkauth.config.CoseAlgorithm;
 import com.codeheadsystems.pkauth.refresh.RefreshTokenConfig;
 import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -148,10 +150,22 @@ public record PkAuthConfig(
    * com.codeheadsystems.pkauth.config.CeremonyConfig#defaults()}.
    *
    * @param challengeTtl Override for challenge TTL; null = use the brief's 5-minute default.
+   * @param offeredAlgorithms COSE algorithms advertised in create-options; null = core default
+   *     (ES256, EdDSA, RS256). Must be a subset of {@code acceptedAlgorithms}.
+   * @param acceptedAlgorithms COSE algorithms accepted on verify; null = core default union (ES256,
+   *     EdDSA, RS256, ES384, RS384). Narrowing can reject already-registered credentials.
    */
-  public record Ceremony(@Nullable Duration challengeTtl) {
+  public record Ceremony(
+      @Nullable Duration challengeTtl,
+      @Nullable List<CoseAlgorithm> offeredAlgorithms,
+      @Nullable List<CoseAlgorithm> acceptedAlgorithms) {
     public Ceremony() {
-      this(null);
+      this(null, null, null);
+    }
+
+    /** Back-compat convenience for the TTL-only construction used before crypto-agility config. */
+    public Ceremony(@Nullable Duration challengeTtl) {
+      this(challengeTtl, null, null);
     }
   }
 

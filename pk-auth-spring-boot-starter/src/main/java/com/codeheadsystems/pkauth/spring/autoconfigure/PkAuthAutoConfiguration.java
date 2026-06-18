@@ -118,7 +118,9 @@ public class PkAuthAutoConfiguration {
         c.userVerification(),
         c.residentKey(),
         c.attestation(),
-        c.counterRegression());
+        c.counterRegression(),
+        c.offeredAlgorithms(),
+        c.acceptedAlgorithms());
   }
 
   /**

@@ -4,8 +4,10 @@ package com.codeheadsystems.pkauth.spring.config;
 import com.codeheadsystems.pkauth.api.AttestationConveyance;
 import com.codeheadsystems.pkauth.api.ResidentKeyRequirement;
 import com.codeheadsystems.pkauth.api.UserVerificationRequirement;
+import com.codeheadsystems.pkauth.config.CoseAlgorithm;
 import com.codeheadsystems.pkauth.config.CounterRegressionPolicy;
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
@@ -102,6 +104,11 @@ public record PkAuthProperties(
    * @param residentKey discoverable-credential requirement (default {@code PREFERRED})
    * @param attestation attestation conveyance preference (default {@code NONE})
    * @param counterRegression signature-counter regression policy (default {@code REJECT})
+   * @param offeredAlgorithms COSE algorithms advertised in create-options (default ES256, EdDSA,
+   *     RS256); must be a subset of {@code acceptedAlgorithms}
+   * @param acceptedAlgorithms COSE algorithms accepted on registration verify (default the
+   *     historical union ES256, EdDSA, RS256, ES384, RS384); narrowing this can reject
+   *     already-registered credentials, so change deliberately
    * @since 2.0.0
    */
   public record Ceremony(
@@ -109,10 +116,12 @@ public record PkAuthProperties(
       @Nullable UserVerificationRequirement userVerification,
       @Nullable ResidentKeyRequirement residentKey,
       @Nullable AttestationConveyance attestation,
-      @Nullable CounterRegressionPolicy counterRegression) {
+      @Nullable CounterRegressionPolicy counterRegression,
+      @Nullable List<CoseAlgorithm> offeredAlgorithms,
+      @Nullable List<CoseAlgorithm> acceptedAlgorithms) {
 
     public static Ceremony defaults() {
-      return new Ceremony(Duration.ofMinutes(5), null, null, null, null);
+      return new Ceremony(Duration.ofMinutes(5), null, null, null, null, null, null);
     }
   }
 

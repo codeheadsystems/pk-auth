@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 package com.codeheadsystems.pkauth.micronaut;
 
+import com.codeheadsystems.pkauth.config.CoseAlgorithm;
 import io.micronaut.context.annotation.ConfigurationProperties;
 import java.time.Duration;
 import java.util.List;
@@ -103,6 +104,8 @@ public final class PkAuthConfiguration {
   @ConfigurationProperties("ceremony")
   public static final class Ceremony {
     private Duration challengeTtl = Duration.ofMinutes(5);
+    @Nullable private List<CoseAlgorithm> offeredAlgorithms;
+    @Nullable private List<CoseAlgorithm> acceptedAlgorithms;
 
     public Duration getChallengeTtl() {
       return challengeTtl;
@@ -110,6 +113,26 @@ public final class PkAuthConfiguration {
 
     public void setChallengeTtl(Duration challengeTtl) {
       this.challengeTtl = challengeTtl;
+    }
+
+    /** COSE algorithms advertised in create-options; null = core default (ES256, EdDSA, RS256). */
+    @Nullable
+    public List<CoseAlgorithm> getOfferedAlgorithms() {
+      return offeredAlgorithms;
+    }
+
+    public void setOfferedAlgorithms(@Nullable List<CoseAlgorithm> offeredAlgorithms) {
+      this.offeredAlgorithms = offeredAlgorithms;
+    }
+
+    /** COSE algorithms accepted on verify; null = core default union (adds ES384, RS384). */
+    @Nullable
+    public List<CoseAlgorithm> getAcceptedAlgorithms() {
+      return acceptedAlgorithms;
+    }
+
+    public void setAcceptedAlgorithms(@Nullable List<CoseAlgorithm> acceptedAlgorithms) {
+      this.acceptedAlgorithms = acceptedAlgorithms;
     }
   }
 
