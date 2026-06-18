@@ -85,9 +85,12 @@ verification and *are* Shor-vulnerable, with exposure bounded by the short token
 
 ## Open follow-ups
 
-- Wire `offeredAlgorithms` / `acceptedAlgorithms` through each adapter's external (YAML) host config.
-  Today they are overridable via `CeremonyConfig` / the `PasskeyAuthenticationServices` builder; full
-  per-adapter property plumbing is deferred until there is a concrete reason to narrow the lists from
-  configuration.
+- ~~Wire `offeredAlgorithms` / `acceptedAlgorithms` through each adapter's external host config.~~
+  Done: bound under `pkauth.ceremony.offered-algorithms` / `pkauth.ceremony.accepted-algorithms` in
+  the Spring starter (`PkAuthProperties.Ceremony`) and Micronaut adapter (`PkAuthConfiguration`),
+  and as the `PkAuthConfig.Ceremony(offeredAlgorithms, acceptedAlgorithms)` record components in the
+  Dropwizard adapter. Each adapter null-coalesces to the core defaults and passes the lists to the
+  seven-argument `CeremonyConfig.from(...)`. All three example apps set them explicitly (to the
+  defaults) as living documentation.
 - Revisit when a COSE-registered post-quantum signature algorithm lands in WebAuthn4J; adding it is
   the localized change this ADR was written to enable.

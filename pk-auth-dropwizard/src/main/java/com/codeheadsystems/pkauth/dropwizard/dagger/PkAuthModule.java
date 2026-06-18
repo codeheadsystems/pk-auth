@@ -104,9 +104,11 @@ public final class PkAuthModule {
   @Provides
   @Singleton
   CeremonyConfig provideCeremonyConfig(PkAuthConfig cfg) {
-    // Only challengeTtl is host-settable here; the remaining knobs take the conservative core
-    // defaults (UV=REQUIRED, counter=REJECT) via the null fallbacks.
-    return CeremonyConfig.from(cfg.ceremony().challengeTtl(), null, null, null, null);
+    // challengeTtl and the COSE algorithm lists are host-settable; the remaining knobs take the
+    // conservative core defaults (UV=REQUIRED, counter=REJECT) via the null fallbacks.
+    PkAuthConfig.Ceremony c = cfg.ceremony();
+    return CeremonyConfig.from(
+        c.challengeTtl(), null, null, null, null, c.offeredAlgorithms(), c.acceptedAlgorithms());
   }
 
   /**

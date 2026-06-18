@@ -46,6 +46,27 @@ authenticator (mere user-presence, no biometric/PIN). A passkey then degrades to
 UV-incapable roaming hardware security keys; if you do, scope it deliberately and
 understand the trade-off.
 
+### COSE signature algorithms (crypto-agility)
+
+Two ceremony knobs control which COSE signature algorithms are used (ADR 0019):
+
+- `pkauth.ceremony.offered-algorithms` — advertised to the authenticator in
+  registration create-options. Default: `[ES256, EdDSA, RS256]`.
+- `pkauth.ceremony.accepted-algorithms` — the verify allow-list; a credential
+  whose algorithm is absent is rejected on registration. Default (and the
+  enforced superset): `[ES256, EdDSA, RS256, ES384, RS384]`.
+
+`offered` must be a subset of `accepted`. The defaults are the historical union,
+so leaving them unset changes nothing. You may **narrow** either (e.g. drop RSA),
+but narrowing `accepted` can reject **already-registered** credentials that use a
+removed algorithm — drive a re-enrollment campaign first (see
+`AdminService.listCredentialsByAlgorithm`). In Spring and Micronaut these bind
+from `application.yml`; in Dropwizard they are the `PkAuthConfig.Ceremony`
+record's `offeredAlgorithms` / `acceptedAlgorithms` components. All three example
+apps set them explicitly (to the defaults) as living documentation. There is no
+post-quantum signature algorithm to select yet — see `docs/threat-model.md`
+(Post-quantum readiness).
+
 ## 3. Persistence migrations
 
 ### JDBI / Postgres

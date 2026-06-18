@@ -17,3 +17,10 @@ pkauth:
     issuer: pk-auth-micronaut-demo
     audience: pk-auth-micronaut-demo-clients
     secret: change-me-in-prod-use-a-32-byte-secret!!
+  ceremony:
+    # Crypto-agility (ADR 0019): COSE signature algorithms. `offered-algorithms` is advertised to
+    # the authenticator in create-options; `accepted-algorithms` is the verify allow-list and must
+    # be a superset. Listed here as the explicit core defaults; an operator can narrow either
+    # (narrowing `accepted` can reject already-registered credentials, so change deliberately).
+    offered-algorithms: [ES256, EdDSA, RS256]
+    accepted-algorithms: [ES256, EdDSA, RS256, ES384, RS384]

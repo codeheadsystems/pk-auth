@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: MIT
 package com.codeheadsystems.pkauth.demo.dropwizard;
 
+import com.codeheadsystems.pkauth.config.CoseAlgorithm;
 import com.codeheadsystems.pkauth.dropwizard.HasPkAuthConfig;
 import com.codeheadsystems.pkauth.dropwizard.config.PkAuthConfig;
 import io.dropwizard.core.Configuration;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -18,7 +20,21 @@ public final class DemoConfiguration extends Configuration implements HasPkAuthC
           new PkAuthConfig.RelyingParty(
               "localhost", "pk-auth demo", Set.of("http://localhost:8080")),
           new PkAuthConfig.Jwt("https://issuer.local", "pkauth-demo", defaultDevSecret(), null),
-          new PkAuthConfig.Ceremony(),
+          // Crypto-agility (ADR 0019): the COSE algorithm lists are explicit here for illustration.
+          // These match the core defaults — `offered` is advertised to the authenticator,
+          // `accepted`
+          // is the (superset) verify allow-list. An operator can narrow either; the defaults are
+          // the
+          // historical union so no already-registered credential can fail verification.
+          new PkAuthConfig.Ceremony(
+              null,
+              List.of(CoseAlgorithm.ES256, CoseAlgorithm.EdDSA, CoseAlgorithm.RS256),
+              List.of(
+                  CoseAlgorithm.ES256,
+                  CoseAlgorithm.EdDSA,
+                  CoseAlgorithm.RS256,
+                  CoseAlgorithm.ES384,
+                  CoseAlgorithm.RS384)),
           new PkAuthConfig.Otp(defaultDevOtpPepper()),
           new PkAuthConfig.MagicLink("http://localhost:8080"),
           new PkAuthConfig.BackupCode());
