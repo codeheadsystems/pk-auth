@@ -4,6 +4,7 @@ package com.codeheadsystems.pkauth.admin;
 import com.codeheadsystems.pkauth.api.CredentialId;
 import com.codeheadsystems.pkauth.api.UserHandle;
 import com.codeheadsystems.pkauth.backupcodes.BackupCodeService;
+import com.codeheadsystems.pkauth.credential.CredentialAlgorithms;
 import com.codeheadsystems.pkauth.credential.CredentialRecord;
 import com.codeheadsystems.pkauth.json.Base64Url;
 import com.codeheadsystems.pkauth.magiclink.MagicLinkService;
@@ -98,6 +99,20 @@ public final class DefaultAdminService implements AdminService {
     List<CredentialSummary> credentials =
         credentialRepository.findByUserHandle(target).stream().map(CredentialSummary::of).toList();
     return new AdminResult.Success<>(credentials);
+  }
+
+  @Override
+  public AdminResult<List<CredentialSummary>> listCredentialsByAlgorithm(
+      UserHandle actor, UserHandle target, int coseAlgorithm) {
+    if (!authorize(actor, target)) return new AdminResult.Forbidden<>();
+    // Algorithm is read from each credential's already-stored COSE key (no schema change); see
+    // CredentialAlgorithms / ADR 0019.
+    List<CredentialSummary> matching =
+        credentialRepository.findByUserHandle(target).stream()
+            .filter(record -> CredentialAlgorithms.usesAlgorithm(record, coseAlgorithm))
+            .map(CredentialSummary::of)
+            .toList();
+    return new AdminResult.Success<>(matching);
   }
 
   @Override

@@ -20,6 +20,18 @@ public interface AdminService {
   /** Lists every credential the user has registered. */
   AdminResult<List<CredentialSummary>> listCredentials(UserHandle actor, UserHandle target);
 
+  /**
+   * Lists the user's credentials whose stored COSE public key uses {@code coseAlgorithm} (an IANA
+   * COSE algorithm identifier, e.g. {@code -7} for ES256). Read-side support for a crypto-agility /
+   * post-quantum re-enrollment campaign: an operator can enumerate which credentials still use a
+   * Shor-vulnerable algorithm and prompt those users to re-enroll. The algorithm is read from the
+   * already-stored COSE key — no schema change. See ADR 0019.
+   *
+   * @since 2.0.1
+   */
+  AdminResult<List<CredentialSummary>> listCredentialsByAlgorithm(
+      UserHandle actor, UserHandle target, int coseAlgorithm);
+
   /** Renames a credential's label. Returns NotFound when the credential is not the user's. */
   AdminResult<CredentialSummary> renameCredential(
       UserHandle actor, UserHandle target, CredentialId credentialId, String newLabel);

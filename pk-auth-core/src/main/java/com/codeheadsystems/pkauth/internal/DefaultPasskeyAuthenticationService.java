@@ -258,10 +258,12 @@ public final class DefaultPasskeyAuthenticationService implements PasskeyAuthent
                 req.username(),
                 req.displayName() == null ? req.username() : req.displayName()),
             challenge,
-            List.of(
-                new PublicKeyCredentialParameters("public-key", -7),
-                new PublicKeyCredentialParameters("public-key", -8),
-                new PublicKeyCredentialParameters("public-key", -257)),
+            // Crypto-agility: the offered algorithm list comes from CeremonyConfig, not a hardcoded
+            // literal. Same source of truth the verify path reads (the accepted list); see
+            // WebAuthn4JConverters.pubKeyCredParams and ADR 0019.
+            ceremonyConfig.offeredAlgorithms().stream()
+                .map(a -> new PublicKeyCredentialParameters("public-key", a.coseValue()))
+                .toList(),
             DEFAULT_TIMEOUT_MS,
             excludeCredentials,
             selection,
@@ -348,7 +350,7 @@ public final class DefaultPasskeyAuthenticationService implements PasskeyAuthent
     var w4jParams =
         new RegistrationParameters(
             serverProperty,
-            WebAuthn4JConverters.DEFAULT_PUB_KEY_PARAMS,
+            WebAuthn4JConverters.pubKeyCredParams(ceremonyConfig.acceptedAlgorithms()),
             WebAuthn4JConverters.userVerificationRequired(ceremonyConfig.userVerification()),
             /* userPresenceRequired */ true);
     // Attestation signature verification is intentionally non-strict in the default manager;

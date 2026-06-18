@@ -7,6 +7,7 @@ import com.codeheadsystems.pkauth.api.RegistrationResponseJson;
 import com.codeheadsystems.pkauth.api.ResidentKeyRequirement;
 import com.codeheadsystems.pkauth.api.Transport;
 import com.codeheadsystems.pkauth.api.UserVerificationRequirement;
+import com.codeheadsystems.pkauth.config.CoseAlgorithm;
 import com.codeheadsystems.pkauth.config.RelyingPartyConfig;
 import com.codeheadsystems.pkauth.credential.CredentialRecord;
 import com.webauthn4j.converter.util.ObjectConverter;
@@ -28,6 +29,7 @@ import com.webauthn4j.data.client.challenge.DefaultChallenge;
 import com.webauthn4j.data.extension.authenticator.AuthenticationExtensionsAuthenticatorOutputs;
 import com.webauthn4j.data.extension.client.AuthenticationExtensionsClientOutputs;
 import com.webauthn4j.server.ServerProperty;
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -39,21 +41,34 @@ import java.util.UUID;
  */
 public final class WebAuthn4JConverters {
 
-  /** Default credential-parameter set: ES256, EdDSA, RS256, ES384, RS384 (preference order). */
-  public static final List<PublicKeyCredentialParameters> DEFAULT_PUB_KEY_PARAMS =
-      List.of(
-          new PublicKeyCredentialParameters(
-              PublicKeyCredentialType.PUBLIC_KEY, COSEAlgorithmIdentifier.ES256),
-          new PublicKeyCredentialParameters(
-              PublicKeyCredentialType.PUBLIC_KEY, COSEAlgorithmIdentifier.EdDSA),
-          new PublicKeyCredentialParameters(
-              PublicKeyCredentialType.PUBLIC_KEY, COSEAlgorithmIdentifier.RS256),
-          new PublicKeyCredentialParameters(
-              PublicKeyCredentialType.PUBLIC_KEY, COSEAlgorithmIdentifier.ES384),
-          new PublicKeyCredentialParameters(
-              PublicKeyCredentialType.PUBLIC_KEY, COSEAlgorithmIdentifier.RS384));
-
   private WebAuthn4JConverters() {}
+
+  /**
+   * Builds the WebAuthn4J {@code pubKeyCredParams} verify list from the ceremony config's accepted
+   * algorithms. This is the only place the verify path learns which algorithms are allowed — there
+   * is no hardcoded default list. WebAuthn4J rejects a registration whose COSE key algorithm is
+   * absent from this list, so narrowing {@code accepted} in {@link
+   * com.codeheadsystems.pkauth.config.CeremonyConfig} narrows what verifies.
+   */
+  public static List<PublicKeyCredentialParameters> pubKeyCredParams(
+      List<CoseAlgorithm> algorithms) {
+    List<PublicKeyCredentialParameters> params = new ArrayList<>(algorithms.size());
+    for (CoseAlgorithm alg : algorithms) {
+      params.add(new PublicKeyCredentialParameters(PublicKeyCredentialType.PUBLIC_KEY, toW4j(alg)));
+    }
+    return List.copyOf(params);
+  }
+
+  /** Maps our framework-neutral {@link CoseAlgorithm} to WebAuthn4J's COSE algorithm constant. */
+  static COSEAlgorithmIdentifier toW4j(CoseAlgorithm alg) {
+    return switch (alg) {
+      case ES256 -> COSEAlgorithmIdentifier.ES256;
+      case EdDSA -> COSEAlgorithmIdentifier.EdDSA;
+      case ES384 -> COSEAlgorithmIdentifier.ES384;
+      case RS256 -> COSEAlgorithmIdentifier.RS256;
+      case RS384 -> COSEAlgorithmIdentifier.RS384;
+    };
+  }
 
   /** Builds a WebAuthn4J {@link ServerProperty} from our RP config and a challenge. */
   public static ServerProperty serverProperty(RelyingPartyConfig rp, byte[] challenge) {

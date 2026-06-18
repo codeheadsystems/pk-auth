@@ -40,7 +40,14 @@ public final class BackupCodeService {
   /** Default count of codes generated per call. */
   public static final int DEFAULT_CODE_COUNT = 10;
 
-  /** Length of each plaintext code in characters. */
+  /**
+   * Length of each plaintext code in characters. At length 10 over the 32-symbol {@link #ALPHABET}
+   * each code carries ~50 bits of entropy (10 × log2(32)). This is <em>not</em> a quantum concern:
+   * the real attack cost is dominated by the Argon2id verify hash plus the per-user verify rate
+   * limiter ({@link #DEFAULT_RATE_LIMIT} attempts per {@link #DEFAULT_RATE_WINDOW}), not by brute
+   * search of the code space. {@code CODE_LENGTH} is the lever if a deployment wants more margin;
+   * the default is deliberately left unchanged.
+   */
   public static final int CODE_LENGTH = 10;
 
   /** Default maximum verify attempts allowed per user within the rate-limit window. */

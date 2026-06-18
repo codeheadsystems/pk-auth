@@ -99,6 +99,89 @@ Boundaries cross-checked in this model:
 - **Passkey export / migration**: not the library's concern. The user's authenticator owns the
   key material; pk-auth never sees it.
 
+## Post-quantum readiness
+
+This section states the project's posture honestly: pk-auth is **post-quantum *aware* and
+crypto-agile where it can be**, but it cannot ship a post-quantum *passkey signature* today
+because none exists in the stack it sits on. The goal here is accurate framing plus the
+agility hooks that make a future migration a configuration change, not a rewrite.
+
+### What is Shor-vulnerable, and why this library can't fix it yet
+
+The passkey signature algorithms — ES256 (ECDSA P-256), EdDSA (Ed25519), and RS256/RS384
+(RSA) — all rest on problems (discrete log, factoring) that a cryptographically-relevant
+quantum computer (CRQC) running Shor's algorithm would break. None exists today, and the
+timeline is uncertain, but the threat is real for long-lived public keys.
+
+The library **cannot** unilaterally fix this. The signature algorithm of a passkey is gated,
+end to end, by layers pk-auth does not own:
+
+- the **authenticator hardware / secure element** (what keypairs it can generate),
+- **CTAP2 / FIDO2** (what the authenticator and platform negotiate),
+- **WebAuthn / the COSE algorithm registry** (what `PublicKeyCredentialParameters.alg`
+  values are even defined), and
+- **WebAuthn4J** (what this library's verifier can actually validate).
+
+No post-quantum signature scheme (e.g. an ML-DSA / FIPS 204 COSE binding) is standardized
+across that chain or implemented by WebAuthn4J as of this writing. pk-auth therefore does
+**not** invent COSE identifiers or advertise algorithms nothing in the ecosystem can produce
+or verify. When the ecosystem standardizes one, adding it is a single new constant in
+`CoseAlgorithm` plus its WebAuthn4J mapping — by design (see [crypto-agility hooks](#crypto-agility-hooks-present-today)).
+
+### Why the exposure is bounded
+
+WebAuthn is a **challenge–response** protocol, not encryption. An assertion proves possession
+of a private key *now*, against a fresh server-issued challenge; there is no long-lived
+ciphertext for an attacker to harvest and decrypt later. A CRQC does **not** retroactively
+break past authentications.
+
+The real long-term liability is the **stored public key**: once a CRQC exists, an attacker who
+has the public key (public by definition) could forge assertions for that credential. The
+mitigation is re-enrollment onto a post-quantum algorithm *before* a CRQC arrives — which is
+exactly what the per-credential algorithm visibility below is for. (The genuine
+harvest-now/decrypt-later risk in a deployment is recorded **TLS** sessions carrying bearer
+tokens, which is terminated outside this library — see the operator guide.)
+
+### Crypto-agility hooks present today
+
+Concrete seams added so a migration is configuration, not surgery (ADR 0019):
+
+- **Single injectable COSE algorithm list.** `CeremonyConfig.offeredAlgorithms` (advertised in
+  create-options) and `CeremonyConfig.acceptedAlgorithms` (enforced on verify) are the one
+  source of truth, expressed in the framework-neutral `CoseAlgorithm` enum. Both the
+  create-options ceremony and the WebAuthn4J verify path derive their lists from this config —
+  the two formerly-divergent hardcoded lists are gone. The accepted list is authoritative;
+  the offered list may be a narrower subset, and an operator can narrow *either* without code
+  changes. The default accepted set is the **union** of everything historically accepted
+  (ES256, EdDSA, RS256, ES384, RS384), so no already-registered credential can fail
+  verification.
+- **Per-credential algorithm visibility.** `CredentialAlgorithms.coseAlgorithm(record)` decodes
+  the COSE algorithm already stored on every credential (no schema change), and
+  `AdminService.listCredentialsByAlgorithm(actor, target, coseAlgorithm)` reports which of a
+  user's credentials use a given (e.g. quantum-vulnerable) algorithm — the read side a future
+  re-enrollment campaign drives off.
+- **A symmetric-resistant JWT path.** The HS256 post-ceremony token (with the enforced
+  ≥ 256-bit key) is HMAC-SHA256, which Shor does not break; see [Symmetric primitives](#symmetric-primitives-already-quantum-conservative).
+
+### Symmetric primitives already quantum-conservative
+
+The non-signature secrets pk-auth generates are all 256-bit random values, which only Grover's
+algorithm targets — and Grover merely halves the effective bit-strength, leaving ~128-bit
+security at 256 bits. No action needed:
+
+| Secret | Size | Post-quantum status |
+|---|---|---|
+| JWT HS256 signing secret | ≥ 32 bytes (enforced) | HMAC-SHA256 — Shor N/A; ~128-bit under Grover |
+| Refresh-token secret | 32 bytes | SHA-256 hashed at rest; ~128-bit under Grover |
+| OTP pepper | ≥ 16 bytes (32+ recommended) | HMAC-SHA256 keying; ~128-bit under Grover at 32 B |
+| Ceremony challenge | 32 bytes | Random nonce, single-use; not a long-term liability |
+| Backup codes | ~50 bits + Argon2id | Entropy + KDF + rate limit dominate; not a quantum issue |
+
+ES256 (asymmetric) JWTs, by contrast, **are** Shor-vulnerable — they exist for untrusted
+third-party verification, and their exposure is bounded by the short token TTL. For a
+single-issuer/single-verifier deployment, HS256 with a strong key is the quantum-conservative
+default (see the `pk-auth-jwt` package Javadoc and ADR 0019).
+
 ## Supply chain
 
 pk-auth is a security library published to Maven Central and npm, so a compromise of
