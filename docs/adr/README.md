@@ -27,3 +27,4 @@ ADR is added and the prior one is marked `Superseded by NNNN`. See
 | [0017](./0017-sonarqube-cloud-static-analysis.md) | Superseded by [0018](./0018-remove-sonarqube-cloud.md) | 2026-06-11 | SonarQube Cloud for static analysis and coverage tracking |
 | [0018](./0018-remove-sonarqube-cloud.md) | Accepted | 2026-06-11 | Remove SonarQube Cloud; enforce coverage with native JaCoCo line + branch gates |
 | [0019](./0019-crypto-agility-post-quantum-readiness.md) | Accepted | 2026-06-17 | Crypto-agility and post-quantum readiness for passkey algorithms |
+| [0020](./0020-browser-sdk-testing-strategy.md) | Accepted | 2026-06-18 | Browser SDK testing strategy |
