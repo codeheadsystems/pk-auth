@@ -1,7 +1,13 @@
 
 import * as b64u from "../../src/base64url";
-import {StartRegistrationRequest, StartRegistrationResponse} from "../../src";
+import {
+  FinishRegistrationRequest,
+  FinishRegistrationResponse,
+  StartRegistrationRequest,
+  StartRegistrationResponse
+} from "../../src";
 import {HttpError} from "./httpServer";
+import {Encoder} from "cbor-x";
 
 interface PendingEntry {
   displayName: string;
@@ -13,17 +19,15 @@ interface PendingEntry {
 }
 
 /*
-RegistrationService is a representation of a server side service that can start and finish
+RegistrationService is a server side service that can start and finish
 client registrations.
 Instantiate the service with a relying party id [rpId] and a list of allowed users.
 A registration is started with a call to start which will produce a challenge that
-the client must respond to when calling finish.
+the client must respond to with a call to finish.
  */
 export class RegistrationService {
   // pending is the map of registrations which have been started; but not yet finished.
   // Maps challenge id to a PendingEntry structure.
-  // A registration.ts cannot be finished unless it has been successfully started.
-  // A successfully started registration.ts must appear on the pending map.
   private readonly pending : Map<string, PendingEntry>;
   private readonly rpId : string;
   private readonly allowedUsernames : string[];
@@ -34,7 +38,7 @@ export class RegistrationService {
     this.allowedUsernames = allowedUsernames ?? [];
   }
 
-  start(req : StartRegistrationRequest) : StartRegistrationResponse {
+  async start(req : StartRegistrationRequest) : Promise<StartRegistrationResponse> {
     if (!this.allowedUsernames.includes(req.username)) {
       throw new HttpError(403, { error: `username '${req.username}' not allowed` });
     }
@@ -48,10 +52,140 @@ export class RegistrationService {
       userId,
       challenge,
       challengeId,
-      rpId: this.rpId };
+      rpId: this.rpId
+    };
 
-    this.pending.set(challengeId, pendingEntry); // save the requests which will be validated in finish
+    // save the requests which will be validated in finish
+    this.pending.set(challengeId, pendingEntry);
     return newStartRegistrationResponse(pendingEntry)
+  }
+
+  async finish(req: FinishRegistrationRequest): Promise<FinishRegistrationResponse> {
+    const entry = this.pending.get(req.challengeId);
+    if (!entry) {
+      throw new HttpError(400, { error: `unknown challengeId: ${req.challengeId}` });
+    }
+    if (entry.username !== req.username) {
+      throw new HttpError(400, { error: `username mismatch: ${req.username}` });
+    }
+    const clientData = parseClientData(req.response.response.clientDataJSON);
+    if (clientData.type !== "webauthn.create") {
+      throw new HttpError(400, { error: `wrong clientDataJSON type: ${clientData.type}` });
+    }
+    if (clientData.challenge !== entry.challenge) {
+      throw new HttpError(400, { error: "challenge mismatch" });
+    }
+
+    const attestation = decodeAttestation(req.response.response.attestationObject)
+    const publicKey = await parsePublicKey(attestation.publicKeyBytes)
+    const isValid = await validateChallenge(publicKey, attestation, req.response.response.clientDataJSON)
+    if (!isValid) {
+      throw new HttpError(400, { error: "invalid signature" });
+    }
+
+    const credId = attestation.authData.slice(55, 55 + attestation.credentialIdLength);
+    const flags = attestation.authData[32]!;
+    this.pending.delete(req.challengeId);
+    return {
+      credential: {
+        credentialId: b64u.encode(credId),
+        userHandle: entry.userId,
+        label: req.label ?? "key",
+        transports: req.response.response.transports ?? [],
+        counter: attestation.dv.getUint32(33),
+        backupEligible: (flags & 0x08) !== 0,
+        backupState: (flags & 0x10) !== 0,
+        authenticatorData: b64u.encode(attestation.authData),
+      },
+    };
+  }
+}
+
+async function validateChallenge(publicKey: CryptoKey, attestation: Attestation, clientDataJson: string) : Promise<boolean> {
+  const data = b64u.decode(clientDataJson);
+  const clientDataHash = new Uint8Array(
+    await crypto.subtle.digest("SHA-256", data),
+  );
+  const verificationData = new Uint8Array(attestation.authData.length + clientDataHash.length);
+  verificationData.set(attestation.authData);
+  verificationData.set(clientDataHash, attestation.authData.length);
+
+  return crypto.subtle.verify(
+    { name: "ECDSA", hash: "SHA-256" },
+    publicKey,
+    attestation.signature,
+    verificationData,
+  );
+}
+
+function parsePublicKey(publicKeyBytes : Uint8Array<ArrayBuffer>) : Promise<CryptoKey> {
+  try {
+    return crypto.subtle.importKey(
+      "raw",
+      publicKeyBytes,
+      { name: "ECDSA", namedCurve: "P-256" },
+      false,
+      ["verify"],
+    );
+  } catch(e) {
+    const eMessage = e as {message: string}
+    const message = eMessage && eMessage.message ? eMessage.message : "unknown error";
+    throw new HttpError(400, { error: `invalid public key in authData: ${message}` });
+  }
+}
+
+type Attestation = {
+  dv: DataView,
+  credentialIdLength: number,
+  signature: Uint8Array<ArrayBuffer>,
+  authData: Uint8Array<ArrayBufferLike>,
+  publicKeyBytes: Uint8Array<ArrayBuffer>,
+}
+
+function decodeAttestation(attestation: string) : Attestation {
+  const cbor = new Encoder({ useRecords: false, mapsAsObjects: false });
+  const attestationObjectBytes = b64u.decode(attestation);
+  const attObj = cbor.decode(attestationObjectBytes) as Map<string, unknown>;
+  if (attObj.get("fmt") !== "packed") {
+    throw new HttpError(400, { error: `unsupported attestation format: ${attObj.get("fmt")}` });
+  }
+  const authData = attObj.get("authData") as Uint8Array;
+  const attStmt = attObj.get("attStmt") as Map<string, unknown>;
+  const sig = attStmt.get("sig") as Uint8Array<ArrayBuffer>;
+
+  // Extract COSE public key from authData
+  const dv = new DataView(authData.buffer, authData.byteOffset);
+  const credIdLen = dv.getUint16(53);
+  const coseKey = cbor.decode(authData.slice(55 + credIdLen)) as Map<number, unknown>;
+  const xBytes = coseKey.get(-2) as Uint8Array;
+  const yBytes = coseKey.get(-3) as Uint8Array;
+
+  const rawPoint = new Uint8Array(65);
+  rawPoint[0] = 0x04;
+  rawPoint.set(xBytes, 1);
+  rawPoint.set(yBytes, 33);
+
+  return {
+    dv: dv,
+    credentialIdLength: credIdLen,
+    signature: sig,
+    authData: authData,
+    publicKeyBytes: rawPoint
+  }
+}
+
+function parseClientData(clientDataJson: string) : { type:string, challenge: string } {
+  // Decode and validate clientDataJSON
+  const data = b64u.decode(clientDataJson);
+  try {
+    return JSON.parse(new TextDecoder().decode(data)) as {
+      type: string;
+      challenge: string;
+    };
+  } catch(e){
+    const eMessage = e as {message: string}
+    const message = eMessage && eMessage.message ? eMessage.message : "unknown error";
+    throw new HttpError(400, { error: "invalid client data json: " + message });
   }
 }
 
