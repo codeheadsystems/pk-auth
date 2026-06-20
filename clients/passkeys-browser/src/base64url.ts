@@ -22,7 +22,7 @@ export function encode(input: ArrayBuffer | Uint8Array | ArrayBufferView): Base6
   return btoa(s).replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
 }
 
-export function decode(input: Base64Url): Uint8Array {
+export function decode(input: Base64Url): Uint8Array<ArrayBuffer> {
   const pad = "=".repeat((4 - (input.length % 4)) % 4);
   const normalized = input.replaceAll("-", "+").replaceAll("_", "/") + pad;
   const binary = atob(normalized);
@@ -43,6 +43,11 @@ export function decodeToArrayBuffer(input: Base64Url): ArrayBuffer {
 
 function toUint8Array(input: ArrayBuffer | Uint8Array | ArrayBufferView): Uint8Array {
   if (input instanceof Uint8Array) return input;
-  if (input instanceof ArrayBuffer) return new Uint8Array(input);
+  // Use toString-based check to handle cross-realm ArrayBuffers (e.g. from TextEncoder in jsdom)
+  // jsdom's TextEncoder creates an ArrayBuffer that is different from NodeJs ArrayBuffer so "instanceof"
+  // will not work. The string tag for the type will work.
+  if (input instanceof ArrayBuffer || Object.prototype.toString.call(input) === "[object ArrayBuffer]") {
+    return new Uint8Array(input as ArrayBuffer);
+  }
   return new Uint8Array(input.buffer, input.byteOffset, input.byteLength);
 }
