@@ -332,7 +332,7 @@ describe("PkAuthCeremonyClient.authenticate (end-to-end with stubbed credentials
       "/authentication/finish": { token: "t" },
     };
     // conditional = true -> mediation set
-    const getCond = vi.fn(async () => fakeAssertion(new Uint8Array([1])));
+    const getCond = vi.fn(async (_options?: CredentialRequestOptions) => fakeAssertion(new Uint8Array([1])));
     const a = ceremonyFetch(responses);
     await new PkAuthCeremonyClient(
       { apiBase: "https://x", fetch: a.fetchImpl as unknown as typeof fetch },
@@ -343,7 +343,7 @@ describe("PkAuthCeremonyClient.authenticate (end-to-end with stubbed credentials
     ).toBe("conditional");
 
     // conditional defaults to false -> no mediation
-    const getPlain = vi.fn(async () => fakeAssertion(new Uint8Array([1])));
+    const getPlain = vi.fn(async (_options?: CredentialRequestOptions) => fakeAssertion(new Uint8Array([1])));
     const b = ceremonyFetch(responses);
     await new PkAuthCeremonyClient(
       { apiBase: "https://x", fetch: b.fetchImpl as unknown as typeof fetch },
