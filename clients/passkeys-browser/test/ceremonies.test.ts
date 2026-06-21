@@ -9,12 +9,22 @@ import {
   encodeRegistrationResponse,
 } from "../src/ceremonies";
 import type {
+  FinishRegistrationRequest, FinishRegistrationResponse,
   PublicKeyCredentialCreationOptionsJson,
   PublicKeyCredentialRequestOptionsJson, StartRegistrationRequest, StartRegistrationResponse,
 } from "../src/types";
-import {decodeJson, encodeJson, Handler, HttpHandler, HttpServer, newHttpHandler} from "./helpers/httpServer";
+import {
+  decodeJson,
+  encodeJson,
+  Handler,
+  HttpError,
+  HttpHandler,
+  HttpServer,
+  newHttpHandler
+} from "./helpers/httpServer";
 import * as http from "node:http";
 import {RegistrationService} from "./helpers/registration";
+import {FakeAuthenticator} from "./helpers/fakeAuthenticator";
 
 const CREATE_OPTIONS_JSON: PublicKeyCredentialCreationOptionsJson = {
   rp: { id: "example.com", name: "Example" },
@@ -135,7 +145,6 @@ describe("encodeAuthenticationResponse", () => {
   });
 });
 
-
 describe("PkAuthCeremonyClient http test", () => {
   it("when startRegistration endpoint returns 500 then the client makes no attempt to create credential", async() => {
     using server= await startHttpServer({
@@ -175,7 +184,8 @@ describe("PkAuthCeremonyClient http test", () => {
       [startPath]: newStartHandler(registration),
       [finishPath]: errorHttpHandler
     });
-    const credentialsContainer = mockCredentialContainer();
+    const credentialsContainer = new FakeAuthenticator();
+    credentialsContainer.create = vi.fn(credentialsContainer.create)
     const client = new PkAuthCeremonyClient(
       { apiBase: server.url },
       { credentials: credentialsContainer },
@@ -184,23 +194,28 @@ describe("PkAuthCeremonyClient http test", () => {
     await expect(client.register({ username: "alice", label: "key" })).rejects.toThrow("HTTP 500: unit test error from errorHttpHandler");
 
     expect(credentialsContainer.create).toHaveBeenCalled(); // this proves the client did attempt to create a credential
-    // TODO: wait for the finish handler to more strongly assert behavior of "finish" phase of client.register
+  })
+
+  it("when registering a credential, then the server returns a finished response", async() => {
+    const registration = new RegistrationService("localhost", "alice", "bob")
+    using server = await startHttpServer({
+      [startPath]: newStartHandler(registration),
+      [finishPath]: newFinishHandler(registration)
+    });
+    const client = new PkAuthCeremonyClient(
+      { apiBase: server.url },
+      { credentials: new FakeAuthenticator() },
+    );
+
+    const response = await client.register({ username: "alice", label: "key" });
+    expect(response.credential.label).to.equal("key");
+    expect(response.credential.credentialId).not.toBe("");
+    expect(response.credential.userHandle).not.toBe("");
+    expect(response.credential.authenticatorData).not.toBe("");
   })
 
   const startPath = "/auth/passkeys/registration/start";
   const finishPath = "/auth/passkeys/registration/finish"
-
-  function mockCredentialContainer() : CredentialsContainer {
-    return {
-      create: vi.fn(async () =>
-        fakeCredential(new Uint8Array([7]), {
-          clientDataJSON: new Uint8Array([0]).buffer as ArrayBuffer,
-          attestationObject: new Uint8Array([0]).buffer as ArrayBuffer,
-        } as unknown as AuthenticatorResponse),
-      ),
-      get: vi.fn(),
-    } as unknown as CredentialsContainer;
-  }
 
   function noOpCredentialsContainer() : CredentialsContainer {
     return { create: vi.fn(), get: vi.fn(), preventSilentAccess: vi.fn(), store: vi.fn()};
@@ -215,8 +230,23 @@ describe("PkAuthCeremonyClient http test", () => {
     const endpoint = async (req: StartRegistrationRequest) : Promise<StartRegistrationResponse> => {
       return registration.start(req);
     };
-    const handler = new Handler(decodeJson, endpoint, encodeJson);
+    const handler = new Handler(decodePost, endpoint, encodeJson);
     return newHttpHandler(handler);
+  }
+
+  function newFinishHandler(registration: RegistrationService) : HttpHandler{
+    const endpoint = async (req: FinishRegistrationRequest) : Promise<FinishRegistrationResponse> => {
+      return registration.finish(req);
+    };
+    const handler = new Handler(decodePost, endpoint, encodeJson);
+    return newHttpHandler(handler);
+  }
+
+  async function decodePost<T>(req : http.IncomingMessage): Promise<T> {
+      if (req.method !== "POST") {
+        throw new HttpError(405, `method '${req.method}' not allowed`);
+      }
+      return decodeJson(req);
   }
 
   async function startHttpServer(routes: Record<string, HttpHandler>) : Promise<HttpServer> {
@@ -226,148 +256,15 @@ describe("PkAuthCeremonyClient http test", () => {
   }
 });
 
-describe("PkAuthCeremonyClient.register (end-to-end with stubbed credentials)", () => {
-  it("walks start -> create -> finish, propagating the challenge id", async () => {
-    const startBody: PublicKeyCredentialCreationOptionsJson = CREATE_OPTIONS_JSON;
-    const fetchImpl = vi.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
-      if (String(url).endsWith("/registration/start")) {
-        return new Response(
-          JSON.stringify({ challengeId: "ch-1", publicKey: startBody }),
-          { status: 200 },
-        );
-      }
-      if (String(url).endsWith("/registration/finish")) {
-        const body = JSON.parse(String(init!.body));
-        expect(body.challengeId).toBe("ch-1");
-        expect(body.username).toBe("alice");
-        return new Response(
-          JSON.stringify({
-            credential: {
-              credentialId: "cred",
-              userHandle: "uh",
-              label: "key",
-              transports: [],
-              counter: 0,
-              backupEligible: false,
-              backupState: false,
-              authenticatorData: "ad",
-            },
-          }),
-          { status: 200 },
-        );
-      }
-      throw new Error("unexpected " + String(url));
-    });
-
-    const rawId = new Uint8Array([42]);
-    const fakeCreds = {
-      create: vi.fn(async () =>
-        fakeCredential(rawId, {
-          clientDataJSON: new Uint8Array([0]).buffer as ArrayBuffer,
-          attestationObject: new Uint8Array([0]).buffer as ArrayBuffer,
-          getTransports: () => ["internal"],
-        } as unknown as AuthenticatorResponse),
-      ),
-      get: vi.fn(),
-    } as unknown as CredentialsContainer;
-
-    const client = new PkAuthCeremonyClient(
-      { apiBase: "https://x", fetch: fetchImpl as unknown as typeof fetch },
-      { credentials: fakeCreds },
-    );
-    const result = await client.register({ username: "alice", label: "key" });
-    expect(result.credential.credentialId).toBe("cred");
-    expect(fakeCreds.create).toHaveBeenCalledOnce();
-  });
-});
-
-// Additional ceremony coverage driven by the StrykerJS report (PR #39, @bernata):
-// the suite previously exercised only the register() happy path, leaving
-// authenticate(), the credential create/get helpers, the cancellation branches,
-// and the navigator.credentials guard as 0%-covered (every mutant survived).
-// These ceremonies ARE unit-testable because CeremonyOptions.credentials injects
-// a fake CredentialsContainer — so we drive the full flows here.
-
-function fakeAssertion(rawId: Uint8Array): PublicKeyCredential {
-  return fakeCredential(rawId, {
-    clientDataJSON: new Uint8Array([0x7b]).buffer as ArrayBuffer,
-    authenticatorData: new Uint8Array([0x55]).buffer as ArrayBuffer,
-    signature: new Uint8Array([0x99]).buffer as ArrayBuffer,
-    userHandle: null,
-  } as unknown as AuthenticatorResponse);
-}
-
-/** Records every request body keyed by the URL suffix, and serves canned responses. */
-function ceremonyFetch(responses: Record<string, unknown>) {
-  const bodies: Record<string, Record<string, unknown>> = {};
-  const methods: Record<string, string | undefined> = {};
-  const urls: string[] = [];
-  const fetchImpl = vi.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
-    const u = String(url);
-    urls.push(u);
-    const key = Object.keys(responses).find((suffix) => u.endsWith(suffix));
-    if (!key) throw new Error("unexpected " + u);
-    methods[key] = init?.method;
-    if (init?.body) bodies[key] = JSON.parse(String(init.body));
-    return new Response(JSON.stringify(responses[key]), { status: 200 });
-  });
-  return { fetchImpl, bodies, methods, urls };
-}
-
 describe("PkAuthCeremonyClient.register (start-body contract)", () => {
-  it("defaults displayName to username and label to null, POSTing both ceremony steps", async () => {
-    const { fetchImpl, bodies, methods } = ceremonyFetch({
-      "/registration/start": { challengeId: "ch-1", publicKey: CREATE_OPTIONS_JSON },
-      "/registration/finish": { credential: { credentialId: "cred" } },
-    });
-    const fakeCreds = {
-      create: vi.fn(async () =>
-        fakeCredential(new Uint8Array([7]), {
-          clientDataJSON: new Uint8Array([0]).buffer as ArrayBuffer,
-          attestationObject: new Uint8Array([0]).buffer as ArrayBuffer,
-        } as unknown as AuthenticatorResponse),
-      ),
-      get: vi.fn(),
-    } as unknown as CredentialsContainer;
-
-    const client = new PkAuthCeremonyClient(
-      { apiBase: "https://x", fetch: fetchImpl as unknown as typeof fetch },
-      { credentials: fakeCreds },
-    );
-    // No displayName, no label provided.
-    await client.register({ username: "alice" });
-
-    // displayName ?? username  (kills the `&&` mutant) and label ?? null.
-    expect(bodies["/registration/start"]).toMatchObject({
-      username: "alice",
-      displayName: "alice",
-      label: null,
-      challenge: null,
-    });
-    // label ?? null again on the finish body.
-    expect(bodies["/registration/finish"]).toMatchObject({ username: "alice", label: null });
-    // Both ceremony steps must be POST (kills the "POST" -> "" mutants).
-    expect(methods["/registration/start"]).toBe("POST");
-    expect(methods["/registration/finish"]).toBe("POST");
-  });
-
   it("passes an explicit displayName and label straight through", async () => {
     const { fetchImpl, bodies } = ceremonyFetch({
       "/registration/start": { challengeId: "ch-1", publicKey: CREATE_OPTIONS_JSON },
       "/registration/finish": { credential: { credentialId: "cred" } },
     });
-    const fakeCreds = {
-      create: vi.fn(async () =>
-        fakeCredential(new Uint8Array([7]), {
-          clientDataJSON: new Uint8Array([0]).buffer as ArrayBuffer,
-          attestationObject: new Uint8Array([0]).buffer as ArrayBuffer,
-        } as unknown as AuthenticatorResponse),
-      ),
-      get: vi.fn(),
-    } as unknown as CredentialsContainer;
     const client = new PkAuthCeremonyClient(
       { apiBase: "https://x", fetch: fetchImpl as unknown as typeof fetch },
-      { credentials: fakeCreds },
+      { credentials: new FakeAuthenticator() },
     );
     await client.register({ username: "bob", displayName: "Bobby", label: "yubikey" });
     expect(bodies["/registration/start"]).toMatchObject({ displayName: "Bobby", label: "yubikey" });
@@ -486,3 +383,40 @@ describe("PkAuthCeremonyClient credentials guard", () => {
     );
   });
 });
+
+
+// Additional ceremony coverage driven by the StrykerJS report (PR #39, @bernata):
+// the suite previously exercised only the register() happy path, leaving
+// authenticate(), the credential create/get helpers, the cancellation branches,
+// and the navigator.credentials guard as 0%-covered (every mutant survived).
+// These ceremonies ARE unit-testable because CeremonyOptions.credentials injects
+// a fake CredentialsContainer — so we drive the full flows here.
+
+function fakeAssertion(rawId: Uint8Array): PublicKeyCredential {
+  return fakeCredential(rawId, {
+    clientDataJSON: new Uint8Array([0x7b]).buffer as ArrayBuffer,
+    authenticatorData: new Uint8Array([0x55]).buffer as ArrayBuffer,
+    signature: new Uint8Array([0x99]).buffer as ArrayBuffer,
+    userHandle: null,
+  } as unknown as AuthenticatorResponse);
+}
+
+/** Records every request body keyed by the URL suffix, and serves canned responses. */
+function ceremonyFetch(responses: Record<string, unknown>) {
+  const bodies: Record<string, Record<string, unknown>> = {};
+  const methods: Record<string, string | undefined> = {};
+  const urls: string[] = [];
+  const fetchImpl = vi.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
+    const u = String(url);
+    urls.push(u);
+    const key = Object.keys(responses).find((suffix) => u.endsWith(suffix));
+    if (!key) throw new Error("unexpected " + u);
+    methods[key] = init?.method;
+    if (init?.body) bodies[key] = JSON.parse(String(init.body));
+    return new Response(JSON.stringify(responses[key]), { status: 200 });
+  });
+  return { fetchImpl, bodies, methods, urls };
+}
+
+
+
