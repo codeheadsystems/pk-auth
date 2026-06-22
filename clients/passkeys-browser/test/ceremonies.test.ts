@@ -165,7 +165,7 @@ describe("PkAuthCeremonyClient http test", () => {
     const registration = new RegistrationService("localhost", "alice", "bob")
     using server= await startHttpServer({
       [startPath]: newStartHandler(registration),
-      [finishPath]: errorHttpHandler
+      [finishPath]: newFinishHandler(registration)
     });
     const credentialsContainer = noOpCredentialsContainer();
     const client = new PkAuthCeremonyClient(
@@ -173,8 +173,7 @@ describe("PkAuthCeremonyClient http test", () => {
       { credentials: credentialsContainer },
     );
 
-    await expect(client.register({ username: "alice", label: "key" })).rejects.toThrow();
-
+    await expect(client.register({ username: "alice", label: "key" })).rejects.toThrow(/creation was cancelled/);
     expect(credentialsContainer.create).toHaveBeenCalled(); // this proves the client did attempt to create a credential
   })
 
@@ -202,16 +201,28 @@ describe("PkAuthCeremonyClient http test", () => {
       [startPath]: newStartHandler(registration),
       [finishPath]: newFinishHandler(registration)
     });
+    const authenticator = new FakeAuthenticator();
     const client = new PkAuthCeremonyClient(
       { apiBase: server.url },
-      { credentials: new FakeAuthenticator() },
+      { credentials: authenticator },
     );
 
     const response = await client.register({ username: "alice", label: "key" });
+    const challenge = crypto.getRandomValues(new Uint8Array(32));
+    const credentialRequestOptions = {
+      publicKey: {
+        challenge: challenge,
+        rpId: "localhost"
+      }
+    }
+    const retrievedCredential = await authenticator.get(credentialRequestOptions);
+
     expect(response.credential.label).to.equal("key");
     expect(response.credential.credentialId).not.toBe("");
     expect(response.credential.userHandle).not.toBe("");
     expect(response.credential.authenticatorData).not.toBe("");
+    expect(retrievedCredential?.id).toEqual(response.credential.credentialId);
+    expect(retrievedCredential?.type).toEqual("public-key");
   })
 
   const startPath = "/auth/passkeys/registration/start";
@@ -269,18 +280,6 @@ describe("PkAuthCeremonyClient.register (start-body contract)", () => {
     await client.register({ username: "bob", displayName: "Bobby", label: "yubikey" });
     expect(bodies["/registration/start"]).toMatchObject({ displayName: "Bobby", label: "yubikey" });
     expect(bodies["/registration/finish"]).toMatchObject({ label: "yubikey" });
-  });
-
-  it("rejects when the authenticator returns no credential (create cancelled)", async () => {
-    const { fetchImpl } = ceremonyFetch({
-      "/registration/start": { challengeId: "ch-1", publicKey: CREATE_OPTIONS_JSON },
-    });
-    const fakeCreds = { create: vi.fn(async () => null), get: vi.fn() } as unknown as CredentialsContainer;
-    const client = new PkAuthCeremonyClient(
-      { apiBase: "https://x", fetch: fetchImpl as unknown as typeof fetch },
-      { credentials: fakeCreds },
-    );
-    await expect(client.register({ username: "alice" })).rejects.toThrow(/creation was cancelled/);
   });
 });
 

@@ -121,10 +121,68 @@ function makeOptions(rpId: string, challenge: Uint8Array): CredentialCreationOpt
 }
 
 
+describe("FakeAuthenticator.get", () => {
+  it("returns a credential whose clientDataJSON embeds the challenge and has type 'webauthn.get'", async () => {
+    const auth = new FakeAuthenticator();
+    const assertionChallenge = crypto.getRandomValues(new Uint8Array(32));
+
+    await auth.create(makeOptions("example.com", crypto.getRandomValues(new Uint8Array(32))));
+    const credential = await auth.get(makeGetOptions("example.com", assertionChallenge));
+
+    const clientData = decodeAssertionClientData(credential!);
+    expect(clientData.type).toBe("webauthn.get");
+    expect(b64u.decode(clientData.challenge)).toEqual(assertionChallenge);
+    expect(clientData.origin).toBe("https://example.com");
+  });
+
+  it("returns an assertion whose signature verifies against the registered public key", async () => {
+    const auth = new FakeAuthenticator();
+    const assertionChallenge = crypto.getRandomValues(new Uint8Array(32));
+
+    const registered = await auth.create(makeOptions("example.com", crypto.getRandomValues(new Uint8Array(32))));
+    const assertion = await auth.get(makeGetOptions("example.com", assertionChallenge));
+
+    const publicKey = await extractPublicKey(registered);
+    const response = assertion!.response as AuthenticatorAssertionResponse;
+    const sigData = await toBeSigned(new Uint8Array(response.authenticatorData), response.clientDataJSON);
+    const valid = await crypto.subtle.verify(
+      { name: "ECDSA", hash: "SHA-256" },
+      publicKey,
+      response.signature,
+      sigData,
+    );
+    expect(valid).toBe(true);
+  });
+
+  it("uses the same credential id as the registered credential", async () => {
+    const auth = new FakeAuthenticator();
+
+    const registered = await auth.create(makeOptions("example.com", new Uint8Array(32)));
+    const assertion = await auth.get(makeGetOptions("example.com", new Uint8Array(32)));
+
+    expect(assertion!.id).toBe(registered.id);
+    expect(new Uint8Array(assertion!.rawId)).toEqual(new Uint8Array(registered.rawId));
+  });
+});
+
 interface ClientData  {
   type: string;
   challenge: string;
   origin: string
+}
+
+function makeGetOptions(rpId: string, challenge: Uint8Array): CredentialRequestOptions {
+  return {
+    publicKey: {
+      challenge: challenge.buffer.slice(
+        challenge.byteOffset,
+        challenge.byteOffset + challenge.byteLength,
+      ) as ArrayBuffer,
+      rpId,
+      userVerification: "preferred",
+      allowCredentials: [],
+    },
+  };
 }
 
 function decodeClientData(credential: PublicKeyCredential): ClientData {
@@ -132,4 +190,34 @@ function decodeClientData(credential: PublicKeyCredential): ClientData {
   return JSON.parse(
     new TextDecoder().decode(response.clientDataJSON),
   )
+}
+
+function decodeAssertionClientData(credential: PublicKeyCredential): ClientData {
+  const response = credential.response as AuthenticatorAssertionResponse;
+  return JSON.parse(new TextDecoder().decode(response.clientDataJSON));
+}
+
+async function extractPublicKey(credential: PublicKeyCredential): Promise<CryptoKey> {
+  const cbor = new Encoder({ useRecords: false, mapsAsObjects: false });
+  const response = credential.response as AuthenticatorAttestationResponse;
+  const attObj = cbor.decode(new Uint8Array(response.attestationObject)) as Map<string, unknown>;
+  const authData = attObj.get("authData") as Uint8Array;
+  const view = new DataView(authData.buffer, authData.byteOffset);
+  const credIdLen = view.getUint16(53);
+  const coseKey = cbor.decode(authData.slice(55 + credIdLen)) as Map<number, unknown>;
+
+  const xBytes = coseKey.get(-2) as Uint8Array;
+  const yBytes = coseKey.get(-3) as Uint8Array;
+  const rawPoint = new Uint8Array(65);
+  rawPoint[0] = 0x04;
+  rawPoint.set(xBytes, 1);
+  rawPoint.set(yBytes, 33);
+
+  return crypto.subtle.importKey(
+    "raw",
+    rawPoint,
+    { name: "ECDSA", namedCurve: "P-256" },
+    false,
+    ["verify"],
+  );
 }

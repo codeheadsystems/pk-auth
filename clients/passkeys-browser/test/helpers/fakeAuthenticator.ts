@@ -3,7 +3,19 @@ import {Encoder} from "cbor-x";
 import * as b64u from "../../src/base64url";
 import {BufferUint8} from "./buffer";
 
+type StoredCredential = { keyPair: CryptoKeyPair; rawId: Uint8Array };
+
 export class FakeAuthenticator implements CredentialsContainer {
+  // map id to keypair. The id is the base64 encoding of the randomly generated id [rawId].
+  private readonly stored : Map<string, StoredCredential>;
+  // lastId is used when get method is invoked w/o specifying a specific id.
+  private lastId: string | null;
+
+  constructor() {
+    this.stored = new Map<string, StoredCredential>();
+    this.lastId = null;
+  }
+
   async create(options: CredentialCreationOptions): Promise<PublicKeyCredential> {
     const pk = options.publicKey;
     if (!pk) throw new Error("FakeAuthenticator.create: publicKey options are required");
@@ -11,16 +23,20 @@ export class FakeAuthenticator implements CredentialsContainer {
     if (!rpId) throw new Error("FakeAuthenticator.create: rp.id is required");
 
     const challenge = new Uint8Array(pk.challenge as ArrayBuffer);
-    const clientDataBytes = encodeClientData(challenge, rpId);
+    const clientDataBytes = encodeClientData(challenge, rpId, "webauthn.create");
     const keyPair = await ecdsa("P-256")
     const rawId = crypto.getRandomValues(new Uint8Array(16));
     const authData = await newAuthData(keyPair, rpId, rawId);
     const signature = await sign(authData, clientDataBytes, keyPair);
     const atoBytes = encodeAttestationObject(authData, signature);
 
+    const id = b64u.encode(rawId);
+    this.stored.set(id, { keyPair, rawId });
+    this.lastId = id;
+
     return {
       rawId: rawId.buffer,
-      id: b64u.encode(rawId),
+      id,
       type: "public-key",
       authenticatorAttachment: null,
       getClientExtensionResults: () => ({}),
@@ -33,8 +49,49 @@ export class FakeAuthenticator implements CredentialsContainer {
     };
   }
 
-  async get(_options: CredentialRequestOptions): Promise<PublicKeyCredential | null> {
-    throw new Error("FakeAuthenticator.get() not yet implemented");
+  async get(options: CredentialRequestOptions): Promise<PublicKeyCredential | null> {
+    const pk = options.publicKey;
+    if (!pk) throw new Error("FakeAuthenticator.get: publicKey options are required");
+    const rpId = pk.rpId;
+    if (!rpId) throw new Error("FakeAuthenticator.get: rpId is required");
+
+    const credential = this.findCredential(pk.allowCredentials);
+    if (!credential) throw new Error("FakeAuthenticator.get: no matching credential found");
+
+    const challenge = new Uint8Array(pk.challenge as ArrayBuffer);
+    const clientDataBytes = encodeClientData(challenge, rpId, "webauthn.get");
+    const authData = await assertionAuthData(rpId);
+    const signature = await sign(authData, clientDataBytes, credential.keyPair);
+    const { rawId } = credential;
+
+    return {
+      rawId: newArrayBuffer(rawId),
+      id: b64u.encode(rawId),
+      type: "public-key",
+      authenticatorAttachment: null,
+      getClientExtensionResults: () => ({}),
+      response: {
+        clientDataJSON: newArrayBuffer(clientDataBytes),
+        authenticatorData: newArrayBuffer(authData),
+        signature: newArrayBuffer(signature),
+        userHandle: null,
+      } as AuthenticatorAssertionResponse,
+      toJSON: () => ({} as AuthenticationResponseJSON),
+    };
+  }
+
+  private findCredential(
+    allowCredentials: PublicKeyCredentialDescriptor[] | undefined,
+  ): StoredCredential | undefined {
+    if (allowCredentials && allowCredentials.length > 0) {
+      for (const desc of allowCredentials) {
+        const id = b64u.encode(new Uint8Array(desc.id as ArrayBuffer));
+        const entry = this.stored.get(id);
+        if (entry) return entry;
+      }
+      return undefined;
+    }
+    return this.lastId ? this.stored.get(this.lastId) : undefined;
   }
 
   async preventSilentAccess() { /*no impl*/ }
@@ -81,6 +138,17 @@ async function newAuthData(keyPair: CryptoKeyPair, rpId: string, id: Uint8Array)
     uint8array(id).
     uint8array(coseKeyEncoded).
     bytes();
+}
+
+async function assertionAuthData(rpId: string): Promise<Uint8Array> {
+  const rpIdHash = new Uint8Array(
+    await crypto.subtle.digest("SHA-256", new TextEncoder().encode(rpId)),
+  );
+  return new BufferUint8()
+    .uint8array(rpIdHash)
+    .uint8(0x05) // UP | UV flags (no AT — assertion carries no attested credential data)
+    .skip(4)     // counter = 0
+    .bytes();
 }
 
 type Curve = "P-256" | "P-384" | "P-512"
@@ -141,10 +209,12 @@ function curveValue(publicKey : CryptoKey) : number {
   throw new Error(`Unsupported algorithm: ${publicKey.algorithm.name}`)
 }
 
-function encodeClientData(challenge: Uint8Array, rpId: string): Uint8Array<ArrayBuffer> {
+type WebAuthnType = "webauthn.create" | "webauthn.get";
+
+function encodeClientData(challenge: Uint8Array, rpId: string, webAuthnType: WebAuthnType): Uint8Array<ArrayBuffer> {
   return new TextEncoder().encode(
     JSON.stringify({
-      type: "webauthn.create",
+      type: webAuthnType,
       challenge: b64u.encode(challenge),
       origin: `https://${rpId}`,
       crossOrigin: false,
@@ -158,5 +228,5 @@ function encodeAttestationObject(authData: Uint8Array<ArrayBufferLike>, signatur
     fmt: "packed",
     attStmt: { alg: -7, sig: signature },
     authData,
-  }) as Uint8Array;
+  });
 }
