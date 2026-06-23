@@ -18,7 +18,7 @@ package com.codeheadsystems.pkauth.config;
  * touching the ceremony or verification code. See {@code docs/threat-model.md} (Post-quantum
  * readiness) and ADR 0019.
  *
- * @since 2.0.1
+ * @since 2.1.0
  */
 public enum CoseAlgorithm {
 
@@ -47,7 +47,7 @@ public enum CoseAlgorithm {
    * The IANA COSE algorithm identifier for this algorithm (e.g. {@code -7} for {@link #ES256}).
    *
    * @return the signed COSE algorithm identifier.
-   * @since 2.0.1
+   * @since 2.1.0
    */
   public int coseValue() {
     return coseValue;

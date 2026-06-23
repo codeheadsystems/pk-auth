@@ -194,7 +194,7 @@ git tag, because the release is already tagged (`vX.Y.Z`) for Maven Central. Pin
 the SDK version to that same number so the two stay in lockstep.
 
 > The committed `version` in `package.json` is the in-development line
-> (e.g. `2.0.0-SNAPSHOT`), mirroring `gradle.properties`. `SNAPSHOT` is a valid
+> (e.g. `2.1.0-SNAPSHOT`), mirroring `gradle.properties`. `SNAPSHOT` is a valid
 > semver prerelease identifier, so it will not be published by accident — step 1
 > always pins it to the concrete release version first. After publishing, you may
 > leave `package.json` at the published version or restore the `-SNAPSHOT` line on

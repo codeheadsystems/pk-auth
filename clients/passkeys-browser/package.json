@@ -1,6 +1,6 @@
 {
   "name": "@pk-auth/passkeys-browser",
-  "version": "2.0.1-SNAPSHOT",
+  "version": "2.1.0",
   "description": "pk-auth browser SDK: WebAuthn ceremonies + admin operations against the pk-auth wire contract.",
   "license": "MIT",
   "author": "Ned Wolpert",

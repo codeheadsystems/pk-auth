@@ -41,7 +41,7 @@ public record CeremonyConfig(
    * PublicKeyCredentialParameters}). The historical offered set: ES256, EdDSA, RS256. Deliberately
    * a subset of {@link #DEFAULT_ACCEPTED_ALGORITHMS}.
    *
-   * @since 2.0.1
+   * @since 2.1.0
    */
   public static final List<CoseAlgorithm> DEFAULT_OFFERED_ALGORITHMS =
       List.of(CoseAlgorithm.ES256, CoseAlgorithm.EdDSA, CoseAlgorithm.RS256);
@@ -52,7 +52,7 @@ public record CeremonyConfig(
    * the <em>union</em> of everything previously accepted so no already-registered credential can
    * fail verification.
    *
-   * @since 2.0.1
+   * @since 2.1.0
    */
   public static final List<CoseAlgorithm> DEFAULT_ACCEPTED_ALGORITHMS =
       List.of(
@@ -173,7 +173,7 @@ public record CeremonyConfig(
    * @param offeredAlgorithms algorithms advertised in create-options, or null for the default.
    * @param acceptedAlgorithms algorithms accepted on verify, or null for the default.
    * @return the resolved ceremony config.
-   * @since 2.0.1
+   * @since 2.1.0
    */
   public static CeremonyConfig from(
       @Nullable Duration challengeTtl,

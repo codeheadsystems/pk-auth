@@ -3,7 +3,7 @@
 ## Current status: 2.x
 
 pk-auth is **post-1.0** as of the `v1.0.0` tag. The current development line is
-**2.0.1-SNAPSHOT** (`gradle.properties` is authoritative); the 1.1, 1.2, 1.3, and
+**2.1.0-SNAPSHOT** (`gradle.properties` is authoritative); the 1.1, 1.2, 1.3, and
 2.0 releases have shipped. See [`CHANGELOG.md`](../CHANGELOG.md) for the
 per-release delta.
 

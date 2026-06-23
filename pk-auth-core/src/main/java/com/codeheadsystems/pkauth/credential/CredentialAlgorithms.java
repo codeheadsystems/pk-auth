@@ -19,7 +19,7 @@ import com.webauthn4j.data.attestation.statement.COSEAlgorithmIdentifier;
  * against the configured algorithm vocabulary directly. See {@code docs/threat-model.md}
  * (Post-quantum readiness) and ADR 0019.
  *
- * @since 2.0.1
+ * @since 2.1.0
  */
 public final class CredentialAlgorithms {
 
@@ -35,7 +35,7 @@ public final class CredentialAlgorithms {
    * @param record the stored credential.
    * @return the IANA COSE algorithm identifier (e.g. {@code -7} for ES256).
    * @throws IllegalStateException if the stored COSE key cannot be decoded or carries no algorithm.
-   * @since 2.0.1
+   * @since 2.1.0
    */
   public static int coseAlgorithm(CredentialRecord record) {
     COSEKey coseKey;
@@ -60,7 +60,7 @@ public final class CredentialAlgorithms {
    * @param coseAlgorithm the IANA COSE algorithm identifier to test for (e.g. {@code -7} for
    *     ES256).
    * @return {@code true} if the credential uses that algorithm.
-   * @since 2.0.1
+   * @since 2.1.0
    */
   public static boolean usesAlgorithm(CredentialRecord record, int coseAlgorithm) {
     return coseAlgorithm(record) == coseAlgorithm;

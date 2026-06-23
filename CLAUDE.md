@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-pk-auth is a **passkeys-first authentication library set for the JVM**, published to Maven Central under `com.codeheadsystems`. All modules share one version (`gradle.properties` → currently `2.0.1-SNAPSHOT`). It is *not* an identity provider: it owns passkeys/credentials, never users — the host maps users via the `UserLookup` SPI.
+pk-auth is a **passkeys-first authentication library set for the JVM**, published to Maven Central under `com.codeheadsystems`. All modules share one version (`gradle.properties` → currently `2.1.0-SNAPSHOT`). It is *not* an identity provider: it owns passkeys/credentials, never users — the host maps users via the `UserLookup` SPI.
 
 The canonical architecture reference is [`DESIGN.md`](./DESIGN.md); per-decision rationale lives in [`docs/adr/`](./docs/adr/) (Nygard format, numbered). Read the relevant ADR before changing cross-module behavior.
 
