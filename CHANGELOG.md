@@ -9,6 +9,62 @@ The 0.x line is treated as a single pre-stable development series — see
 1.0.0 stabilisation cut; for 0.x history consult `git log` against the relevant
 tags.
 
+## [2.1.0] — 2026-06-23
+
+A backward-compatible minor release. The headline is **crypto-agility and
+post-quantum readiness for passkey signature algorithms** (ADR 0019): the
+two divergent hardcoded COSE algorithm lists are replaced by a single
+operator-configurable source of truth, and there is now a way to see which
+algorithm each stored credential uses. No public API is removed and the HTTP
+`/auth/**` wire contract is unchanged, so hosts upgrade by bumping the version.
+
+To be precise about scope: **no post-quantum signature algorithm is added** —
+PQC for passkeys is gated end-to-end by authenticator hardware, CTAP2/FIDO2,
+the WebAuthn/COSE registry, and WebAuthn4J's verifier, none of which yet
+standardize one. The goal here is crypto-agility (clean removal of the
+migration obstacles) and honest documentation, not new algorithms.
+
+### Added
+
+- **Crypto-agility for passkey signature algorithms** (ADR 0019). A new
+  framework-neutral `CoseAlgorithm` enum, and `CeremonyConfig` now carries two
+  ordered lists: `offeredAlgorithms` (advertised in registration create-options)
+  and `acceptedAlgorithms` (enforced on the WebAuthn4J verify path).
+  `acceptedAlgorithms` is authoritative and `offeredAlgorithms` must be a subset.
+  Both the create-options ceremony and the verify path derive their lists from
+  this single config, replacing the two previously-divergent hardcoded lists, so
+  operators can narrow either without code changes. A new 5-arg `CeremonyConfig`
+  convenience constructor applies backward-compatible defaults — accepted =
+  `ES256, EdDSA, RS256, ES384, RS384` (the union of everything previously
+  accepted, so no already-registered credential can fail verification); offered =
+  `ES256, EdDSA, RS256` (the historical create-options subset) — so every
+  existing call site compiles and behaves identically.
+- **Per-credential algorithm visibility.**
+  `CredentialAlgorithms.coseAlgorithm(record)` decodes the COSE algorithm already
+  embedded in a stored public key (**no schema change**), and
+  `AdminService.listCredentialsByAlgorithm(actor, target, coseAlgorithm)` reports
+  which stored credentials use a given algorithm — the read side a future
+  "re-enroll off algorithm X" campaign drives off.
+- **Offered/accepted algorithm configuration wired through every adapter.** The
+  Spring Boot starter, Dropwizard, and Micronaut adapters (and the matching demo
+  `application.yml` files) expose the two algorithm lists as host config, so the
+  create-options and verify lists can be tuned without touching code.
+
+### Changed
+
+- **Honest JWT crypto framing** (ADR 0019, documentation only — no behavior
+  change). The HS256-vs-ES256 choice is re-documented as a trust-topology
+  decision rather than a dev-vs-prod one: HMAC-SHA256 is *not* broken by Shor and
+  retains ~128-bit security under Grover with the enforced ≥ 256-bit key, making
+  it the quantum-conservative default for a single-issuer/single-verifier
+  deployment; ES256 JWTs exist for untrusted third-party verification and carry
+  Shor exposure bounded by the short token TTL. See `docs/threat-model.md` and
+  `docs/operator-guide.md`.
+- **Build / CI.** The Playwright end-to-end suites under `examples/` are now
+  wired into each demo's `check` via an opt-in `e2eTest` task (gated on
+  `PK_RUN_E2E=1` / `-PrunE2e`, so the default gate stays fast and Chrome-free),
+  and CI runs all three demos in a dedicated `e2e` matrix job.
+
 ## [2.0.0] — 2026-06-13
 
 The first 2.x release. The bulk of the work is correctness, hardening, and
@@ -352,7 +408,9 @@ Security-review follow-ups (hardening; no known exploit in the items below).
 First stable release. Captures the surface produced by the 0.x development
 series; see `git log` for the full history.
 
-[Unreleased]: https://github.com/codeheadsystems/pk-auth/compare/v1.3.1...HEAD
+[Unreleased]: https://github.com/codeheadsystems/pk-auth/compare/v2.1.0...HEAD
+[2.1.0]: https://github.com/codeheadsystems/pk-auth/compare/v2.0.0...v2.1.0
+[2.0.0]: https://github.com/codeheadsystems/pk-auth/compare/v1.3.1...v2.0.0
 [1.3.1]: https://github.com/codeheadsystems/pk-auth/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/codeheadsystems/pk-auth/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/codeheadsystems/pk-auth/compare/v1.1.0...v1.2.0

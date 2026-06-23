@@ -27,7 +27,7 @@ public interface AdminService {
    * Shor-vulnerable algorithm and prompt those users to re-enroll. The algorithm is read from the
    * already-stored COSE key — no schema change. See ADR 0019.
    *
-   * @since 2.0.1
+   * @since 2.1.0
    */
   AdminResult<List<CredentialSummary>> listCredentialsByAlgorithm(
       UserHandle actor, UserHandle target, int coseAlgorithm);
