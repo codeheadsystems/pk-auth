@@ -36,7 +36,7 @@ jdbi = "3.53.0"
 flyway = "12.9.0"
 postgresql = "42.7.11"
 hikaricp = "7.1.0"
-aws-sdk = "2.46.16"
+aws-sdk = "2.46.17"
 testcontainers = "1.21.4"
 
 # Spring Boot adapter (Phase 8). Spring Boot 4 / Spring Security 7. Spring Boot 4 standardized
@@ -76,7 +76,7 @@ jakarta-inject = "2.0.1"
 junit-jupiter = "6.1.0"
 assertj = "3.27.7"
 mockito = "5.23.0"
-logback = "1.5.34"
+logback = "1.5.35"
 
 [libraries]
 jspecify = { module = "org.jspecify:jspecify", version.ref = "jspecify" }
