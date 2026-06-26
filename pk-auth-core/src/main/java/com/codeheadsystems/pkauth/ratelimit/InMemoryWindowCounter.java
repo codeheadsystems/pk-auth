@@ -10,7 +10,12 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Caffeine-backed sliding-window counter shared by the backup-codes and magic-link rate limiters.
+ * Caffeine-backed fixed-window counter shared by the backup-codes and magic-link rate limiters.
+ *
+ * <p>The window is fixed from a key's first increment, not sliding: {@code expireAfterWrite} starts
+ * the clock when the key's counter is created, and the in-place {@link AtomicInteger} increments
+ * that follow do not reset it, so the whole window expires at once {@code window} after the first
+ * increment (the next increment then starts a fresh window at {@code 1}).
  *
  * <p>Each rate-limiter SPI in this project (e.g. {@code BackupCodeRateLimiter}, {@code
  * MagicLinkRateLimiter}, {@code CeremonyRateLimiter}) defines its own key signature. The

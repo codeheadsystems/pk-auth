@@ -43,11 +43,10 @@ import org.slf4j.LoggerFactory;
  * configuration shape. This module is used only by {@link PkAuthFullComponent}; the slim {@link
  * PkAuthComponent} (passkey-ceremony-only) does not include it.
  *
- * <p>Fail-fast policy (matches the maintainer decision pinned in the TODO): no adapter-level
- * defaults. The host must hand in the OTP pepper, the magic-link base URL, and an explicit {@link
- * EmailSender} / {@link SmsSender} (or accept the {@link LoggingEmailSender} / {@link
- * LoggingSmsSender} dev-only fallback by passing {@code null} senders, which only activates when
- * the {@link AltFlowOptions#devMode()} flag is true).
+ * <p>Fail-fast policy: no adapter-level defaults. The host must hand in the OTP pepper, the
+ * magic-link base URL, and an explicit {@link EmailSender} / {@link SmsSender} (or accept the
+ * {@link LoggingEmailSender} / {@link LoggingSmsSender} dev-only fallback by passing {@code null}
+ * senders, which only activates when the {@link AltFlowOptions#devMode()} flag is true).
  *
  * @since 0.9.1
  */

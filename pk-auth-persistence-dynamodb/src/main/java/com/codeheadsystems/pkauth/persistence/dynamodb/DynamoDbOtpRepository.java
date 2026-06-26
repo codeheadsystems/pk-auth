@@ -65,7 +65,11 @@ public final class DynamoDbOtpRepository implements OtpRepository {
               .flatMap(page -> page.items().stream())
               .filter(i -> phoneE164.equals(i.getPhoneE164()))
               .filter(i -> !i.isConsumed())
-              .max(Comparator.comparing(OtpItem::getCreatedAt))
+              // Compare parsed Instants, not the raw ISO strings: createdAt is stored via
+              // Instant.toString(), which is variable-precision (it drops the fractional-seconds
+              // field when zero), so "...:00Z" sorts after "...:00.000001Z" lexicographically and
+              // would pick the wrong "latest" for two OTPs minted in the same wall-clock second.
+              .max(Comparator.comparing(i -> DynamoDbSupport.parseInstant(i.getCreatedAt())))
               .map(OtpItem::toRecord);
         });
   }

@@ -76,16 +76,38 @@ class OtpServiceTest {
 
   @Test
   void verifyMismatchDecrementsRemainingAttempts() {
+    // maxAttempts == 3: the caller gets exactly three code comparisons (remaining 2, 1, 0); only
+    // the fourth submission is refused as AttemptsExceeded. Guards against the prior off-by-one
+    // (`>=`) where the third, in-budget attempt was wrongly rejected without comparing the code.
     service.startVerification(USER, PHONE);
-    OtpService.VerifyResult first = service.finishVerification(USER, PHONE, "000000");
-    assertThat(first)
+    assertThat(service.finishVerification(USER, PHONE, "000000"))
         .isInstanceOfSatisfying(
             OtpService.VerifyResult.CodeMismatch.class,
             m -> assertThat(m.remainingAttempts()).isEqualTo(2));
-    service.finishVerification(USER, PHONE, "000000");
-    service.finishVerification(USER, PHONE, "000000");
+    assertThat(service.finishVerification(USER, PHONE, "000000"))
+        .isInstanceOfSatisfying(
+            OtpService.VerifyResult.CodeMismatch.class,
+            m -> assertThat(m.remainingAttempts()).isEqualTo(1));
+    assertThat(service.finishVerification(USER, PHONE, "000000"))
+        .isInstanceOfSatisfying(
+            OtpService.VerifyResult.CodeMismatch.class,
+            m -> assertThat(m.remainingAttempts()).isEqualTo(0));
     assertThat(service.finishVerification(USER, PHONE, "000000"))
         .isInstanceOf(OtpService.VerifyResult.AttemptsExceeded.class);
+  }
+
+  @Test
+  void verifyAcceptsCorrectCodeOnFinalAllowedAttempt() {
+    // The maxAttempts-th submission must still be compared: a correct code on the last allowed
+    // attempt succeeds. Two prior mismatches exhaust attempts 1 and 2, leaving the 3rd (final).
+    service.startVerification(USER, PHONE);
+    String code = sms.lastCode();
+    assertThat(service.finishVerification(USER, PHONE, "000000"))
+        .isInstanceOf(OtpService.VerifyResult.CodeMismatch.class);
+    assertThat(service.finishVerification(USER, PHONE, "000000"))
+        .isInstanceOf(OtpService.VerifyResult.CodeMismatch.class);
+    assertThat(service.finishVerification(USER, PHONE, code))
+        .isInstanceOf(OtpService.VerifyResult.Success.class);
   }
 
   @Test

@@ -197,18 +197,21 @@ public final class OtpService {
       return new VerifyResult.Expired();
     }
 
-    // Increment first to close the TOCTOU window: the returned count is authoritative. Use `>=`
-    // so the attempt that reaches the cap is itself rejected — paired with the JDBI repo now
-    // incrementing unconditionally, this closes the prior bypass where the guarded UPDATE was a
-    // no-op once attempts == max_attempts. An empty result means the row has vanished between
-    // findLatestActive and incrementAttempts (e.g. concurrent admin delete) — treat as no-op
+    // Increment first to close the TOCTOU window: the returned (1-based) count is authoritative.
+    // The repo increments unconditionally, which closes the prior bypass where the guarded UPDATE
+    // was a no-op once attempts == max_attempts. Reject with `>` (not `>=`) so the caller gets
+    // exactly maxAttempts code comparisons: the submission whose post-increment count equals the
+    // cap is still checked, and only the first submission *beyond* the cap is refused. Using `>=`
+    // wasted the final attempt (only maxAttempts-1 codes were ever compared), contradicting the
+    // documented "max N attempts" contract. An empty result means the row vanished between
+    // findLatestActive and incrementAttempts (e.g. concurrent admin delete) — treat as a no-op
     // mismatch via NoActiveOtp so we don't pretend a phantom verify succeeded.
     OptionalInt incremented = repository.incrementAttempts(user, active.otpId());
     if (incremented.isEmpty()) {
       return new VerifyResult.NoActiveOtp();
     }
     int newAttempts = incremented.getAsInt();
-    if (newAttempts >= active.maxAttempts()) {
+    if (newAttempts > active.maxAttempts()) {
       return new VerifyResult.AttemptsExceeded();
     }
 

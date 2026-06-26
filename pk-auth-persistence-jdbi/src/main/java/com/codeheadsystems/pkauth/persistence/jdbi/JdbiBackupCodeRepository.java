@@ -197,18 +197,19 @@ public final class JdbiBackupCodeRepository implements BackupCodeRepository {
       String eventType, byte[] userHandle, String subjectId, String detail) {
     jdbi.useHandle(
         h -> {
-          Update update =
+          try (Update update =
               h.createUpdate(
                       "INSERT INTO pkauth_audit_events"
                           + " (event_type, user_handle, subject_id, detail)"
                           + " VALUES (:eventType, :userHandle, :subjectId, :detail)")
                   .bind("eventType", eventType)
                   .bind("subjectId", subjectId)
-                  .bind("detail", detail);
-          // user_handle is BYTEA and nullable (unknown attacker). Untyped-null default
-          // (Types.VARCHAR) is rejected against BYTEA — force Types.BINARY on the null branch.
-          bindNullable(update, "userHandle", userHandle, Types.BINARY);
-          update.execute();
+                  .bind("detail", detail)) {
+            // user_handle is BYTEA and nullable (unknown attacker). Untyped-null default
+            // (Types.VARCHAR) is rejected against BYTEA — force Types.BINARY on the null branch.
+            bindNullable(update, "userHandle", userHandle, Types.BINARY);
+            update.execute();
+          }
         });
   }
 

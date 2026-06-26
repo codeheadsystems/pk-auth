@@ -27,6 +27,7 @@ import software.amazon.awssdk.enhanced.dynamodb.model.ScanEnhancedRequest;
 import software.amazon.awssdk.enhanced.dynamodb.model.TransactPutItemEnhancedRequest;
 import software.amazon.awssdk.enhanced.dynamodb.model.TransactUpdateItemEnhancedRequest;
 import software.amazon.awssdk.enhanced.dynamodb.model.TransactWriteItemsEnhancedRequest;
+import software.amazon.awssdk.enhanced.dynamodb.model.UpdateItemEnhancedRequest;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.CancellationReason;
 import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedException;
@@ -226,8 +227,8 @@ public final class DynamoDbRefreshTokenRepository implements RefreshTokenReposit
     return DynamoDbSupport.wrap(
         "refresh_tokens.revokeFamily",
         () -> {
-          // Query the family-index for every member, then mutate the primary item of each (the
-          // primary is the authority on revoked_at).
+          // Query the family-index for every member, then mark the primary item of each revoked
+          // (the primary is the authority on revoked_at).
           int[] revoked = {0};
           String nowIso = DynamoDbSupport.encodeInstant(now);
           table
@@ -239,35 +240,7 @@ public final class DynamoDbRefreshTokenRepository implements RefreshTokenReposit
                           .build()))
               .stream()
               .flatMap(p -> p.items().stream())
-              .forEach(
-                  indexItem -> {
-                    RefreshTokenItem primary =
-                        table.getItem(
-                            Key.builder()
-                                .partitionValue(PRIMARY_PK_PREFIX + indexItem.getRefreshId())
-                                .sortValue(PRIMARY_PK_PREFIX + indexItem.getRefreshId())
-                                .build());
-                    if (primary == null || primary.getRevokedAtIso() != null) {
-                      return;
-                    }
-                    primary.setRevokedAtIso(nowIso);
-                    primary.setRevokedReason(reason.name());
-                    // Conditional put: only set revoked_at if it's still null (idempotent under
-                    // concurrent revokers).
-                    try {
-                      table.putItem(
-                          PutItemEnhancedRequest.builder(RefreshTokenItem.class)
-                              .item(primary)
-                              .conditionExpression(
-                                  Expression.builder()
-                                      .expression("attribute_not_exists(revokedAtIso)")
-                                      .build())
-                              .build());
-                      revoked[0]++;
-                    } catch (ConditionalCheckFailedException raceLost) {
-                      // Another revoker won; revokedAt is now set. Nothing to do.
-                    }
-                  });
+              .forEach(indexItem -> revoked[0] += markRevoked(indexItem, nowIso, reason));
           return revoked[0];
         });
   }
@@ -289,35 +262,45 @@ public final class DynamoDbRefreshTokenRepository implements RefreshTokenReposit
                           .build()))
               .stream()
               .flatMap(p -> p.items().stream())
-              .forEach(
-                  indexItem -> {
-                    RefreshTokenItem primary =
-                        table.getItem(
-                            Key.builder()
-                                .partitionValue(PRIMARY_PK_PREFIX + indexItem.getRefreshId())
-                                .sortValue(PRIMARY_PK_PREFIX + indexItem.getRefreshId())
-                                .build());
-                    if (primary == null || primary.getRevokedAtIso() != null) {
-                      return;
-                    }
-                    primary.setRevokedAtIso(nowIso);
-                    primary.setRevokedReason(reason.name());
-                    try {
-                      table.putItem(
-                          PutItemEnhancedRequest.builder(RefreshTokenItem.class)
-                              .item(primary)
-                              .conditionExpression(
-                                  Expression.builder()
-                                      .expression("attribute_not_exists(revokedAtIso)")
-                                      .build())
-                              .build());
-                      revoked[0]++;
-                    } catch (ConditionalCheckFailedException raceLost) {
-                      // Lost race; revoked by someone else.
-                    }
-                  });
+              .forEach(indexItem -> revoked[0] += markRevoked(indexItem, nowIso, reason));
           return revoked[0];
         });
+  }
+
+  /**
+   * Marks one family/user-index member's primary item revoked via a conditional, scalar-only {@code
+   * UpdateItem} that writes ONLY {@code revokedAtIso}/{@code revokedReason} — never a
+   * read-modify-write of the whole item. A full-item {@code putItem} (the prior approach) would
+   * carry a stale snapshot and could silently revert a {@code usedAtIso} mark set concurrently by
+   * {@code rotateAtomically}, corrupting the rotation/audit trail. {@code attribute_exists(pk)}
+   * prevents resurrecting a primary that was already pruned (an index row can outlive it), and
+   * {@code attribute_not_exists(revokedAtIso)} keeps the operation idempotent under concurrent
+   * revokers. A failed condition (already revoked, or primary gone) means "nothing to do" and
+   * returns 0.
+   *
+   * @return 1 if this call set revoked_at, 0 if there was nothing to revoke
+   */
+  private int markRevoked(RefreshTokenItem indexItem, String nowIso, RevokeReason reason) {
+    RefreshTokenItem mark = new RefreshTokenItem();
+    mark.setPk(PRIMARY_PK_PREFIX + indexItem.getRefreshId());
+    mark.setSk(PRIMARY_PK_PREFIX + indexItem.getRefreshId());
+    mark.setRevokedAtIso(nowIso);
+    mark.setRevokedReason(reason.name());
+    try {
+      table.updateItem(
+          UpdateItemEnhancedRequest.builder(RefreshTokenItem.class)
+              .item(mark)
+              .ignoreNullsMode(IgnoreNullsMode.SCALAR_ONLY)
+              .conditionExpression(
+                  Expression.builder()
+                      .expression("attribute_exists(pk) AND attribute_not_exists(revokedAtIso)")
+                      .build())
+              .build());
+      return 1;
+    } catch (ConditionalCheckFailedException raceLost) {
+      // Already revoked by another revoker, or the primary was pruned — nothing to do.
+      return 0;
+    }
   }
 
   @Override

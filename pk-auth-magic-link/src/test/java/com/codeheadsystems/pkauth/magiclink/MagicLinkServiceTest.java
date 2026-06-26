@@ -112,6 +112,32 @@ class MagicLinkServiceTest {
   }
 
   @Test
+  void finishVerificationRejectsCrossPurposeTokenWithoutConsumingIt() {
+    UserHandle user = users.register("alice", "Alice");
+
+    // A login-purpose token must not satisfy the email-verify consume check.
+    MagicLinkService.SendResult send = service.startLogin("alice", "alice@example.com");
+    String token = ((MagicLinkService.SendResult.Sent) send).tokenJti();
+
+    MagicLinkService.ConsumeResult wrong =
+        service.finishVerification(token, MagicLinkService.PURPOSE_EMAIL_VERIFY);
+    assertThat(wrong)
+        .isInstanceOfSatisfying(
+            MagicLinkService.ConsumeResult.WrongPurpose.class,
+            w -> {
+              assertThat(w.expectedPurpose()).isEqualTo(MagicLinkService.PURPOSE_EMAIL_VERIFY);
+              assertThat(w.actualPurpose()).isEqualTo(MagicLinkService.PURPOSE_LOGIN);
+            });
+
+    // The rejected cross-purpose attempt did NOT burn the single-use JTI: the token still works at
+    // its intended endpoint.
+    assertThat(service.finishVerification(token, MagicLinkService.PURPOSE_LOGIN))
+        .isInstanceOfSatisfying(
+            MagicLinkService.ConsumeResult.Success.class,
+            s -> assertThat(s.userHandle()).isEqualTo(user));
+  }
+
+  @Test
   void loginUnknownUserReturnsSentToPreventEnumeration() {
     // Privacy invariant: startLogin must return Sent even when the username does not exist,
     // so callers cannot enumerate accounts via the result shape.

@@ -330,6 +330,20 @@ class DefaultAdminServiceTest {
             s -> assertThat(s.value()).isInstanceOf(PhoneVerificationResult.Expired.class));
   }
 
+  @Test
+  void finishPhoneVerificationExhaustedAttemptsMapsToRateLimited() {
+    // maxAttempts == 3: three wrong guesses are compared (soft 200 mismatch), and the fourth is
+    // refused. A brute-force lockout must surface as RateLimited (429), not a 200 whose failure is
+    // hidden in the body, so a client/proxy can see guessing was throttled.
+    admin.startPhoneVerification(alice, alice, "+15551234567");
+    for (int i = 0; i < 3; i++) {
+      assertThat(admin.finishPhoneVerification(alice, alice, "+15551234567", "000000"))
+          .isInstanceOf(AdminResult.Success.class);
+    }
+    assertThat(admin.finishPhoneVerification(alice, alice, "+15551234567", "000000"))
+        .isInstanceOf(AdminResult.RateLimited.class);
+  }
+
   // -- Authorizer override --
 
   @Test
