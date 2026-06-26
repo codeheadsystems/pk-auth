@@ -206,7 +206,12 @@ public final class DefaultAdminService implements AdminService {
       return new AdminResult.ValidationFailed<>("token must be non-blank");
     }
     if (magicLinkService == null) return notConfigured("email verification");
-    ConsumeResult result = magicLinkService.finishVerification(token);
+    // Demand the email-verify purpose: a login-flow magic-link token must not be replayable here to
+    // mark an address verified (cross-purpose token confusion). MagicLinkService checks the purpose
+    // before consuming the single-use JTI, so a rejected cross-purpose token stays usable for
+    // login.
+    ConsumeResult result =
+        magicLinkService.finishVerification(token, MagicLinkService.PURPOSE_EMAIL_VERIFY);
     if (result instanceof ConsumeResult.Success success) {
       // Host apps own the users table; we report success and let the adapter persist the
       // emailVerified flag via UserLookup's host-app-specific update path (out of scope here).
@@ -215,6 +220,9 @@ public final class DefaultAdminService implements AdminService {
     }
     if (result instanceof ConsumeResult.AlreadyConsumed) {
       return new AdminResult.Conflict<>("token already consumed");
+    }
+    if (result instanceof ConsumeResult.WrongPurpose) {
+      return new AdminResult.ValidationFailed<>("token is not an email-verification token");
     }
     return new AdminResult.ValidationFailed<>("invalid token");
   }
@@ -249,6 +257,15 @@ public final class DefaultAdminService implements AdminService {
     }
     if (otpService == null) return notConfigured("phone verification");
     OtpService.VerifyResult result = otpService.finishVerification(target, phoneE164, code);
+    // AttemptsExceeded is a brute-force lockout signal, not a "soft" verification outcome, so it
+    // must surface at the HTTP layer as 429 (RateLimited) rather than a 200 the failure of which is
+    // buried in the body — otherwise a client/proxy keying off status (the documented contract for
+    // these sums) can't see that guessing has been throttled. A new OTP must be requested.
+    // Ordinary mismatch/expiry stay as a typed 200 body on purpose: the privacy-neutral
+    // remainingAttempts is part of the verification UX, not an error.
+    if (result instanceof OtpService.VerifyResult.AttemptsExceeded) {
+      return new AdminResult.RateLimited<>(Duration.ofMinutes(15));
+    }
     return new AdminResult.Success<>(
         switch (result) {
           case OtpService.VerifyResult.Success s -> new PhoneVerificationResult.Verified();

@@ -7,6 +7,7 @@ import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -29,10 +30,41 @@ public record JwtClaims(
     @Nullable Map<String, Object> additionalClaims,
     @Nullable String audience) {
 
+  /**
+   * Claim names the issuer sets itself and that {@link #additionalClaims} must never carry. Because
+   * the issuer merges {@code additionalClaims} into the same JWT body after writing these, allowing
+   * a caller to supply one would let it silently overwrite a security-critical value (e.g. a future
+   * {@code exp}, an impersonating {@code sub}, or a forged {@code aud}/{@code iss}). The RFC 7519
+   * registered set plus the {@code pkauth.*} private claims mirror {@code
+   * PkAuthJwtValidator.removeKnownClaims}.
+   *
+   * @since 2.1.0
+   */
+  private static final Set<String> RESERVED_CLAIM_NAMES =
+      Set.of(
+          "iss",
+          "sub",
+          "aud",
+          "iat",
+          "nbf",
+          "exp",
+          "jti",
+          "pkauth.method",
+          "pkauth.cred",
+          "pkauth.amr");
+
   public JwtClaims {
     Objects.requireNonNull(userHandle, "userHandle");
     Objects.requireNonNull(method, "method");
     Objects.requireNonNull(amr, "amr");
+    if (additionalClaims != null) {
+      for (String key : additionalClaims.keySet()) {
+        if (RESERVED_CLAIM_NAMES.contains(key)) {
+          throw new IllegalArgumentException(
+              "additionalClaims must not contain the reserved claim '" + key + "'");
+        }
+      }
+    }
     if (method == AuthMethod.PASSKEY && credentialId == null) {
       throw new IllegalArgumentException("credentialId is required when method == PASSKEY");
     }

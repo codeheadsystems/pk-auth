@@ -46,8 +46,8 @@ dependencies {
 
     // Micronaut's @Inject site references the JDBI errorprone @GuardedBy via the persistence
     // modules. Same trick as pk-auth-persistence-jdbi.
-    compileOnly("com.google.errorprone:error_prone_annotations:2.50.0")
-    testCompileOnly("com.google.errorprone:error_prone_annotations:2.50.0")
+    compileOnly(libs.build.errorprone.annotations)
+    testCompileOnly(libs.build.errorprone.annotations)
 
     annotationProcessor(libs.micronaut.inject.java)
 

@@ -57,7 +57,7 @@ public final class JdbiCredentialRepository implements CredentialRepository {
             () ->
                 jdbi.withHandle(
                     h -> {
-                      Update update =
+                      try (Update update =
                           h.createUpdate(
                                   "INSERT INTO credentials (credential_id, user_handle,"
                                       + " public_key_cose, sign_count, label, aaguid, transports,"
@@ -75,20 +75,22 @@ public final class JdbiCredentialRepository implements CredentialRepository {
                               .bind("bs", record.backupState())
                               .bind(
                                   "createdAt",
-                                  OffsetDateTime.ofInstant(record.createdAt(), ZoneOffset.UTC));
-                      // aaguid is null for platform authenticators / attestation=none. The default
-                      // untyped-null binding uses Types.VARCHAR, which Postgres rejects against a
-                      // UUID column ("column ... is of type uuid but expression is of type
-                      // character varying"). Force Types.OTHER for the null case.
-                      bindNullable(update, "aaguid", record.aaguid(), Types.OTHER);
-                      bindNullable(
-                          update,
-                          "lastUsedAt",
-                          record.lastUsedAt() == null
-                              ? null
-                              : OffsetDateTime.ofInstant(record.lastUsedAt(), ZoneOffset.UTC),
-                          Types.TIMESTAMP_WITH_TIMEZONE);
-                      return update.execute();
+                                  OffsetDateTime.ofInstant(record.createdAt(), ZoneOffset.UTC))) {
+                        // aaguid is null for platform authenticators / attestation=none. The
+                        // default
+                        // untyped-null binding uses Types.VARCHAR, which Postgres rejects against a
+                        // UUID column ("column ... is of type uuid but expression is of type
+                        // character varying"). Force Types.OTHER for the null case.
+                        bindNullable(update, "aaguid", record.aaguid(), Types.OTHER);
+                        bindNullable(
+                            update,
+                            "lastUsedAt",
+                            record.lastUsedAt() == null
+                                ? null
+                                : OffsetDateTime.ofInstant(record.lastUsedAt(), ZoneOffset.UTC),
+                            Types.TIMESTAMP_WITH_TIMEZONE);
+                        return update.execute();
+                      }
                     }));
     if (inserted == 0) {
       throw new DuplicateCredentialException(

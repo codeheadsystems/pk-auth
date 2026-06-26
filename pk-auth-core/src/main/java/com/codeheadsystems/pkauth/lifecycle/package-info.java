@@ -9,4 +9,5 @@
  *
  * @since 1.1.0
  */
+@org.jspecify.annotations.NullMarked
 package com.codeheadsystems.pkauth.lifecycle;

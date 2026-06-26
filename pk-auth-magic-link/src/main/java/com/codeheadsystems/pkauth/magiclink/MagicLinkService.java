@@ -110,6 +110,16 @@ public final class MagicLinkService {
 
     /** Token already consumed earlier. */
     record AlreadyConsumed() implements ConsumeResult {}
+
+    /**
+     * Token is otherwise valid but was minted for a different {@code pkauth.purpose} than the
+     * endpoint requires (e.g. a {@code login} token presented to the email-verification flow). The
+     * single-use JTI is deliberately <em>not</em> consumed in this case, so the token stays usable
+     * at its intended endpoint.
+     *
+     * @since 2.1.0
+     */
+    record WrongPurpose(String expectedPurpose, String actualPurpose) implements ConsumeResult {}
   }
 
   /** Pluggable rate limiter — defaults to an in-process Caffeine counter. */
@@ -272,6 +282,24 @@ public final class MagicLinkService {
    * @since 0.9.1
    */
   public ConsumeResult finishVerification(String token) {
+    return finishVerification(token, null);
+  }
+
+  /**
+   * Verifies and consumes a magic-link token, additionally enforcing that its {@code
+   * pkauth.purpose} claim equals {@code requiredPurpose}. This closes a cross-purpose token
+   * confusion: without it, a token minted for one flow (e.g. {@link #PURPOSE_LOGIN}) satisfies
+   * another flow's consume check (e.g. {@link #PURPOSE_EMAIL_VERIFY}), letting one ceremony's token
+   * stand in for another. The purpose is checked <em>before</em> the single-use JTI is consumed, so
+   * a cross-purpose attempt does not burn the token at its legitimate endpoint.
+   *
+   * @param token the magic-link JWT
+   * @param requiredPurpose the purpose the caller demands, or {@code null} to accept any purpose
+   *     (the caller then inspects {@link ConsumeResult.Success#purpose()} itself)
+   * @return the consume outcome
+   * @since 2.1.0
+   */
+  public ConsumeResult finishVerification(String token, @Nullable String requiredPurpose) {
     Objects.requireNonNull(token, "token");
     JwtVerificationResult verification = validator.validate(token);
     if (!(verification instanceof JwtVerificationResult.Success success)) {
@@ -281,6 +309,14 @@ public final class MagicLinkService {
     String purpose = stringClaim(claims.additionalClaims(), CLAIM_PURPOSE);
     if (purpose == null) {
       return new ConsumeResult.Invalid(new JwtVerificationResult.MissingClaim(CLAIM_PURPOSE));
+    }
+    if (requiredPurpose != null && !requiredPurpose.equals(purpose)) {
+      LOG.warn(
+          "magiclink.verify wrong-purpose user={} expected={} actual={}",
+          claims.userHandle(),
+          requiredPurpose,
+          purpose);
+      return new ConsumeResult.WrongPurpose(requiredPurpose, purpose);
     }
     String email = stringClaim(claims.additionalClaims(), CLAIM_EMAIL);
 
@@ -382,6 +418,14 @@ public final class MagicLinkService {
    * <p>The default {@link MagicLinkRateLimiter} is {@link InMemoryRateLimiter} — DEV /
    * SINGLE-INSTANCE ONLY. Multi-replica deployments MUST replace it with a shared (Redis/DB-backed)
    * implementation.
+   *
+   * <p><strong>{@code consumedJtiTtl} must be at least as long as the magic-link JWT's
+   * TTL.</strong> Single-use is enforced by retaining each consumed JTI for {@code consumedJtiTtl};
+   * if that retention is shorter than the token's own validity, a still-unexpired token becomes
+   * redeemable again once its JTI entry is evicted, defeating single-use. The defaults are safe
+   * (30m retention vs the 15m default token TTL); keep this invariant if you tune either value.
+   * This is not enforced at construction because the token TTL is owned by the JWT issuer (and may
+   * vary per audience), not by this config.
    *
    * @since 0.9.1
    */

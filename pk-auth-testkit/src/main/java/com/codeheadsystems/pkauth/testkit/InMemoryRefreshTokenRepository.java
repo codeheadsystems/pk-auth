@@ -15,8 +15,9 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * In-memory {@link RefreshTokenRepository}. Backed by a {@link ConcurrentHashMap}; the load-bearing
- * {@link #rotateAtomically} primitive uses {@link java.util.concurrent.ConcurrentMap#compute} so
- * the mark-then-insert pair is atomic against concurrent rotators.
+ * {@link #rotateAtomically} primitive speculatively inserts the successor, then serializes the
+ * parent's mark-used via {@link java.util.concurrent.ConcurrentMap#compute}, rolling the successor
+ * back if the parent was not fresh. Exactly one of N concurrent rotators of the same parent wins.
  *
  * @since 1.1.0
  */
@@ -41,11 +42,17 @@ public final class InMemoryRefreshTokenRepository implements RefreshTokenReposit
   @Override
   public boolean rotateAtomically(
       String parentRefreshId, Instant now, RefreshTokenRecord successor) {
-    // compute() on the parent key serializes concurrent rotators on the same parent. Inside the
-    // block we (a) check the freshness predicate on the parent, (b) if fresh, flip used_at and
-    // ALSO insert the successor under its own key — both atomic w.r.t. any other compute on
-    // either key (a ConcurrentHashMap-wide guarantee in practice for distinct keys; we additionally
-    // use putIfAbsent so we don't accept duplicate successor IDs).
+    // Insert the successor under its own key FIRST, then serialize the parent's mark-used via
+    // compute(). The successor write MUST happen outside compute(): ConcurrentHashMap.compute
+    // forbids updating any other mapping of the same map from within the remapping function (risk
+    // of lockup / undefined behavior), so the prior nested putIfAbsent was illegal. A successor id
+    // collision aborts without disturbing the existing entry; if the parent turns out non-fresh
+    // (already used/revoked/expired, or missing) we roll our speculative successor back out so a
+    // lost rotation leaves no orphan. compute() on the parent still serializes concurrent rotators,
+    // so exactly one flips used_at and returns true.
+    if (byRefreshId.putIfAbsent(successor.refreshId(), successor) != null) {
+      return false; // duplicate successor id → abort, never half-commit
+    }
     boolean[] rotated = {false};
     byRefreshId.compute(
         parentRefreshId,
@@ -58,13 +65,13 @@ public final class InMemoryRefreshTokenRepository implements RefreshTokenReposit
               || !existing.expiresAt().isAfter(now)) {
             return existing; // not fresh → no rotation
           }
-          // Insert successor first. If it collides, abort — never half-commit a rotation.
-          if (byRefreshId.putIfAbsent(successor.refreshId(), successor) != null) {
-            return existing;
-          }
           rotated[0] = true;
           return markUsed(existing, now);
         });
+    if (!rotated[0]) {
+      // Roll back the speculative insert; remove(key, value) only deletes our own successor.
+      byRefreshId.remove(successor.refreshId(), successor);
+    }
     return rotated[0];
   }
 
