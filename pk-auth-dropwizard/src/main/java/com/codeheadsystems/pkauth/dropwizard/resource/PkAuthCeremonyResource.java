@@ -76,7 +76,9 @@ public class PkAuthCeremonyResource {
   }
 
   private static Response toResponse(CeremonyResponse wire) {
-    return Response.status(wire.status()).entity(wire.body()).build();
+    Response.ResponseBuilder builder = Response.status(wire.status()).entity(wire.body());
+    wire.headers().forEach(builder::header);
+    return builder.build();
   }
 
   private static String clientIp(HttpServletRequest httpRequest) {

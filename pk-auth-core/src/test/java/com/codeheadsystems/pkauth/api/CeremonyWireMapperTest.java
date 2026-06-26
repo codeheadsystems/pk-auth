@@ -111,6 +111,7 @@ class CeremonyWireMapperTest {
         CeremonyWireMapper.forRegistration(new RegistrationResult.RateLimited("register"));
     assertThat(r.status()).isEqualTo(429);
     assertThat(r.body()).containsEntry("outcome", "rate_limited");
+    assertThat(r.headers()).containsEntry("Retry-After", "60");
   }
 
   @Test
@@ -185,6 +186,7 @@ class CeremonyWireMapperTest {
         CeremonyWireMapper.forAssertionError(new AssertionResult.RateLimited("authenticate"));
     assertThat(r.status()).isEqualTo(429);
     assertThat(r.body()).containsEntry("outcome", "rate_limited");
+    assertThat(r.headers()).containsEntry("Retry-After", "60");
   }
 
   @Test
@@ -192,6 +194,7 @@ class CeremonyWireMapperTest {
     CeremonyResponse r = CeremonyWireMapper.rateLimited();
     assertThat(r.status()).isEqualTo(429);
     assertThat(r.body()).containsEntry("outcome", "rate_limited");
+    assertThat(r.headers()).containsEntry("Retry-After", "60");
   }
 
   @Test

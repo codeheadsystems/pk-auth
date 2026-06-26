@@ -37,10 +37,51 @@ public final class CeremonyWireMapper {
 
   private CeremonyWireMapper() {}
 
-  /** Carries a wire-format response: HTTP status code + a JSON-serializable body. */
-  public record CeremonyResponse(int status, Map<String, Object> body) {
+  /**
+   * {@code Retry-After} hint (seconds) emitted on every ceremony 429, mirroring the {@code
+   * Retry-After} the admin endpoints already send on their rate-limit refusals. The value is a
+   * conservative constant matching {@code InMemoryCeremonyRateLimiter.DEFAULT_WINDOW} (1 minute):
+   * the {@link com.codeheadsystems.pkauth.spi.CeremonyRateLimiter} SPI is boolean-only and exposes
+   * no per-call window, so an exact remaining-time cannot be computed here. A host that tightens or
+   * widens its limiter window may therefore serve a slightly stale hint, which {@code Retry-After}
+   * explicitly permits (it is advisory). Hosts wanting an exact value can override the header.
+   */
+  private static final Map<String, String> RATE_LIMIT_HEADERS = Map.of("Retry-After", "60");
+
+  /**
+   * Canonical 429 ceremony refusal: {@code {"outcome":"rate_limited"}} body + {@code Retry-After}.
+   */
+  private static CeremonyResponse rateLimitedResponse() {
+    return new CeremonyResponse(429, Map.of("outcome", "rate_limited"), RATE_LIMIT_HEADERS);
+  }
+
+  /**
+   * Carries a wire-format response: HTTP status code, a JSON-serializable body, and response
+   * headers. Adapters MUST copy {@link #headers()} onto the native HTTP response (e.g. {@code
+   * Retry-After} on a 429); a body-only adapter silently drops them.
+   *
+   * <p>The {@code headers} component was added in 2.1.0; the two-arg constructor preserves the
+   * prior {@code (status, body)} call sites with no headers.
+   *
+   * @param status the HTTP status code
+   * @param body the JSON-serializable response body
+   * @param headers response headers to copy onto the native HTTP response (since 2.1.0)
+   */
+  public record CeremonyResponse(
+      int status, Map<String, Object> body, Map<String, String> headers) {
     public CeremonyResponse {
       body = Map.copyOf(body);
+      headers = Map.copyOf(headers);
+    }
+
+    /**
+     * Convenience constructor for a response with no extra headers.
+     *
+     * @param status the HTTP status code
+     * @param body the JSON-serializable response body
+     */
+    public CeremonyResponse(int status, Map<String, Object> body) {
+      this(status, body, Map.of());
     }
   }
 
@@ -68,8 +109,7 @@ public final class CeremonyWireMapper {
                   Base64Url.encode(dc.credentialId().value())));
       case RegistrationResult.InvalidPayload ip ->
           new CeremonyResponse(400, errorBody("invalid_payload", "detail", ip.detail()));
-      case RegistrationResult.RateLimited rl ->
-          new CeremonyResponse(429, Map.of("outcome", "rate_limited"));
+      case RegistrationResult.RateLimited rl -> rateLimitedResponse();
     };
   }
 
@@ -78,11 +118,12 @@ public final class CeremonyWireMapper {
    * controllers use this for the {@code RateLimited} variant of {@code StartRegistrationResult} /
    * {@code StartAuthenticationResult}.
    *
-   * @return canonical rate-limited response (HTTP 429, body {@code {"outcome": "rate_limited"}})
+   * @return canonical rate-limited response (HTTP 429, body {@code {"outcome": "rate_limited"}},
+   *     plus a {@code Retry-After} header since 2.1.0)
    * @since 0.9.1
    */
   public static CeremonyResponse rateLimited() {
-    return new CeremonyResponse(429, Map.of("outcome", "rate_limited"));
+    return rateLimitedResponse();
   }
 
   /**
@@ -137,8 +178,7 @@ public final class CeremonyWireMapper {
           new CeremonyResponse(401, Map.of("outcome", "user_verification_required"));
       case AssertionResult.InvalidSignature is ->
           new CeremonyResponse(401, Map.of("outcome", "invalid_signature"));
-      case AssertionResult.RateLimited rl ->
-          new CeremonyResponse(429, Map.of("outcome", "rate_limited"));
+      case AssertionResult.RateLimited rl -> rateLimitedResponse();
     };
   }
 
