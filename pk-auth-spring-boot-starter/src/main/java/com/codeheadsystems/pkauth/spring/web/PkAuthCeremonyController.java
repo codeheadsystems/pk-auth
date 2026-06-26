@@ -75,7 +75,9 @@ public class PkAuthCeremonyController {
   }
 
   private static ResponseEntity<Object> toResponseEntity(CeremonyResponse wire) {
-    return ResponseEntity.status(wire.status()).body(wire.body());
+    ResponseEntity.BodyBuilder builder = ResponseEntity.status(wire.status());
+    wire.headers().forEach(builder::header);
+    return builder.body(wire.body());
   }
 
   private static @Nullable String clientIp(HttpServletRequest request) {

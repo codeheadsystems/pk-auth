@@ -13,6 +13,7 @@ import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.HttpStatus;
 import io.micronaut.http.MediaType;
+import io.micronaut.http.MutableHttpResponse;
 import io.micronaut.http.annotation.Body;
 import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Post;
@@ -84,8 +85,11 @@ public class PkAuthCeremonyController {
   }
 
   private static HttpResponse<Map<String, Object>> toResponse(CeremonyResponse wire) {
-    return HttpResponse.<Map<String, Object>>status(HttpStatus.valueOf(wire.status()))
-        .body(wire.body());
+    MutableHttpResponse<Map<String, Object>> response =
+        HttpResponse.<Map<String, Object>>status(HttpStatus.valueOf(wire.status()))
+            .body(wire.body());
+    wire.headers().forEach(response::header);
+    return response;
   }
 
   private static @Nullable String clientIp(HttpRequest<?> request) {
