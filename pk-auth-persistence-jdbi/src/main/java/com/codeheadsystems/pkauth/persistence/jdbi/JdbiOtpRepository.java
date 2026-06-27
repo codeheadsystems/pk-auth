@@ -57,6 +57,16 @@ public final class JdbiOtpRepository implements OtpRepository {
             jdbi.withHandle(
                 h ->
                     h.createQuery(
+                            // NOTE: expiry is intentionally NOT filtered here. This SPI method has
+                            // no ClockProvider, so the only available "now" would be the database
+                            // wall clock (NOW()), which is a second, uncontrollable clock source
+                            // independent of the host's ClockProvider (it also breaks fixed-clock
+                            // testing). OtpService.verify re-checks expiry against the host clock
+                            // and
+                            // returns Expired, so an expired row surfaced here is rejected there.
+                            // Filtering expiry in-store would require threading ClockProvider
+                            // through
+                            // the OtpRepository SPI — deferred.
                             "SELECT * FROM otp_codes WHERE user_handle = :uh AND phone_e164 ="
                                 + " :phone AND consumed = FALSE"
                                 + " ORDER BY created_at DESC LIMIT 1")

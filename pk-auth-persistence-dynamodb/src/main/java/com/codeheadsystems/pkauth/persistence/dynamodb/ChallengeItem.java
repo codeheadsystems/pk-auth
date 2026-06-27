@@ -3,6 +3,7 @@ package com.codeheadsystems.pkauth.persistence.dynamodb;
 
 import com.codeheadsystems.pkauth.api.ChallengeId;
 import com.codeheadsystems.pkauth.api.UserHandle;
+import com.codeheadsystems.pkauth.api.UserVerificationRequirement;
 import com.codeheadsystems.pkauth.json.Base64Url;
 import com.codeheadsystems.pkauth.spi.ChallengeRecord;
 import java.time.Instant;
@@ -21,6 +22,7 @@ public final class ChallengeItem {
   private String challenge;
   private String purpose;
   private String userHandle;
+  private String userVerification;
   private Long expiresAt;
 
   @DynamoDbPartitionKey
@@ -81,6 +83,14 @@ public final class ChallengeItem {
     this.userHandle = userHandle;
   }
 
+  public String getUserVerification() {
+    return userVerification;
+  }
+
+  public void setUserVerification(String userVerification) {
+    this.userVerification = userVerification;
+  }
+
   public Long getExpiresAt() {
     return expiresAt;
   }
@@ -100,6 +110,8 @@ public final class ChallengeItem {
     item.setPurpose(record.purpose().name());
     item.setUserHandle(
         record.userHandle() == null ? null : Base64Url.encode(record.userHandle().value()));
+    item.setUserVerification(
+        record.userVerification() == null ? null : record.userVerification().name());
     item.setExpiresAt(record.expiresAt().toEpochMilli());
     return item;
   }
@@ -110,6 +122,7 @@ public final class ChallengeItem {
         Base64Url.decode(challenge),
         ChallengeRecord.Purpose.valueOf(purpose),
         userHandle == null ? null : UserHandle.of(Base64Url.decode(userHandle)),
+        userVerification == null ? null : UserVerificationRequirement.valueOf(userVerification),
         Instant.ofEpochMilli(expiresAt));
   }
 }

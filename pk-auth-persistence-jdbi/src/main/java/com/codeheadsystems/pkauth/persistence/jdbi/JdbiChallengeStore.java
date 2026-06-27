@@ -3,6 +3,7 @@ package com.codeheadsystems.pkauth.persistence.jdbi;
 
 import com.codeheadsystems.pkauth.api.ChallengeId;
 import com.codeheadsystems.pkauth.api.UserHandle;
+import com.codeheadsystems.pkauth.api.UserVerificationRequirement;
 import com.codeheadsystems.pkauth.spi.ChallengeRecord;
 import com.codeheadsystems.pkauth.spi.ChallengeStore;
 import java.sql.ResultSet;
@@ -42,15 +43,21 @@ public final class JdbiChallengeStore implements ChallengeStore {
               h ->
                   h.createUpdate(
                           "INSERT INTO challenges (id, challenge, purpose, user_handle,"
-                              + " expires_at)"
-                              + " VALUES (:id, :challenge, :purpose, :uh, :expiresAt)"
+                              + " user_verification, expires_at)"
+                              + " VALUES (:id, :challenge, :purpose, :uh, :uv, :expiresAt)"
                               + " ON CONFLICT (id) DO UPDATE SET challenge = EXCLUDED.challenge,"
                               + " purpose = EXCLUDED.purpose, user_handle = EXCLUDED.user_handle,"
+                              + " user_verification = EXCLUDED.user_verification,"
                               + " expires_at = EXCLUDED.expires_at")
                       .bind("id", id.value())
                       .bind("challenge", record.challenge())
                       .bind("purpose", record.purpose().name())
                       .bind("uh", record.userHandle() == null ? null : record.userHandle().value())
+                      .bind(
+                          "uv",
+                          record.userVerification() == null
+                              ? null
+                              : record.userVerification().name())
                       .bind(
                           "expiresAt", OffsetDateTime.ofInstant(record.expiresAt(), ZoneOffset.UTC))
                       .execute());
@@ -67,7 +74,8 @@ public final class JdbiChallengeStore implements ChallengeStore {
                 h ->
                     h.createQuery(
                             "DELETE FROM challenges WHERE id = :id AND expires_at > NOW()"
-                                + " RETURNING challenge, purpose, user_handle, expires_at")
+                                + " RETURNING challenge, purpose, user_handle, user_verification,"
+                                + " expires_at")
                         .bind("id", id.value())
                         .map(MAPPER)
                         .findFirst()));
@@ -80,7 +88,11 @@ public final class JdbiChallengeStore implements ChallengeStore {
     ChallengeRecord.Purpose purpose = ChallengeRecord.Purpose.valueOf(rs.getString("purpose"));
     byte[] userHandleBytes = rs.getBytes("user_handle");
     UserHandle userHandle = userHandleBytes == null ? null : UserHandle.of(userHandleBytes);
+    String uvName = rs.getString("user_verification");
+    UserVerificationRequirement userVerification =
+        uvName == null ? null : UserVerificationRequirement.valueOf(uvName);
     OffsetDateTime expiresAt = rs.getObject("expires_at", OffsetDateTime.class);
-    return new ChallengeRecord(challenge, purpose, userHandle, expiresAt.toInstant());
+    return new ChallengeRecord(
+        challenge, purpose, userHandle, userVerification, expiresAt.toInstant());
   }
 }

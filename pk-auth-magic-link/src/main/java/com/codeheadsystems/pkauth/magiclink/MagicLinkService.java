@@ -139,6 +139,7 @@ public final class MagicLinkService {
   private final int rateLimit;
   private final MagicLinkRateLimiter rateLimiter;
   private final ConsumedJtiStore consumedJtiStore;
+  private final Duration tokenTtl;
   private final Duration consumedJtiTtl;
   private final MessageFormatter<MagicLinkContext, MagicLinkMessage> messageFormatter;
 
@@ -153,6 +154,7 @@ public final class MagicLinkService {
     this.baseUrl = config.baseUrl();
     this.rateLimit = config.rateLimit();
     this.rateLimiter = config.rateLimiter();
+    this.tokenTtl = config.tokenTtl();
     this.consumedJtiTtl = config.consumedJtiTtl();
     if (consumedJtiStore instanceof InMemoryConsumedJtiStore) {
       LOG.warn(
@@ -250,6 +252,15 @@ public final class MagicLinkService {
    * dominates and varies — hosts that need timing-side-channel resistance should front this with a
    * uniform-latency wrapper or rate-limit and monitor for enumeration probing.
    *
+   * <p><strong>The login link is delivered ONLY to the address bound to the resolved user</strong>
+   * via {@link UserLookup#emailFor(UserHandle)} — never to the caller-supplied {@code email}.
+   * Sending to a caller-supplied address would let an attacker request a login token for any
+   * account by username and have it delivered to an address they control (account takeover). When
+   * the host has not implemented {@code emailFor} (no trusted destination exists), the send is
+   * skipped and the same enumeration-resistant {@link SendResult.Sent} shape is returned. The
+   * {@code email} parameter is retained for source/back-compatibility but is not used as the
+   * delivery address.
+   *
    * @since 0.9.1
    */
   public SendResult startLogin(String username, String email) {
@@ -263,6 +274,18 @@ public final class MagicLinkService {
       return new SendResult.Sent("");
     }
     UserHandle user = resolved.get();
+    // SECURITY: resolve the delivery address from the binding, not the caller-supplied parameter.
+    Optional<String> bound = userLookup.emailFor(user);
+    if (bound.isEmpty()) {
+      LOG.warn(
+          "magiclink.login no-bound-email user={} — UserLookup#emailFor returned empty; refusing"
+              + " to send a login link to a caller-supplied address. Implement UserLookup#emailFor"
+              + " so a trusted destination can be established.",
+          user);
+      // Enumeration-resistant: same Sent shape as the not-found / success paths.
+      return new SendResult.Sent("");
+    }
+    String deliveryEmail = bound.get();
     int count = rateLimiter.countAndIncrement(user, PURPOSE_LOGIN, clockProvider.now());
     if (count > rateLimit) {
       return new SendResult.RateLimited(count);
@@ -270,8 +293,8 @@ public final class MagicLinkService {
     String token = issue(user, PURPOSE_LOGIN, Map.of());
     String url = baseUrl + "?t=" + URLEncoder.encode(token, StandardCharsets.UTF_8);
     MagicLinkMessage message =
-        messageFormatter.format(new MagicLinkContext(user, email, url, PURPOSE_LOGIN));
-    emailSender.send(email, message.subject(), message.body());
+        messageFormatter.format(new MagicLinkContext(user, deliveryEmail, url, PURPOSE_LOGIN));
+    emailSender.send(deliveryEmail, message.subject(), message.body());
     return new SendResult.Sent(token);
   }
 
@@ -335,7 +358,10 @@ public final class MagicLinkService {
     Map<String, Object> additional = new HashMap<>(extras);
     additional.put(CLAIM_PURPOSE, purpose);
     JwtClaims claims = new JwtClaims(user, AuthMethod.MAGIC_LINK, null, List.of("eml"), additional);
-    return issuer.issue(claims);
+    // Issue with the magic-link tokenTtl (default 15m), NOT the issuer's per-audience access TTL
+    // (default 1h). Inheriting the access TTL would leave the link redeemable — and replayable
+    // once its single-use JTI is evicted at consumedJtiTtl — for far longer than intended.
+    return issuer.issue(claims, tokenTtl);
   }
 
   private static @Nullable String stringClaim(@Nullable Map<String, Object> map, String name) {
@@ -419,35 +445,65 @@ public final class MagicLinkService {
    * SINGLE-INSTANCE ONLY. Multi-replica deployments MUST replace it with a shared (Redis/DB-backed)
    * implementation.
    *
-   * <p><strong>{@code consumedJtiTtl} must be at least as long as the magic-link JWT's
-   * TTL.</strong> Single-use is enforced by retaining each consumed JTI for {@code consumedJtiTtl};
-   * if that retention is shorter than the token's own validity, a still-unexpired token becomes
-   * redeemable again once its JTI entry is evicted, defeating single-use. The defaults are safe
-   * (30m retention vs the 15m default token TTL); keep this invariant if you tune either value.
-   * This is not enforced at construction because the token TTL is owned by the JWT issuer (and may
-   * vary per audience), not by this config.
+   * <p><strong>{@code consumedJtiTtl} must be at least as long as {@code tokenTtl}.</strong>
+   * Single-use is enforced by retaining each consumed JTI for {@code consumedJtiTtl}; if that
+   * retention is shorter than the token's own validity, a still-unexpired token becomes redeemable
+   * again once its JTI entry is evicted, defeating single-use. This service now OWNS the token TTL
+   * ({@code tokenTtl}, default {@link #DEFAULT_TTL} = 15m) and issues magic links with it
+   * explicitly (rather than inheriting the JWT issuer's 1h access TTL), so the invariant is
+   * enforced at construction: the compact constructor rejects {@code consumedJtiTtl < tokenTtl}.
+   * The defaults are safe (30m retention vs 15m token TTL).
    *
    * @since 0.9.1
    */
   public record Config(
-      String baseUrl, int rateLimit, MagicLinkRateLimiter rateLimiter, Duration consumedJtiTtl) {
+      String baseUrl,
+      int rateLimit,
+      MagicLinkRateLimiter rateLimiter,
+      Duration tokenTtl,
+      Duration consumedJtiTtl) {
     /**
-     * Compact constructor — enforces non-null on every field, and rejects a {@code baseUrl} that
-     * isn't an http(s) URL or that carries whitespace / CRLF (which would enable header-splitting
-     * if the value flowed into a response header). Hosts running in dev mode may pass {@code
-     * http://}; production deployments are expected to pass {@code https://}.
+     * Compact constructor — enforces non-null on every field, rejects a {@code baseUrl} that isn't
+     * an http(s) URL or that carries whitespace / CRLF (which would enable header-splitting if the
+     * value flowed into a response header), and enforces {@code consumedJtiTtl >= tokenTtl} so
+     * single-use cannot be defeated by JTI eviction while a token is still valid. Hosts running in
+     * dev mode may pass {@code http://}; production deployments are expected to pass {@code
+     * https://}.
      */
     public Config {
       Objects.requireNonNull(baseUrl, "baseUrl");
       Objects.requireNonNull(rateLimiter, "rateLimiter");
+      Objects.requireNonNull(tokenTtl, "tokenTtl");
       Objects.requireNonNull(consumedJtiTtl, "consumedJtiTtl");
       validateBaseUrl(baseUrl);
       if (rateLimit < 1) {
         throw new IllegalArgumentException("rateLimit must be at least 1");
       }
+      if (tokenTtl.isZero() || tokenTtl.isNegative()) {
+        throw new IllegalArgumentException("tokenTtl must be strictly positive");
+      }
       if (consumedJtiTtl.isZero() || consumedJtiTtl.isNegative()) {
         throw new IllegalArgumentException("consumedJtiTtl must be strictly positive");
       }
+      if (consumedJtiTtl.compareTo(tokenTtl) < 0) {
+        throw new IllegalArgumentException(
+            "consumedJtiTtl ("
+                + consumedJtiTtl
+                + ") must be >= tokenTtl ("
+                + tokenTtl
+                + ") so a consumed magic link cannot be replayed after its single-use JTI is"
+                + " evicted but before the token itself expires");
+      }
+    }
+
+    /**
+     * Back-compatible constructor that defaults {@code tokenTtl} to {@link #DEFAULT_TTL} (15m).
+     *
+     * @since 2.1.0
+     */
+    public Config(
+        String baseUrl, int rateLimit, MagicLinkRateLimiter rateLimiter, Duration consumedJtiTtl) {
+      this(baseUrl, rateLimit, rateLimiter, DEFAULT_TTL, consumedJtiTtl);
     }
 
     private static void validateBaseUrl(String baseUrl) {
@@ -474,6 +530,7 @@ public final class MagicLinkService {
           baseUrl,
           DEFAULT_RATE_LIMIT,
           new InMemoryRateLimiter(DEFAULT_RATE_WINDOW),
+          DEFAULT_TTL,
           DEFAULT_CONSUMED_JTI_TTL);
     }
   }

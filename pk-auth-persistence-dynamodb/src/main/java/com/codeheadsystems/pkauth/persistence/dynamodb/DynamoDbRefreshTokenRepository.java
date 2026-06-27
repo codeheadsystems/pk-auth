@@ -8,6 +8,7 @@ import com.codeheadsystems.pkauth.refresh.RefreshTokenRecord;
 import com.codeheadsystems.pkauth.refresh.RevokeReason;
 import com.codeheadsystems.pkauth.refresh.spi.Amr;
 import com.codeheadsystems.pkauth.refresh.spi.RefreshTokenRepository;
+import com.codeheadsystems.pkauth.spi.PkAuthPersistenceException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.LinkedHashMap;
@@ -21,7 +22,6 @@ import software.amazon.awssdk.enhanced.dynamodb.Expression;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
 import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
 import software.amazon.awssdk.enhanced.dynamodb.model.IgnoreNullsMode;
-import software.amazon.awssdk.enhanced.dynamodb.model.PutItemEnhancedRequest;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
 import software.amazon.awssdk.enhanced.dynamodb.model.ScanEnhancedRequest;
 import software.amazon.awssdk.enhanced.dynamodb.model.TransactPutItemEnhancedRequest;
@@ -94,7 +94,56 @@ public final class DynamoDbRefreshTokenRepository implements RefreshTokenReposit
     DynamoDbSupport.wrap(
         "refresh_tokens.create",
         () -> {
-          putAllItems(record, /*requirePrimaryAbsent*/ true);
+          // Write the primary item plus its user-index and family-index pointers as a single atomic
+          // TransactWriteItems — the same idiom rotateAtomically uses. If any of the three puts
+          // fails
+          // (throttle/crash) none commit, so a breach-response revokeFamily/revokeAllForUser (which
+          // scan the index pointers) can never miss an orphaned primary whose index entries were
+          // never written. The primary carries an attribute_not_exists(pk) guard so a duplicate
+          // refreshId is rejected; the two index items are unconditional puts but ride the same
+          // transaction.
+          String userB64 = Base64Url.encode(record.userHandle().value());
+          RefreshTokenItem primary =
+              toItem(
+                  record,
+                  PRIMARY_PK_PREFIX + record.refreshId(),
+                  PRIMARY_PK_PREFIX + record.refreshId());
+          RefreshTokenItem userIndex =
+              toItem(record, USER_PK_PREFIX + userB64, INDEX_SK_PREFIX + record.refreshId());
+          RefreshTokenItem familyIndex =
+              toItem(
+                  record,
+                  FAMILY_PK_PREFIX + record.familyId(),
+                  INDEX_SK_PREFIX + record.refreshId());
+          try {
+            enhanced.transactWriteItems(
+                TransactWriteItemsEnhancedRequest.builder()
+                    .addPutItem(
+                        table,
+                        TransactPutItemEnhancedRequest.builder(RefreshTokenItem.class)
+                            .item(primary)
+                            .conditionExpression(
+                                Expression.builder().expression("attribute_not_exists(pk)").build())
+                            .build())
+                    .addPutItem(table, userIndex)
+                    .addPutItem(table, familyIndex)
+                    .build());
+          } catch (TransactionCanceledException cancelled) {
+            // The primary's attribute_not_exists(pk) guard is the first action added (index 0); a
+            // ConditionalCheckFailed there means the refreshId already exists. Surface it as the
+            // same
+            // duplicate signal create() has always produced, but routed through
+            // DynamoDbSupport.wrap
+            // as a PkAuthPersistenceException like every other failure in this class — rather than
+            // as
+            // a raw IllegalStateException that bypassed the wrapper. Any other cancellation
+            // (throughput, transaction conflict, validation) is rethrown for the wrapper to map.
+            if (isPrimaryDuplicate(cancelled)) {
+              throw new PkAuthPersistenceException(
+                  "refresh_tokens.create", "duplicate refreshId: " + record.refreshId(), cancelled);
+            }
+            throw cancelled;
+          }
           return null;
         });
   }
@@ -215,6 +264,22 @@ public final class DynamoDbRefreshTokenRepository implements RefreshTokenReposit
    * returns false here so the caller rethrows rather than scorching the family.
    */
   private static boolean isParentFreshnessFailure(TransactionCanceledException cancelled) {
+    List<CancellationReason> reasons = cancelled.cancellationReasons();
+    if (reasons == null || reasons.isEmpty()) {
+      return false;
+    }
+    return CONDITIONAL_CHECK_FAILED.equals(reasons.get(0).code());
+  }
+
+  /**
+   * True only when the {@code create} transaction was cancelled because the primary item's {@code
+   * attribute_not_exists(pk)} guard failed — i.e. the refreshId already exists. The primary {@code
+   * Put} is the first action added to the transaction, so its reason is at index 0; a {@code
+   * ConditionalCheckFailed} code there is the duplicate signal. Any other cancellation reason
+   * (throughput, transaction conflict, validation) is transient and is rethrown by the caller for
+   * {@code DynamoDbSupport.wrap} to map.
+   */
+  private static boolean isPrimaryDuplicate(TransactionCanceledException cancelled) {
     List<CancellationReason> reasons = cancelled.cancellationReasons();
     if (reasons == null || reasons.isEmpty()) {
       return false;
@@ -407,29 +472,6 @@ public final class DynamoDbRefreshTokenRepository implements RefreshTokenReposit
   }
 
   // -- Internals --------------------------------------------------------------------------
-
-  private void putAllItems(RefreshTokenRecord record, boolean requirePrimaryAbsent) {
-    String userB64 = Base64Url.encode(record.userHandle().value());
-    RefreshTokenItem primary =
-        toItem(
-            record, PRIMARY_PK_PREFIX + record.refreshId(), PRIMARY_PK_PREFIX + record.refreshId());
-    PutItemEnhancedRequest.Builder<RefreshTokenItem> primaryReq =
-        PutItemEnhancedRequest.builder(RefreshTokenItem.class).item(primary);
-    if (requirePrimaryAbsent) {
-      primaryReq.conditionExpression(
-          Expression.builder().expression("attribute_not_exists(pk)").build());
-    }
-    try {
-      table.putItem(primaryReq.build());
-    } catch (ConditionalCheckFailedException duplicate) {
-      throw new IllegalStateException("duplicate refreshId: " + record.refreshId(), duplicate);
-    }
-    // User-index pointer (best-effort; not load-bearing for correctness).
-    table.putItem(toItem(record, USER_PK_PREFIX + userB64, INDEX_SK_PREFIX + record.refreshId()));
-    // Family-index pointer (best-effort; not load-bearing for correctness).
-    table.putItem(
-        toItem(record, FAMILY_PK_PREFIX + record.familyId(), INDEX_SK_PREFIX + record.refreshId()));
-  }
 
   private void deleteAllItems(RefreshTokenItem primary) {
     String refreshId = primary.getRefreshId();

@@ -17,8 +17,16 @@ import java.util.Objects;
  */
 public final class TwilioSmsSender implements SmsSender {
 
+  // Retained to document the canonical Twilio constructor shape (account SID, auth token, sender
+  // number) — the whole point of this naming-anchor skeleton. A real implementation reads them in
+  // send(); until then they are intentionally unread and MUST NOT be echoed into logs/exceptions.
+  @SuppressWarnings("unused")
   private final String accountSid;
+
+  @SuppressWarnings("unused")
   private final String authToken;
+
+  @SuppressWarnings("unused")
   private final String fromNumber;
 
   public TwilioSmsSender(String accountSid, String authToken, String fromNumber) {
@@ -34,16 +42,11 @@ public final class TwilioSmsSender implements SmsSender {
    */
   @Override
   public void send(String phoneE164, String body) {
+    // Deliberately fail loud, but DO NOT echo credential material (account SID, sender number,
+    // auth-token length) into the exception message — it would land in logs / stack traces if a
+    // host ever wired this skeleton unmodified.
     throw new UnsupportedOperationException(
-        "TwilioSmsSender is a skeleton; host applications must wire the Twilio SDK. accountSid="
-            + accountSid
-            + " fromNumber="
-            + fromNumber
-            + " (authToken length="
-            + authToken.length()
-            + ") phone="
-            + phoneE164
-            + " bodyLength="
-            + body.length());
+        "TwilioSmsSender is a skeleton; host applications must add the Twilio SDK dependency and"
+            + " replace send() with the real REST call before sending SMS.");
   }
 }

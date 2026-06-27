@@ -64,10 +64,13 @@ public final class JwtKeyset {
   public static JwtKeyset es256(ECKey current, ECKey... retired) {
     Objects.requireNonNull(current, "current");
     List<JWK> all = new ArrayList<>();
-    all.add(current);
+    // Store ONLY public halves in the verification set. verificationSource() is public and a host
+    // may publish it as a JWKS endpoint; including the private `d` parameter here would leak the
+    // signing key. The full `current` (with the private key) is retained separately for signer().
+    all.add(current.toPublicJWK());
     for (ECKey r : retired) {
       Objects.requireNonNull(r, "retired key");
-      all.add(r);
+      all.add(r.toPublicJWK());
     }
     return new JwtKeyset(current, JWSAlgorithm.ES256, all);
   }

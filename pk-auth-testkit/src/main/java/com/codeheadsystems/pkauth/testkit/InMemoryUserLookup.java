@@ -14,6 +14,7 @@ public final class InMemoryUserLookup implements UserLookup {
 
   private final Map<String, UserView> byUsername = new ConcurrentHashMap<>();
   private final Map<UserHandle, UserView> byHandle = new ConcurrentHashMap<>();
+  private final Map<UserHandle, String> emailByHandle = new ConcurrentHashMap<>();
 
   public InMemoryUserLookup() {}
 
@@ -21,6 +22,11 @@ public final class InMemoryUserLookup implements UserLookup {
   public Optional<UserHandle> findHandleByUsername(String username) {
     UserView u = byUsername.get(username);
     return u == null ? Optional.empty() : Optional.of(u.handle());
+  }
+
+  @Override
+  public Optional<String> emailFor(UserHandle handle) {
+    return Optional.ofNullable(emailByHandle.get(handle));
   }
 
   @Override
@@ -52,6 +58,19 @@ public final class InMemoryUserLookup implements UserLookup {
     UserView view = new UserView(handle, username, displayName, false, false);
     byUsername.put(username, view);
     byHandle.put(handle, view);
+    return handle;
+  }
+
+  /**
+   * Test helper that pre-registers a user with a bound email, exposed via {@link
+   * #emailFor(UserHandle)}. Useful for flows (e.g. magic-link login) that deliver only to the
+   * address bound to the resolved user.
+   *
+   * @since 2.1.0
+   */
+  public UserHandle register(String username, String displayName, String email) {
+    UserHandle handle = register(username, displayName);
+    emailByHandle.put(handle, email);
     return handle;
   }
 }

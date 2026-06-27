@@ -7,6 +7,7 @@ import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
 import java.util.List;
@@ -14,6 +15,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Issues pk-auth JWTs. Maps {@link JwtClaims} onto the standard {@code iss/sub/aud/iat/nbf/exp/jti}
@@ -78,11 +80,30 @@ public final class PkAuthJwtIssuer {
    * to the caller — the host must retry or surface the failure upstream.
    */
   public String issue(JwtClaims claims) {
+    return issue(claims, null);
+  }
+
+  /**
+   * Issues a signed JWT whose lifetime is {@code ttlOverride} instead of the per-audience
+   * access-token TTL resolved from {@link JwtConfig#ttlPolicy()}. Use this for short-lived,
+   * single-purpose tokens (e.g. magic links) that must NOT inherit the full access-token validity
+   * window — a magic link minted at the 1-hour access TTL stays redeemable as a bearer token (and
+   * replayable past its single-use JTI retention) far longer than intended. A {@code null} {@code
+   * ttlOverride} falls back to the audience's access TTL, making this exactly equivalent to {@link
+   * #issue(JwtClaims)}.
+   *
+   * @param claims the claims to sign
+   * @param ttlOverride the token lifetime, or {@code null} to use the audience access TTL
+   * @return the serialized, signed JWT
+   * @since 2.1.0
+   */
+  public String issue(JwtClaims claims, @Nullable Duration ttlOverride) {
     Objects.requireNonNull(claims, "claims");
     Instant now = clockProvider.now();
     Instant nbf = now.minus(config.notBeforeSkew());
     String audience = claims.audience() != null ? claims.audience() : config.defaultAudience();
-    Instant exp = now.plus(config.ttlPolicy().accessTtl(audience));
+    Instant exp =
+        now.plus(ttlOverride != null ? ttlOverride : config.ttlPolicy().accessTtl(audience));
     String jti = UUID.randomUUID().toString();
 
     JWTClaimsSet.Builder body =

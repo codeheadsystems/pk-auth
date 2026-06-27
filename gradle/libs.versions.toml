@@ -10,9 +10,11 @@
 java = "21"
 
 # Build / quality
-# Spotless pinned to the 7.x line: Spotless 8's google-java-format integration intermittently
-# fails class loading on Gradle 9 / JDK 21. Dependabot ignore in .github/dependabot.yml keeps
-# this from getting bumped back. Revisit when Spotless 8 ships a fix.
+# Spotless tracks the 8.x line (currently 8.7.0) and is kept current by Dependabot's
+# dev-dependencies group. Historical note: Spotless 8's google-java-format integration could
+# intermittently fail class loading on Gradle 9 / JDK 21 under a *cached* build, which is why the
+# Gradle build cache stays disabled (see gradle.properties) — `./gradlew check` itself runs clean
+# on 8.x. The earlier 7.x pin (and its dependabot ignore) has been retired.
 spotless = "8.7.0"
 errorprone-plugin = "5.1.0"
 errorprone-core = "2.50.0"
