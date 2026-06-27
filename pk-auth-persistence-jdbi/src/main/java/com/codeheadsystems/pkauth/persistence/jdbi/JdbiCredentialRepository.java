@@ -130,8 +130,12 @@ public final class JdbiCredentialRepository implements CredentialRepository {
   @Override
   public void updateSignCount(CredentialId credentialId, long newCount, Instant lastUsedAt) {
     // Guard against concurrent racing assertions overwriting a higher stored counter with a
-    // lower one — that would silently defeat WebAuthn's clone-detection invariant. Only advance
-    // the counter when the new value strictly exceeds the stored one.
+    // lower one — that would silently defeat WebAuthn's clone-detection invariant. Refuse only a
+    // strict regression (stored > new); allow the equal case through so last_used_at is still
+    // recorded. Most modern/synced passkeys (iCloud Keychain, Google Password Manager, many FIDO
+    // keys) always report sign_count = 0, so a strict `<` guard would never fire for them and
+    // last_used_at would stay NULL forever — see CredentialRepository#updateSignCount, which
+    // documents this as an unconditional last-writer-wins of both fields.
     JdbiSupport.wrap(
         "credentials.updateSignCount",
         () -> {
@@ -139,7 +143,7 @@ public final class JdbiCredentialRepository implements CredentialRepository {
               h ->
                   h.createUpdate(
                           "UPDATE credentials SET sign_count = :sc, last_used_at = :lua"
-                              + " WHERE credential_id = :cid AND sign_count < :sc")
+                              + " WHERE credential_id = :cid AND sign_count <= :sc")
                       .bind("sc", newCount)
                       .bind("lua", OffsetDateTime.ofInstant(lastUsedAt, ZoneOffset.UTC))
                       .bind("cid", credentialId.value())

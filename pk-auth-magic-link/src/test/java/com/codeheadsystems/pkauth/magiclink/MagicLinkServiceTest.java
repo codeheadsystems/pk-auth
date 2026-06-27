@@ -95,11 +95,14 @@ class MagicLinkServiceTest {
 
   @Test
   void loginEmailRoundTrip() {
-    UserHandle user = users.register("alice", "Alice");
+    // startLogin delivers only to the address bound to the resolved user (never the caller-supplied
+    // one), so the fixture must bind alice's email.
+    UserHandle user = users.register("alice", "Alice", "alice@example.com");
 
     MagicLinkService.SendResult send = service.startLogin("alice", "alice@example.com");
     String token = ((MagicLinkService.SendResult.Sent) send).tokenJti();
     assertThat(emails.sent.get(0).subject).isEqualTo("Sign in");
+    assertThat(emails.sent.get(0).to).isEqualTo("alice@example.com");
 
     MagicLinkService.ConsumeResult consumed = service.finishVerification(token);
     assertThat(consumed)
@@ -113,7 +116,7 @@ class MagicLinkServiceTest {
 
   @Test
   void finishVerificationRejectsCrossPurposeTokenWithoutConsumingIt() {
-    UserHandle user = users.register("alice", "Alice");
+    UserHandle user = users.register("alice", "Alice", "alice@example.com");
 
     // A login-purpose token must not satisfy the email-verify consume check.
     MagicLinkService.SendResult send = service.startLogin("alice", "alice@example.com");

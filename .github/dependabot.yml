@@ -17,12 +17,6 @@ updates:
         patterns:
           - "*"
     ignore:
-      # Spotless 8.x's google-java-format integration intermittently fails to load Guava / GJF
-      # classes (NoClassDefFoundError on Newlines / ImmutableList$*) on Gradle 9 / JDK 21. Pin
-      # to 7.x until upstream fixes. The Gradle plugin marker artifact uses the plugin id, not
-      # the implementation artifact id, so this is the right Dependabot dependency-name.
-      - dependency-name: "com.diffplug.spotless:com.diffplug.spotless.gradle.plugin"
-        versions: [">=8"]
       # Micronaut 5.x requires JVM 25; the project targets Java 21 (brief §3). Stay on the 4.x
       # line until the JDK baseline moves.
       - dependency-name: "io.micronaut:*"

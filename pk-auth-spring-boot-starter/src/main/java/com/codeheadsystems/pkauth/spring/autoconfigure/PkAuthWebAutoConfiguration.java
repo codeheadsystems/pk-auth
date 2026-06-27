@@ -20,8 +20,11 @@ import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -74,7 +77,40 @@ public class PkAuthWebAutoConfiguration {
     return new PkAuthJwtAuthenticationFilter(validator);
   }
 
+  /**
+   * Keep the JWT filter out of the global servlet filter chain. Because {@link
+   * #pkAuthJwtAuthenticationFilter} is exposed as a top-level {@link
+   * org.springframework.web.filter.OncePerRequestFilter} bean, Spring Boot would otherwise
+   * auto-register it with the servlet container so it runs on <em>every</em> request path — meaning
+   * a valid pk-auth JWT would populate the {@code SecurityContext} application-wide, even outside
+   * {@code /auth/**}. Disabling the registration confines the filter to where we wire it
+   * explicitly: inside {@link #pkAuthSecurityFilterChain} via {@code addFilterBefore}.
+   *
+   * @param filter the JWT authentication filter bean to suppress from global registration
+   * @return a disabled registration so the container does not mount the filter globally
+   * @since 2.1.0
+   */
   @Bean
+  @ConditionalOnMissingBean(name = "pkAuthJwtAuthenticationFilterRegistration")
+  public FilterRegistrationBean<PkAuthJwtAuthenticationFilter>
+      pkAuthJwtAuthenticationFilterRegistration(PkAuthJwtAuthenticationFilter filter) {
+    FilterRegistrationBean<PkAuthJwtAuthenticationFilter> registration =
+        new FilterRegistrationBean<>(filter);
+    registration.setEnabled(false);
+    return registration;
+  }
+
+  /**
+   * Pin the pk-auth {@code /auth/**} chain to an early order. Spring Security consults {@link
+   * SecurityFilterChain} beans in {@link Order} sequence and the first whose matcher matches wins
+   * exclusively. A host app that defines its own chain — especially a broad catch-all with no
+   * {@code securityMatcher}, which matches everything — at the default (lowest) precedence would
+   * otherwise swallow {@code /auth/**} before this chain is consulted, silently disabling pk-auth's
+   * rules on the public ceremony/refresh endpoints. Running near the highest precedence ensures our
+   * narrow {@code /auth/**} matcher is evaluated first.
+   */
+  @Bean
+  @Order(Ordered.HIGHEST_PRECEDENCE + 10)
   @ConditionalOnMissingBean(name = "pkAuthSecurityFilterChain")
   public SecurityFilterChain pkAuthSecurityFilterChain(
       HttpSecurity http, PkAuthJwtAuthenticationFilter filter) throws Exception {

@@ -53,6 +53,9 @@ public final class DynamoDbChallengeStore implements ChallengeStore {
           if (item.getUserHandle() != null) {
             values.put("userHandle", AttributeValue.fromS(item.getUserHandle()));
           }
+          if (item.getUserVerification() != null) {
+            values.put("userVerification", AttributeValue.fromS(item.getUserVerification()));
+          }
           values.put("expiresAt", AttributeValue.fromN(Long.toString(item.getExpiresAt())));
           client.putItem(PutItemRequest.builder().tableName(tableName).item(values).build());
           return null;
@@ -105,6 +108,9 @@ public final class DynamoDbChallengeStore implements ChallengeStore {
           item.setPurpose(attrs.get("purpose").s());
           if (attrs.containsKey("userHandle")) {
             item.setUserHandle(attrs.get("userHandle").s());
+          }
+          if (attrs.containsKey("userVerification")) {
+            item.setUserVerification(attrs.get("userVerification").s());
           }
           item.setExpiresAt(Long.parseLong(attrs.get("expiresAt").n()));
           return Optional.of(item.toRecord());

@@ -229,12 +229,20 @@ public final class DefaultPasskeyAuthenticationService implements PasskeyAuthent
     byte[] challenge = challengeGenerator.generate();
     ChallengeId challengeId = ChallengeId.random();
 
+    // Resolve the user-verification requirement (per-request override, else ceremony default) and
+    // persist it on the challenge record so finishRegistration can enforce it server-side. Without
+    // this, a per-request REQUIRED (e.g. step-up) is advisory only — finish would fall back to the
+    // global config and accept flagUV=false.
+    UserVerificationRequirement uv =
+        req.userVerification() == null ? ceremonyConfig.userVerification() : req.userVerification();
+
     challengeStore.put(
         challengeId,
         new ChallengeRecord(
             challenge,
             ChallengeRecord.Purpose.REGISTRATION,
             userHandle,
+            uv,
             clockProvider.now().plus(ceremonyConfig.challengeTtl())),
         ceremonyConfig.challengeTtl());
 
@@ -243,9 +251,6 @@ public final class DefaultPasskeyAuthenticationService implements PasskeyAuthent
     // enumeration on the public start-registration endpoint.
     List<PublicKeyCredentialDescriptor> excludeCredentials =
         credentialRepository.findByUserHandle(userHandle).stream().map(this::toDescriptor).toList();
-
-    UserVerificationRequirement uv =
-        req.userVerification() == null ? ceremonyConfig.userVerification() : req.userVerification();
 
     AuthenticatorSelectionCriteria selection =
         new AuthenticatorSelectionCriteria(null, ceremonyConfig.residentKey(), null, uv);
@@ -351,11 +356,29 @@ public final class DefaultPasskeyAuthenticationService implements PasskeyAuthent
         new RegistrationParameters(
             serverProperty,
             WebAuthn4JConverters.pubKeyCredParams(ceremonyConfig.acceptedAlgorithms()),
-            WebAuthn4JConverters.userVerificationRequired(ceremonyConfig.userVerification()),
+            effectiveUserVerificationRequired(challengeRecord),
             /* userPresenceRequired */ true);
     // Attestation signature verification is intentionally non-strict in the default manager;
     // BadSignatureException is not thrown here (see finding #41 / #3 for strict-mode opt-in).
     return webAuthnManager.verify(w4jRequest, w4jParams);
+  }
+
+  /**
+   * Effective user-verification requirement for a finish step: {@code true} (UV required) if EITHER
+   * the global {@link CeremonyConfig#userVerification()} OR the per-request requirement resolved at
+   * start (persisted on {@link ChallengeRecord#userVerification()}) is {@code REQUIRED} — i.e. the
+   * stricter of the two. This enforces a per-request step-up {@code REQUIRED} server-side even when
+   * the global default is relaxed to {@code PREFERRED}/{@code DISCOURAGED}, and never weakens the
+   * global config. A {@code null} recorded requirement (legacy record) contributes nothing, so the
+   * global config still applies.
+   */
+  private boolean effectiveUserVerificationRequired(ChallengeRecord challengeRecord) {
+    boolean configRequired =
+        WebAuthn4JConverters.userVerificationRequired(ceremonyConfig.userVerification());
+    boolean perRequestRequired =
+        challengeRecord.userVerification() != null
+            && WebAuthn4JConverters.userVerificationRequired(challengeRecord.userVerification());
+    return configRequired || perRequestRequired;
   }
 
   /**
@@ -399,7 +422,13 @@ public final class DefaultPasskeyAuthenticationService implements PasskeyAuthent
 
     var authData = data.getAttestationObject().getAuthenticatorData();
     byte[] coseBytes = WebAuthn4JConverters.serializeCoseKey(acd.getCOSEKey(), objectConverter);
-    UUID aaguidUuid = AAGUID.ZERO.equals(acd.getAaguid()) ? null : acd.getAaguid().getValue();
+    // Null-guard the AAGUID to match evaluateAttestation: AAGUID.ZERO.equals(null) is false, so
+    // without the explicit null check a null AAGUID would NPE on getValue() and escape as a 500
+    // instead of a sealed RegistrationResult.
+    UUID aaguidUuid =
+        acd.getAaguid() == null || AAGUID.ZERO.equals(acd.getAaguid())
+            ? null
+            : acd.getAaguid().getValue();
 
     Set<Transport> transports = EnumSet.noneOf(Transport.class);
     if (data.getTransports() != null) {
@@ -480,17 +509,20 @@ public final class DefaultPasskeyAuthenticationService implements PasskeyAuthent
     byte[] challenge = challengeGenerator.generate();
     ChallengeId challengeId = ChallengeId.random();
 
+    // Resolve UV (per-request override, else ceremony default) and persist it on the record so
+    // finishAuthentication enforces it server-side (see startRegistration for rationale).
+    UserVerificationRequirement uv =
+        req.userVerification() == null ? ceremonyConfig.userVerification() : req.userVerification();
+
     challengeStore.put(
         challengeId,
         new ChallengeRecord(
             challenge,
             ChallengeRecord.Purpose.AUTHENTICATION,
             resolvedHandle,
+            uv,
             clockProvider.now().plus(ceremonyConfig.challengeTtl())),
         ceremonyConfig.challengeTtl());
-
-    UserVerificationRequirement uv =
-        req.userVerification() == null ? ceremonyConfig.userVerification() : req.userVerification();
 
     PublicKeyCredentialRequestOptionsJson options =
         new PublicKeyCredentialRequestOptionsJson(
@@ -648,7 +680,7 @@ public final class DefaultPasskeyAuthenticationService implements PasskeyAuthent
             serverProperty,
             w4jCred,
             /* allowCredentials */ null,
-            WebAuthn4JConverters.userVerificationRequired(ceremonyConfig.userVerification()),
+            effectiveUserVerificationRequired(challengeRecord),
             /* userPresenceRequired */ true);
     return webAuthnManager.verify(w4jRequest, w4jParams);
   }

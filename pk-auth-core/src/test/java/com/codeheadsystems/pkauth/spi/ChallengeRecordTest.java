@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.codeheadsystems.pkauth.api.UserHandle;
+import com.codeheadsystems.pkauth.api.UserVerificationRequirement;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
 
@@ -22,6 +23,29 @@ class ChallengeRecordTest {
     assertThat(rec.purpose()).isEqualTo(ChallengeRecord.Purpose.REGISTRATION);
     assertThat(rec.userHandle()).isEqualTo(uh);
     assertThat(rec.expiresAt()).isEqualTo(exp);
+  }
+
+  @Test
+  void carriesUserVerificationAndDefaultsToNullViaCompatConstructor() {
+    Instant exp = Instant.parse("2024-01-01T00:05:00Z");
+    UserHandle uh = UserHandle.random();
+
+    ChallengeRecord withUv =
+        new ChallengeRecord(
+            new byte[] {1},
+            ChallengeRecord.Purpose.AUTHENTICATION,
+            uh,
+            UserVerificationRequirement.REQUIRED,
+            exp);
+    assertThat(withUv.userVerification()).isEqualTo(UserVerificationRequirement.REQUIRED);
+
+    // The back-compat 4-arg constructor records no resolved requirement.
+    ChallengeRecord legacy =
+        new ChallengeRecord(new byte[] {1}, ChallengeRecord.Purpose.AUTHENTICATION, uh, exp);
+    assertThat(legacy.userVerification()).isNull();
+
+    // userVerification participates in equality.
+    assertThat(withUv).isNotEqualTo(legacy);
   }
 
   @Test
