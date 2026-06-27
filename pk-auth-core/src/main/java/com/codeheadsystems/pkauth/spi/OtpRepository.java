@@ -57,10 +57,16 @@ public interface OtpRepository {
   void save(StoredOtp otp);
 
   /**
-   * Returns the most recently issued, non-consumed, non-expired OTP for the given user + phone, if
-   * any. Used by {@code OtpService.verify} as the candidate for matching.
+   * Returns the most recently issued, non-consumed, and non-expired ({@code expiresAt > now}) OTP
+   * for the given user + phone, if any. Used by {@code OtpService.verify} as the candidate for
+   * matching.
+   *
+   * @param userHandle owning user
+   * @param phoneE164 destination phone in E.164 format
+   * @param now the caller's current instant (from the host ClockProvider)
+   * @since 2.1.0
    */
-  Optional<StoredOtp> findLatestActive(UserHandle userHandle, String phoneE164);
+  Optional<StoredOtp> findLatestActive(UserHandle userHandle, String phoneE164, Instant now);
 
   /**
    * Atomically increments the attempts counter for the supplied OTP id and returns the new count.

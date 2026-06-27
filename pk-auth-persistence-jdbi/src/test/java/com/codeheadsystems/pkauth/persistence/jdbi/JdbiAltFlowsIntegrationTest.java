@@ -101,8 +101,8 @@ class JdbiAltFlowsIntegrationTest {
 
     int removed = otp.deleteByUserHandle(user);
     assertThat(removed).isEqualTo(1);
-    assertThat(otp.findLatestActive(user, "+15551110000")).isEmpty();
-    assertThat(otp.findLatestActive(other, "+15552220000")).isPresent();
+    assertThat(otp.findLatestActive(user, "+15551110000", t0)).isEmpty();
+    assertThat(otp.findLatestActive(other, "+15552220000", t0)).isPresent();
   }
 
   @Test
@@ -120,7 +120,7 @@ class JdbiAltFlowsIntegrationTest {
     // (A prior cap-guarded UPDATE made the verifier a no-op past the cap, which allowed unlimited
     // verify attempts within the TTL.)
     assertThat(result).hasValue(4);
-    var stored = otp.findLatestActive(user, "+15559990000").orElseThrow();
+    var stored = otp.findLatestActive(user, "+15559990000", t0).orElseThrow();
     assertThat(stored.attempts()).isEqualTo(4);
   }
 
@@ -135,7 +135,7 @@ class JdbiAltFlowsIntegrationTest {
     var result = otp.incrementAttempts(user, "o-inc");
 
     assertThat(result).hasValue(3);
-    var stored = otp.findLatestActive(user, "+15558880000").orElseThrow();
+    var stored = otp.findLatestActive(user, "+15558880000", t0).orElseThrow();
     assertThat(stored.attempts()).isEqualTo(3);
   }
 
@@ -158,19 +158,19 @@ class JdbiAltFlowsIntegrationTest {
             t0.plusSeconds(60),
             t0.plusSeconds(360)));
 
-    var active = otp.findLatestActive(user, "+15551234567").orElseThrow();
+    var active = otp.findLatestActive(user, "+15551234567", t0).orElseThrow();
     assertThat(active.otpId()).isEqualTo("o2");
 
     otp.incrementAttempts(user, "o2");
     otp.incrementAttempts(user, "o2");
-    var refreshed = otp.findLatestActive(user, "+15551234567").orElseThrow();
+    var refreshed = otp.findLatestActive(user, "+15551234567", t0).orElseThrow();
     assertThat(refreshed.attempts()).isEqualTo(2);
 
     assertThat(otp.countSince(user, "+15551234567", t0.minusSeconds(10))).isEqualTo(2);
     assertThat(otp.countSince(user, "+15551234567", t0.plusSeconds(120))).isZero();
 
     otp.consume(user, "o2");
-    var noActive = otp.findLatestActive(user, "+15551234567");
+    var noActive = otp.findLatestActive(user, "+15551234567", t0);
     assertThat(noActive).hasValueSatisfying(o -> assertThat(o.otpId()).isEqualTo("o1"));
   }
 

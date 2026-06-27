@@ -4,6 +4,8 @@ package com.codeheadsystems.pkauth.magiclink;
 import com.codeheadsystems.pkauth.api.UserHandle;
 import com.codeheadsystems.pkauth.jwt.AuthMethod;
 import com.codeheadsystems.pkauth.jwt.JwtClaims;
+import com.codeheadsystems.pkauth.jwt.JwtConfig;
+import com.codeheadsystems.pkauth.jwt.JwtKeyset;
 import com.codeheadsystems.pkauth.jwt.JwtVerificationResult;
 import com.codeheadsystems.pkauth.jwt.PkAuthJwtIssuer;
 import com.codeheadsystems.pkauth.jwt.PkAuthJwtValidator;
@@ -79,6 +81,18 @@ public final class MagicLinkService {
 
   /** Default rate-limit window. */
   public static final Duration DEFAULT_RATE_WINDOW = Duration.ofHours(1);
+
+  /**
+   * Dedicated audience for magic-link JWTs. Magic-link tokens are minted with this audience (not
+   * the application's resource-server audience) so that the host's ordinary {@link
+   * PkAuthJwtValidator} — which only accepts the application audience — rejects them. This is what
+   * prevents a magic-link token (which sits in an email inbox / proxy log) from being replayed as
+   * an API bearer/access token. Wire the service via {@link Dependencies#ofDedicatedAudience} so
+   * the magic-link issuer and validator are both scoped to this audience.
+   *
+   * @since 2.1.0
+   */
+  public static final String DEFAULT_AUDIENCE = "pkauth:magic-link";
 
   /** Result of a send attempt. */
   public sealed interface SendResult {
@@ -426,6 +440,52 @@ public final class MagicLinkService {
       return new Dependencies(
           issuer,
           validator,
+          emailSender,
+          userLookup,
+          clockProvider,
+          new InMemoryConsumedJtiStore(DEFAULT_CONSUMED_JTI_TTL),
+          new DefaultMagicLinkFormatter());
+    }
+
+    /**
+     * Builds {@link Dependencies} with a <strong>dedicated</strong> magic-link JWT issuer and
+     * validator, both scoped to {@link MagicLinkService#DEFAULT_AUDIENCE} and derived from the
+     * host's {@code keyset} and {@code issuerName} (pass the resource-server issuer so the {@code
+     * iss} claim is consistent). This is the recommended wiring: because magic-link tokens carry
+     * the magic-link audience rather than the application audience, the host's resource-server
+     * {@link PkAuthJwtValidator} rejects them, so a magic-link token cannot be replayed as an API
+     * bearer/access token (token-confusion defense). The dedicated issuer also uses a no-op
+     * access-token store, so magic-link jtis never pollute the host's {@code AccessTokenStore}.
+     *
+     * <p>Prefer this over {@link #of} for production wiring. Token lifetime is controlled by {@link
+     * MagicLinkService} (the {@link Config#tokenTtl()}), not the issuer's access-token TTL, so the
+     * audience config's TTL policy is irrelevant here.
+     *
+     * @param keyset the host's signing keyset (shared with the resource-server issuer)
+     * @param issuerName the {@code iss} claim value (the resource-server issuer name)
+     * @param emailSender the email transport
+     * @param userLookup the user lookup SPI
+     * @param clockProvider the clock
+     * @return dependencies wired to a magic-link-scoped issuer + validator
+     * @since 2.1.0
+     */
+    public static Dependencies ofDedicatedAudience(
+        JwtKeyset keyset,
+        String issuerName,
+        EmailSender emailSender,
+        UserLookup userLookup,
+        ClockProvider clockProvider) {
+      Objects.requireNonNull(keyset, "keyset");
+      Objects.requireNonNull(issuerName, "issuerName");
+      JwtConfig audienceConfig = JwtConfig.defaults(issuerName, DEFAULT_AUDIENCE);
+      // No-op AccessTokenStore on purpose: magic-link jtis must not be recorded as live access
+      // tokens. Single-use is enforced separately via the ConsumedJtiStore.
+      PkAuthJwtIssuer dedicatedIssuer = new PkAuthJwtIssuer(audienceConfig, keyset, clockProvider);
+      PkAuthJwtValidator dedicatedValidator =
+          new PkAuthJwtValidator(audienceConfig, keyset, clockProvider);
+      return new Dependencies(
+          dedicatedIssuer,
+          dedicatedValidator,
           emailSender,
           userLookup,
           clockProvider,

@@ -38,19 +38,19 @@ class InMemoryAltFlowRepositoriesTest {
         new StoredOtp(
             "o2", user, "+15551234567", "h", 0, 5, false, t0.plusSeconds(60), t0.plusSeconds(360)));
 
-    assertThat(repo.findLatestActive(user, "+15551234567"))
+    assertThat(repo.findLatestActive(user, "+15551234567", t0))
         .hasValueSatisfying(o -> assertThat(o.otpId()).isEqualTo("o2"));
 
     repo.incrementAttempts(user, "o2");
     repo.incrementAttempts(user, "o2");
-    assertThat(repo.findLatestActive(user, "+15551234567"))
+    assertThat(repo.findLatestActive(user, "+15551234567", t0))
         .hasValueSatisfying(o -> assertThat(o.attempts()).isEqualTo(2));
 
     assertThat(repo.countSince(user, "+15551234567", t0.minusSeconds(10))).isEqualTo(2);
     assertThat(repo.countSince(user, "+15551234567", t0.plusSeconds(120))).isZero();
 
     repo.consume(user, "o2");
-    assertThat(repo.findLatestActive(user, "+15551234567"))
+    assertThat(repo.findLatestActive(user, "+15551234567", t0))
         .hasValueSatisfying(o -> assertThat(o.otpId()).isEqualTo("o1"));
   }
 }

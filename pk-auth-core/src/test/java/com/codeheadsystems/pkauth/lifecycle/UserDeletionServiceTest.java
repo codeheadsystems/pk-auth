@@ -172,7 +172,8 @@ class UserDeletionServiceTest {
     public void save(StoredOtp otp) {}
 
     @Override
-    public Optional<StoredOtp> findLatestActive(UserHandle userHandle, String phoneE164) {
+    public Optional<StoredOtp> findLatestActive(
+        UserHandle userHandle, String phoneE164, Instant now) {
       return Optional.empty();
     }
 

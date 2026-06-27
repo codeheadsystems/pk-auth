@@ -92,8 +92,8 @@ class DynamoDbAltFlowsIntegrationTest {
 
     int removed = otp.deleteByUserHandle(user);
     assertThat(removed).isEqualTo(2);
-    assertThat(otp.findLatestActive(user, "+15551110000")).isEmpty();
-    assertThat(otp.findLatestActive(other, "+15552220000")).isPresent();
+    assertThat(otp.findLatestActive(user, "+15551110000", t0)).isEmpty();
+    assertThat(otp.findLatestActive(other, "+15552220000", t0)).isPresent();
   }
 
   @Test
@@ -115,17 +115,17 @@ class DynamoDbAltFlowsIntegrationTest {
             t0.plusSeconds(60),
             t0.plusSeconds(360)));
 
-    var active = otp.findLatestActive(user, "+15551234567").orElseThrow();
+    var active = otp.findLatestActive(user, "+15551234567", t0).orElseThrow();
     assertThat(active.otpId()).isEqualTo("o2");
 
     otp.incrementAttempts(user, "o2");
-    var refreshed = otp.findLatestActive(user, "+15551234567").orElseThrow();
+    var refreshed = otp.findLatestActive(user, "+15551234567", t0).orElseThrow();
     assertThat(refreshed.attempts()).isEqualTo(1);
 
     assertThat(otp.countSince(user, "+15551234567", t0.minusSeconds(10))).isEqualTo(2);
 
     otp.consume(user, "o2");
-    assertThat(otp.findLatestActive(user, "+15551234567"))
+    assertThat(otp.findLatestActive(user, "+15551234567", t0))
         .hasValueSatisfying(o -> assertThat(o.otpId()).isEqualTo("o1"));
   }
 

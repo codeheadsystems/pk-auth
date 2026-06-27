@@ -249,13 +249,16 @@ public class PkAuthFactory {
 
   @Singleton
   MagicLinkService magicLinkService(
-      PkAuthJwtIssuer issuer,
-      PkAuthJwtValidator validator,
+      JwtConfig jwtConfig,
+      JwtKeyset keyset,
       EmailSender emailSender,
       UserLookup userLookup,
       ClockProvider clock) {
+    // Dedicated magic-link issuer/validator scoped to MagicLinkService.DEFAULT_AUDIENCE so the
+    // resource-server validator (application audience) rejects magic-link tokens as bearer tokens.
     return MagicLinkService.create(
-        MagicLinkService.Dependencies.of(issuer, validator, emailSender, userLookup, clock),
+        MagicLinkService.Dependencies.ofDedicatedAudience(
+            keyset, jwtConfig.issuer(), emailSender, userLookup, clock),
         "http://localhost:8080/auth/magic");
   }
 

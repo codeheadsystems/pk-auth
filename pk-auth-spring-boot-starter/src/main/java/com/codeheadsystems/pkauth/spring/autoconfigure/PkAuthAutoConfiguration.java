@@ -402,8 +402,8 @@ public class PkAuthAutoConfiguration {
   @ConditionalOnMissingBean
   @ConditionalOnBean(EmailSender.class)
   public MagicLinkService pkAuthMagicLinkService(
-      PkAuthJwtIssuer issuer,
-      PkAuthJwtValidator validator,
+      JwtConfig jwtConfig,
+      JwtKeyset keyset,
       EmailSender emailSender,
       UserLookup userLookup,
       ClockProvider clockProvider,
@@ -411,8 +411,11 @@ public class PkAuthAutoConfiguration {
     // baseUrl for the magic link uses the configured RP origin's first entry. Demo apps that
     // serve at a different path override the service bean explicitly.
     String baseUrl = props.relyingParty().origins().iterator().next();
+    // Dedicated magic-link issuer/validator scoped to MagicLinkService.DEFAULT_AUDIENCE so the
+    // resource-server validator (application audience) rejects magic-link tokens as bearer tokens.
     return MagicLinkService.create(
-        MagicLinkService.Dependencies.of(issuer, validator, emailSender, userLookup, clockProvider),
+        MagicLinkService.Dependencies.ofDedicatedAudience(
+            keyset, jwtConfig.issuer(), emailSender, userLookup, clockProvider),
         baseUrl);
   }
 

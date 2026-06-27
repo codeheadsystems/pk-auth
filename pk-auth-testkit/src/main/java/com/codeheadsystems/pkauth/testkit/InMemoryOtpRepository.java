@@ -23,11 +23,13 @@ public final class InMemoryOtpRepository implements OtpRepository {
   }
 
   @Override
-  public Optional<StoredOtp> findLatestActive(UserHandle userHandle, String phoneE164) {
+  public Optional<StoredOtp> findLatestActive(
+      UserHandle userHandle, String phoneE164, Instant now) {
     return byId.values().stream()
         .filter(o -> o.userHandle().equals(userHandle))
         .filter(o -> o.phoneE164().equals(phoneE164))
         .filter(o -> !o.consumed())
+        .filter(o -> o.expiresAt().isAfter(now))
         .max(Comparator.comparing(StoredOtp::createdAt));
   }
 
