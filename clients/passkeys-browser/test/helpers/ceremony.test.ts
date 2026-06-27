@@ -3,21 +3,21 @@ import { Encoder } from "cbor-x";
 import * as b64u from "../../src/base64url";
 import { decodeCreationOptions, encodeRegistrationResponse } from "../../src/ceremonies";
 import { FakeAuthenticator } from "./fakeAuthenticator";
-import { RegistrationService } from "./registration";
+import { CeremonyService } from "./ceremony";
 
 describe("RegistrationService", () => {
   describe("start a registration", () => {
     it("returns 403 when a username is not in the allowlist", async () => {
-      const service = new RegistrationService("localhost", "alice");
+      const service = new CeremonyService("localhost", "alice");
       await expect(
-        service.start({ username: "eve", displayName: null, label: null, challenge: null }),
+        service.startRegistration({ username: "eve", displayName: null, label: null, challenge: null }),
       ).rejects.toThrow("HTTP 403");
     });
 
     it("returns a StartRegistrationResponse when the request is valid", async () => {
-      const service = new RegistrationService("localhost", "alice")
+      const service = new CeremonyService("localhost", "alice")
 
-      const response = await service.start({ username: "alice", displayName: null, label: null, challenge: null })
+      const response = await service.startRegistration({ username: "alice", displayName: null, label: null, challenge: null })
 
       expect(response.challengeId).toBeTypeOf("string");
       expect(response.publicKey.user.id).toBeTypeOf("string");
@@ -33,9 +33,9 @@ describe("RegistrationService", () => {
 
   describe("finish a registration", () => {
     it("returns 400 for an unknown challengeId", async () => {
-      const service = new RegistrationService("localhost", "alice");
+      const service = new CeremonyService("localhost", "alice");
       await expect(
-        service.finish({
+        service.finishRegistration({
           challengeId: "does-not-exist",
           username: "alice",
           label: "key",
@@ -50,27 +50,27 @@ describe("RegistrationService", () => {
     });
 
     it("returns 400 for a username that does not match the started session", async () => {
-      const service = new RegistrationService("localhost", "alice", "bob");
-      const { challengeId, publicKey } = await service.start({ username: "alice", displayName: null, label: null, challenge: null });
+      const service = new CeremonyService("localhost", "alice", "bob");
+      const { challengeId, publicKey } = await service.startRegistration({ username: "alice", displayName: null, label: null, challenge: null });
 
       const auth = new FakeAuthenticator();
       const credential = await auth.create({ publicKey: decodeCreationOptions(publicKey) });
       const encoded = encodeRegistrationResponse(credential);
 
       await expect(
-        service.finish({ challengeId, username: "bob", label: null, response: encoded }),
+        service.finishRegistration({ challengeId, username: "bob", label: null, response: encoded }),
       ).rejects.toThrow("HTTP 400");
     });
 
     it("verifies the attestation and returns credential metadata", async () => {
-      const service = new RegistrationService("localhost", "alice");
-      const { challengeId, publicKey } = await service.start({ username: "alice", displayName: "Alice", label: null, challenge: null });
+      const service = new CeremonyService("localhost", "alice");
+      const { challengeId, publicKey } = await service.startRegistration({ username: "alice", displayName: "Alice", label: null, challenge: null });
 
       const auth = new FakeAuthenticator();
       const credential = await auth.create({ publicKey: decodeCreationOptions(publicKey) });
       const encoded = encodeRegistrationResponse(credential);
 
-      const { credential: cred } = await service.finish({ challengeId, username: "alice", label: "my-key", response: encoded });
+      const { credential: cred } = await service.finishRegistration({ challengeId, username: "alice", label: "my-key", response: encoded });
 
       expect(cred.credentialId).toBeTypeOf("string");
       expect(cred.userHandle).toBeTypeOf("string");
@@ -81,8 +81,8 @@ describe("RegistrationService", () => {
     });
 
     it("returns 400 when the attestation signature is tampered", async () => {
-      const service = new RegistrationService("localhost", "alice");
-      const { challengeId, publicKey } = await service.start({ username: "alice", displayName: null, label: null, challenge: null });
+      const service = new CeremonyService("localhost", "alice");
+      const { challengeId, publicKey } = await service.startRegistration({ username: "alice", displayName: null, label: null, challenge: null });
 
       const auth = new FakeAuthenticator();
       const credential = await auth.create({ publicKey: decodeCreationOptions(publicKey) });
@@ -99,14 +99,14 @@ describe("RegistrationService", () => {
       const tampered = { ...encoded, response: { ...encoded.response, attestationObject: b64u.encode(cbor.encode(attObj) as Uint8Array) } };
 
       await expect(
-        service.finish({ challengeId, username: "alice", label: null, response: tampered }),
+        service.finishRegistration({ challengeId, username: "alice", label: null, response: tampered }),
       ).rejects.toThrow("HTTP 400");
     });
 
     it("returns 400 when the challenge in clientDataJSON belongs to a different session", async () => {
-      const service = new RegistrationService("localhost", "alice");
-      const s1 = await service.start({ username: "alice", displayName: null, label: null, challenge: null });
-      const s2 = await service.start({ username: "alice", displayName: null, label: null, challenge: null });
+      const service = new CeremonyService("localhost", "alice");
+      const s1 = await service.startRegistration({ username: "alice", displayName: null, label: null, challenge: null });
+      const s2 = await service.startRegistration({ username: "alice", displayName: null, label: null, challenge: null });
 
       const auth = new FakeAuthenticator();
       const credential = await auth.create({ publicKey: decodeCreationOptions(s2.publicKey) });
@@ -114,7 +114,7 @@ describe("RegistrationService", () => {
 
       // finish using s1 challengeId but with s2's credential -- this should fail
       await expect(
-        service.finish({ challengeId: s1.challengeId, username: "alice", label: null, response: encoded }),
+        service.finishRegistration({ challengeId: s1.challengeId, username: "alice", label: null, response: encoded }),
       ).rejects.toThrow("HTTP 400");
     });
   });

@@ -19,13 +19,16 @@ interface PendingEntry {
 }
 
 /*
-RegistrationService is a server side service that can start and finish
-client registrations.
+CeremonyService is a server side service that can:
+  - start registration
+  - finish registration
+  - start authentication
+  - finish authentication
 Instantiate the service with a relying party id [rpId] and a list of allowed users.
-A registration is started with a call to start which will produce a challenge that
-the client must respond to with a call to finish.
+A registration is started with a call to startRegistration which will produce a challenge that
+the client must respond to with a call to finishRegistration.
  */
-export class RegistrationService {
+export class CeremonyService {
   // pending is the map of registrations which have been started; but not yet finished.
   // Maps challenge id to a PendingEntry structure.
   private readonly pending : Map<string, PendingEntry>;
@@ -38,7 +41,7 @@ export class RegistrationService {
     this.allowedUsernames = allowedUsernames ?? [];
   }
 
-  async start(req : StartRegistrationRequest) : Promise<StartRegistrationResponse> {
+  async startRegistration(req : StartRegistrationRequest) : Promise<StartRegistrationResponse> {
     if (!this.allowedUsernames.includes(req.username)) {
       throw new HttpError(403, { error: `username '${req.username}' not allowed` });
     }
@@ -60,7 +63,7 @@ export class RegistrationService {
     return newStartRegistrationResponse(pendingEntry)
   }
 
-  async finish(req: FinishRegistrationRequest): Promise<FinishRegistrationResponse> {
+  async finishRegistration(req: FinishRegistrationRequest): Promise<FinishRegistrationResponse> {
     const entry = this.pending.get(req.challengeId);
     if (!entry) {
       throw new HttpError(400, { error: `unknown challengeId: ${req.challengeId}` });
