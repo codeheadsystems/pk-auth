@@ -23,7 +23,7 @@ import {
   newHttpHandler
 } from "./helpers/httpServer";
 import * as http from "node:http";
-import {RegistrationService} from "./helpers/registration";
+import {CeremonyService} from "./helpers/ceremony";
 import {FakeAuthenticator} from "./helpers/fakeAuthenticator";
 
 const CREATE_OPTIONS_JSON: PublicKeyCredentialCreationOptionsJson = {
@@ -158,11 +158,11 @@ describe("PkAuthCeremonyClient http test", () => {
 
     await expect(client.register({ username: "alice", label: "key" })).rejects.toThrow("HTTP 500: unit test error from errorHttpHandler");
 
-    expect(credentialsContainer.create).not.toHaveBeenCalled(); // this proves the client did not attempt to create a credential upon failure to start registration.ts
+    expect(credentialsContainer.create).not.toHaveBeenCalled(); // this proves the client did not attempt to create a credential upon failure to start ceremony.ts
   })
 
   it("when start registration succeeds but no credential is created, then the client fails with credential cancellation", async() => {
-    const registration = new RegistrationService("localhost", "alice", "bob")
+    const registration = new CeremonyService("localhost", "alice", "bob")
     using server= await startHttpServer({
       [startPath]: newStartHandler(registration),
       [finishPath]: newFinishHandler(registration)
@@ -178,7 +178,7 @@ describe("PkAuthCeremonyClient http test", () => {
   })
 
   it("when finish registration fails, the credential was still created", async() => {
-    const registration = new RegistrationService("localhost", "alice", "bob")
+    const registration = new CeremonyService("localhost", "alice", "bob")
     using server= await startHttpServer({
       [startPath]: newStartHandler(registration),
       [finishPath]: errorHttpHandler
@@ -196,7 +196,7 @@ describe("PkAuthCeremonyClient http test", () => {
   })
 
   it("when registering a credential, then the server returns a finished response", async() => {
-    const registration = new RegistrationService("localhost", "alice", "bob")
+    const registration = new CeremonyService("localhost", "alice", "bob")
     using server = await startHttpServer({
       [startPath]: newStartHandler(registration),
       [finishPath]: newFinishHandler(registration)
@@ -237,17 +237,17 @@ describe("PkAuthCeremonyClient http test", () => {
     res.end("unit test error from errorHttpHandler")
   }
 
-  function newStartHandler(registration: RegistrationService) : HttpHandler{
+  function newStartHandler(registration: CeremonyService) : HttpHandler{
     const endpoint = async (req: StartRegistrationRequest) : Promise<StartRegistrationResponse> => {
-      return registration.start(req);
+      return registration.startRegistration(req);
     };
     const handler = new Handler(decodePost, endpoint, encodeJson);
     return newHttpHandler(handler);
   }
 
-  function newFinishHandler(registration: RegistrationService) : HttpHandler{
+  function newFinishHandler(registration: CeremonyService) : HttpHandler{
     const endpoint = async (req: FinishRegistrationRequest) : Promise<FinishRegistrationResponse> => {
-      return registration.finish(req);
+      return registration.finishRegistration(req);
     };
     const handler = new Handler(decodePost, endpoint, encodeJson);
     return newHttpHandler(handler);
