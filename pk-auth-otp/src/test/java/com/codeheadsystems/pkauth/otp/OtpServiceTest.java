@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.codeheadsystems.pkauth.api.UserHandle;
 import com.codeheadsystems.pkauth.spi.ClockProvider;
+import com.codeheadsystems.pkauth.spi.OtpRepository;
 import com.codeheadsystems.pkauth.testkit.InMemoryOtpRepository;
 import java.security.SecureRandom;
 import java.time.Clock;
@@ -14,6 +15,8 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.OptionalInt;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -125,10 +128,14 @@ class OtpServiceTest {
   void expiredOtpIsRejected() {
     service.startVerification(USER, PHONE);
     String code = sms.lastCode();
+    // Wrap the repository so it does NOT filter expiry — this exercises the service's own expiry
+    // re-check (defense-in-depth). A conforming repository filters expired rows itself (verified by
+    // the persistence integration tests); this asserts the service still rejects an expired row if
+    // a host repository hands one back.
     OtpService advanced =
         OtpService.create(
             OtpService.Dependencies.of(
-                repository,
+                new NonFilteringOtpRepository(repository),
                 sms,
                 ClockProvider.fromClock(
                     Clock.fixed(NOW.plus(Duration.ofMinutes(10)), ZoneOffset.UTC))),
@@ -141,6 +148,50 @@ class OtpServiceTest {
                 Duration.ofMinutes(15)));
     assertThat(advanced.finishVerification(USER, PHONE, code))
         .isInstanceOf(OtpService.VerifyResult.Expired.class);
+  }
+
+  /**
+   * {@link OtpRepository} decorator that ignores the {@code now} expiry filter (delegates with
+   * {@link Instant#MIN}), modelling a host repository that does not filter expired rows in-store —
+   * so the service-level expiry re-check is the thing under test.
+   */
+  private static final class NonFilteringOtpRepository implements OtpRepository {
+    private final OtpRepository delegate;
+
+    NonFilteringOtpRepository(OtpRepository delegate) {
+      this.delegate = delegate;
+    }
+
+    @Override
+    public void save(StoredOtp otp) {
+      delegate.save(otp);
+    }
+
+    @Override
+    public Optional<StoredOtp> findLatestActive(
+        UserHandle userHandle, String phoneE164, Instant now) {
+      return delegate.findLatestActive(userHandle, phoneE164, Instant.MIN);
+    }
+
+    @Override
+    public OptionalInt incrementAttempts(UserHandle userHandle, String otpId) {
+      return delegate.incrementAttempts(userHandle, otpId);
+    }
+
+    @Override
+    public boolean consume(UserHandle userHandle, String otpId) {
+      return delegate.consume(userHandle, otpId);
+    }
+
+    @Override
+    public int countSince(UserHandle userHandle, String phoneE164, Instant since) {
+      return delegate.countSince(userHandle, phoneE164, since);
+    }
+
+    @Override
+    public int deleteByUserHandle(UserHandle userHandle) {
+      return delegate.deleteByUserHandle(userHandle);
+    }
   }
 
   @Test

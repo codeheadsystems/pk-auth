@@ -96,7 +96,9 @@ class JdbiRepositoryExceptionWrappingTest {
         .isInstanceOf(PkAuthPersistenceException.class)
         .extracting("operation")
         .isEqualTo("otp.save");
-    assertThatThrownBy(() -> repo.findLatestActive(user, "+15551112222"))
+    assertThatThrownBy(
+            () ->
+                repo.findLatestActive(user, "+15551112222", Instant.parse("2026-05-15T00:00:00Z")))
         .isInstanceOf(PkAuthPersistenceException.class);
     assertThatThrownBy(() -> repo.incrementAttempts(user, "o1"))
         .isInstanceOf(PkAuthPersistenceException.class);

@@ -7,6 +7,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.codeheadsystems.pkauth.api.UserHandle;
 import com.codeheadsystems.pkauth.jwt.JwtConfig;
 import com.codeheadsystems.pkauth.jwt.JwtKeyset;
+import com.codeheadsystems.pkauth.jwt.JwtVerificationResult;
 import com.codeheadsystems.pkauth.jwt.PkAuthJwtIssuer;
 import com.codeheadsystems.pkauth.jwt.PkAuthJwtValidator;
 import com.codeheadsystems.pkauth.spi.ClockProvider;
@@ -138,6 +139,35 @@ class MagicLinkServiceTest {
         .isInstanceOfSatisfying(
             MagicLinkService.ConsumeResult.Success.class,
             s -> assertThat(s.userHandle()).isEqualTo(user));
+  }
+
+  @Test
+  void magicLinkTokenIsRejectedByResourceServerValidatorButConsumedByItsOwnService() {
+    byte[] secret = new byte[32];
+    new SecureRandom().nextBytes(secret);
+    JwtKeyset keyset = JwtKeyset.hs256(secret);
+    ClockProvider clock = ClockProvider.fromClock(Clock.fixed(NOW, ZoneOffset.UTC));
+    users.register("alice", "Alice", "alice@example.com");
+
+    // Service wired with a dedicated magic-link audience.
+    MagicLinkService dedicated =
+        MagicLinkService.create(
+            MagicLinkService.Dependencies.ofDedicatedAudience(keyset, ISSUER, emails, users, clock),
+            BASE_URL);
+    String token =
+        ((MagicLinkService.SendResult.Sent) dedicated.startLogin("alice", "alice@example.com"))
+            .tokenJti();
+
+    // A resource-server validator scoped to the application audience MUST reject the magic-link
+    // token (wrong audience) — it cannot be replayed as an API bearer/access token.
+    PkAuthJwtValidator resourceServer =
+        new PkAuthJwtValidator(JwtConfig.defaults(ISSUER, AUDIENCE), keyset, clock);
+    assertThat(resourceServer.validate(token))
+        .isInstanceOf(JwtVerificationResult.WrongAudience.class);
+
+    // The magic-link service still validates and consumes its own token.
+    assertThat(dedicated.finishVerification(token, MagicLinkService.PURPOSE_LOGIN))
+        .isInstanceOf(MagicLinkService.ConsumeResult.Success.class);
   }
 
   @Test

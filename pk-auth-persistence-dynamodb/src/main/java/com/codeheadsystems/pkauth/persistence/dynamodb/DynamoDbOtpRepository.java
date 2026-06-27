@@ -49,7 +49,8 @@ public final class DynamoDbOtpRepository implements OtpRepository {
   }
 
   @Override
-  public Optional<StoredOtp> findLatestActive(UserHandle userHandle, String phoneE164) {
+  public Optional<StoredOtp> findLatestActive(
+      UserHandle userHandle, String phoneE164, Instant now) {
     return DynamoDbSupport.wrap(
         "otp.findLatestActive",
         () -> {
@@ -65,6 +66,9 @@ public final class DynamoDbOtpRepository implements OtpRepository {
               .flatMap(page -> page.items().stream())
               .filter(i -> phoneE164.equals(i.getPhoneE164()))
               .filter(i -> !i.isConsumed())
+              // Filter expiry against the caller-supplied instant (the host ClockProvider's "now"),
+              // not the DynamoDB wall clock, so a single authoritative clock governs expiry.
+              .filter(i -> DynamoDbSupport.parseInstant(i.getExpiresAt()).isAfter(now))
               // Compare parsed Instants, not the raw ISO strings: createdAt is stored via
               // Instant.toString(), which is variable-precision (it drops the fractional-seconds
               // field when zero), so "...:00Z" sorts after "...:00.000001Z" lexicographically and

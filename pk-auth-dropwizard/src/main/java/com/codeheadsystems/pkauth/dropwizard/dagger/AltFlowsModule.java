@@ -8,8 +8,8 @@ import com.codeheadsystems.pkauth.admin.DefaultAdminService;
 import com.codeheadsystems.pkauth.backupcodes.BackupCodeService;
 import com.codeheadsystems.pkauth.dropwizard.admin.PkAuthAdminResource;
 import com.codeheadsystems.pkauth.dropwizard.config.PkAuthConfig;
-import com.codeheadsystems.pkauth.jwt.PkAuthJwtIssuer;
-import com.codeheadsystems.pkauth.jwt.PkAuthJwtValidator;
+import com.codeheadsystems.pkauth.jwt.JwtConfig;
+import com.codeheadsystems.pkauth.jwt.JwtKeyset;
 import com.codeheadsystems.pkauth.lifecycle.BackupCodeRepositoryDeletionListener;
 import com.codeheadsystems.pkauth.lifecycle.OtpRepositoryDeletionListener;
 import com.codeheadsystems.pkauth.lifecycle.UserDeletionListener;
@@ -156,8 +156,8 @@ public final class AltFlowsModule {
   @Provides
   @Singleton
   MagicLinkService provideMagicLinkService(
-      PkAuthJwtIssuer issuer,
-      PkAuthJwtValidator validator,
+      JwtConfig jwtConfig,
+      JwtKeyset keyset,
       EmailSender emailSender,
       UserLookup userLookup,
       ClockProvider clock,
@@ -168,8 +168,11 @@ public final class AltFlowsModule {
           "pkAuth.magicLink configuration block is required when alt-flow auto-wiring is enabled"
               + " (set magicLink.baseUrl).");
     }
+    // Dedicated magic-link issuer/validator scoped to MagicLinkService.DEFAULT_AUDIENCE so the
+    // resource-server validator (application audience) rejects magic-link tokens as bearer tokens.
     return MagicLinkService.create(
-        MagicLinkService.Dependencies.of(issuer, validator, emailSender, userLookup, clock),
+        MagicLinkService.Dependencies.ofDedicatedAudience(
+            keyset, jwtConfig.issuer(), emailSender, userLookup, clock),
         ml.baseUrl());
   }
 

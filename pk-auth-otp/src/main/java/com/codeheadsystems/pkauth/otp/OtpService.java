@@ -181,7 +181,8 @@ public final class OtpService {
     Objects.requireNonNull(phoneE164, "phoneE164");
     Objects.requireNonNull(candidate, "candidate");
 
-    Optional<StoredOtp> activeOpt = repository.findLatestActive(user, phoneE164);
+    Instant now = clockProvider.now();
+    Optional<StoredOtp> activeOpt = repository.findLatestActive(user, phoneE164, now);
     if (activeOpt.isEmpty()) {
       // Run a throwaway HMAC so the no-active-OTP branch takes approximately the same wall-clock
       // time as the matching/mismatching branches below — the HMAC dominates the cost, so the
@@ -192,7 +193,6 @@ public final class OtpService {
       return new VerifyResult.NoActiveOtp();
     }
     StoredOtp active = activeOpt.get();
-    Instant now = clockProvider.now();
     if (now.isAfter(active.expiresAt())) {
       return new VerifyResult.Expired();
     }

@@ -50,28 +50,23 @@ public final class JdbiOtpRepository implements OtpRepository {
   }
 
   @Override
-  public Optional<StoredOtp> findLatestActive(UserHandle userHandle, String phoneE164) {
+  public Optional<StoredOtp> findLatestActive(
+      UserHandle userHandle, String phoneE164, Instant now) {
     return JdbiSupport.wrap(
         "otp.findLatestActive",
         () ->
             jdbi.withHandle(
                 h ->
                     h.createQuery(
-                            // NOTE: expiry is intentionally NOT filtered here. This SPI method has
-                            // no ClockProvider, so the only available "now" would be the database
-                            // wall clock (NOW()), which is a second, uncontrollable clock source
-                            // independent of the host's ClockProvider (it also breaks fixed-clock
-                            // testing). OtpService.verify re-checks expiry against the host clock
-                            // and
-                            // returns Expired, so an expired row surfaced here is rejected there.
-                            // Filtering expiry in-store would require threading ClockProvider
-                            // through
-                            // the OtpRepository SPI — deferred.
+                            // Expiry is filtered against the caller-supplied instant (the host
+                            // ClockProvider's "now"), not the database wall clock, so fixed-clock
+                            // tests stay deterministic and there is a single authoritative clock.
                             "SELECT * FROM otp_codes WHERE user_handle = :uh AND phone_e164 ="
-                                + " :phone AND consumed = FALSE"
+                                + " :phone AND consumed = FALSE AND expires_at > :now"
                                 + " ORDER BY created_at DESC LIMIT 1")
                         .bind("uh", userHandle.value())
                         .bind("phone", phoneE164)
+                        .bind("now", OffsetDateTime.ofInstant(now, ZoneOffset.UTC))
                         .map(MAPPER)
                         .findFirst()));
   }
