@@ -9,6 +9,84 @@ The 0.x line is treated as a single pre-stable development series — see
 1.0.0 stabilisation cut; for 0.x history consult `git log` against the relevant
 tags.
 
+## [2.2.0] — 2026-06-27
+
+A security-and-correctness release driven by two rounds of adversarial review.
+The headline is a set of fixes to the magic-link, OTP, and JWT alt-flows plus
+server-side enforcement of per-request user verification. Passkey-core hosts
+upgrade by bumping the version; **hosts that implement the `OtpRepository` SPI
+directly must add the new `Instant now` parameter** to `findLatestActive` (see
+Changed), and JDBI hosts pick up one new Flyway migration (V11).
+
+### Security
+
+- **Magic-link tokens can no longer be replayed or used as bearer tokens.** Links
+  are issued with a dedicated short TTL (15 min, owned by `MagicLinkService`
+  rather than inherited from the 1-hour access-token TTL), the consumed-JTI
+  retention is enforced to be ≥ the token TTL at construction, and tokens carry a
+  dedicated audience (`MagicLinkService.DEFAULT_AUDIENCE`) so the resource-server
+  validator rejects them — a magic-link token can no longer stand in for an API
+  access token.
+- **Magic-link login no longer delivers to attacker-supplied addresses.**
+  `MagicLinkService.startLogin` sends only to the address bound to the resolved
+  user via `UserLookup#emailFor`, never the caller-supplied address
+  (account-takeover fix).
+- **Per-request user verification is enforced server-side.** A per-ceremony
+  `userVerification=REQUIRED` (e.g. step-up) is persisted on the challenge and
+  enforced at finish as the stricter of {global config, per-request}, so it can
+  no longer be silently downgraded by a non-cooperative client.
+- **JWT claim-override hardening.** `JwtClaims` rejects caller-supplied
+  `additionalClaims` that collide with reserved claims (`iss/sub/aud/exp/jti/
+  pkauth.*`), closing an impersonation / TTL-bypass vector.
+- **OTP brute-force off-by-one fixed** so exactly `maxAttempts` guesses are
+  compared, and admin OTP `AttemptsExceeded` now surfaces as HTTP 429 rather than
+  a 200 with the failure buried in the body.
+- **No secret leakage:** `JwtKeyset.es256` puts only public JWKs in
+  `verificationSource()` (a host publishing a JWKS endpoint can't leak the
+  signing key), and the `TwilioSmsSender` skeleton no longer echoes its account
+  SID / sender number into exception messages.
+
+### Added
+
+- `Retry-After: 60` on rate-limited (429) ceremony endpoints
+  (registration/authentication start + finish), via a new `headers` component on
+  the exported `CeremonyResponse` wire record (back-compatible two-arg
+  constructor); all three adapters copy it onto the HTTP response.
+- `MagicLinkService.Dependencies.ofDedicatedAudience(...)` and
+  `MagicLinkService.DEFAULT_AUDIENCE` for the dedicated-audience wiring above;
+  all three adapters wire the magic-link service through it.
+- `ChallengeRecord` carries the resolved `userVerification` requirement (with a
+  back-compatible four-arg constructor); JDBI persists it via **Flyway migration
+  V11** (`challenges.user_verification`, schema version → `11`).
+
+### Changed
+
+- **`OtpRepository.findLatestActive` now takes an `Instant now` parameter**
+  (breaking for direct SPI implementers) so each backend filters expired codes
+  against the host `ClockProvider` rather than the database wall clock.
+- Magic-link tokens are no longer recorded in the `AccessTokenStore` (the
+  dedicated magic-link issuer uses a no-op store).
+- Spring: the pk-auth `/auth/**` security filter chain is pinned to an early
+  `@Order` so a host catch-all chain can't shadow it, and the JWT filter is no
+  longer auto-registered as a global servlet filter (it runs only inside the
+  chain).
+- Maintenance: routine Dependabot bumps (Gradle, gh-actions, npm), and the
+  Spotless version pin / docs were reconciled (the project tracks the 8.x line).
+
+### Fixed
+
+- DynamoDB refresh-token `create()` writes its primary + index items in a single
+  atomic `TransactWriteItems`, so a partial write can't orphan a primary that a
+  family revoke would later miss; a duplicate `refreshId` now surfaces as
+  `PkAuthPersistenceException`.
+- DynamoDB family/user revoke uses a scalar conditional `UpdateItem` instead of a
+  read-modify-write that could clobber a concurrent `usedAt`; the in-memory
+  testkit no longer does a cross-key write inside `ConcurrentHashMap.compute`.
+- JDBI `updateSignCount` records `last_used_at` for sync passkeys that always
+  report `signCount = 0` (a strict-regression check is still enforced).
+- `AAGUID` is null-guarded in `persistRegistration` so a null AAGUID returns a
+  sealed `RegistrationResult` instead of throwing across the result boundary.
+
 ## [2.1.0] — 2026-06-23
 
 A backward-compatible minor release. The headline is **crypto-agility and

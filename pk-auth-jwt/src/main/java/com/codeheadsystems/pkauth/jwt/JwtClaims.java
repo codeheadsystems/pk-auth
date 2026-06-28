@@ -38,7 +38,7 @@ public record JwtClaims(
    * registered set plus the {@code pkauth.*} private claims mirror {@code
    * PkAuthJwtValidator.removeKnownClaims}.
    *
-   * @since 2.1.0
+   * @since 2.2.0
    */
   private static final Set<String> RESERVED_CLAIM_NAMES =
       Set.of(

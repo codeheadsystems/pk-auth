@@ -45,7 +45,7 @@ public record ChallengeRecord(
    * Back-compatible constructor for callers that don't carry a resolved user-verification
    * requirement; equivalent to passing {@code null} for {@code userVerification}.
    *
-   * @since 2.1.0
+   * @since 2.2.0
    */
   public ChallengeRecord(
       byte[] challenge, Purpose purpose, @Nullable UserHandle userHandle, Instant expiresAt) {

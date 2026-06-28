@@ -66,7 +66,7 @@ public final class InMemoryUserLookup implements UserLookup {
    * #emailFor(UserHandle)}. Useful for flows (e.g. magic-link login) that deliver only to the
    * address bound to the resolved user.
    *
-   * @since 2.1.0
+   * @since 2.2.0
    */
   public UserHandle register(String username, String displayName, String email) {
     UserHandle handle = register(username, displayName);

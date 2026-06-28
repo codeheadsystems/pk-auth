@@ -90,7 +90,7 @@ public final class MagicLinkService {
    * an API bearer/access token. Wire the service via {@link Dependencies#ofDedicatedAudience} so
    * the magic-link issuer and validator are both scoped to this audience.
    *
-   * @since 2.1.0
+   * @since 2.2.0
    */
   public static final String DEFAULT_AUDIENCE = "pkauth:magic-link";
 
@@ -131,7 +131,7 @@ public final class MagicLinkService {
      * single-use JTI is deliberately <em>not</em> consumed in this case, so the token stays usable
      * at its intended endpoint.
      *
-     * @since 2.1.0
+     * @since 2.2.0
      */
     record WrongPurpose(String expectedPurpose, String actualPurpose) implements ConsumeResult {}
   }
@@ -334,7 +334,7 @@ public final class MagicLinkService {
    * @param requiredPurpose the purpose the caller demands, or {@code null} to accept any purpose
    *     (the caller then inspects {@link ConsumeResult.Success#purpose()} itself)
    * @return the consume outcome
-   * @since 2.1.0
+   * @since 2.2.0
    */
   public ConsumeResult finishVerification(String token, @Nullable String requiredPurpose) {
     Objects.requireNonNull(token, "token");
@@ -467,7 +467,7 @@ public final class MagicLinkService {
      * @param userLookup the user lookup SPI
      * @param clockProvider the clock
      * @return dependencies wired to a magic-link-scoped issuer + validator
-     * @since 2.1.0
+     * @since 2.2.0
      */
     public static Dependencies ofDedicatedAudience(
         JwtKeyset keyset,
@@ -559,7 +559,7 @@ public final class MagicLinkService {
     /**
      * Back-compatible constructor that defaults {@code tokenTtl} to {@link #DEFAULT_TTL} (15m).
      *
-     * @since 2.1.0
+     * @since 2.2.0
      */
     public Config(
         String baseUrl, int rateLimit, MagicLinkRateLimiter rateLimiter, Duration consumedJtiTtl) {
