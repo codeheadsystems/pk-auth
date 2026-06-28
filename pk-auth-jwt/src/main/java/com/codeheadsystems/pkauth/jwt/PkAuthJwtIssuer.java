@@ -95,7 +95,7 @@ public final class PkAuthJwtIssuer {
    * @param claims the claims to sign
    * @param ttlOverride the token lifetime, or {@code null} to use the audience access TTL
    * @return the serialized, signed JWT
-   * @since 2.1.0
+   * @since 2.2.0
    */
   public String issue(JwtClaims claims, @Nullable Duration ttlOverride) {
     Objects.requireNonNull(claims, "claims");

@@ -64,7 +64,7 @@ public interface OtpRepository {
    * @param userHandle owning user
    * @param phoneE164 destination phone in E.164 format
    * @param now the caller's current instant (from the host ClockProvider)
-   * @since 2.1.0
+   * @since 2.2.0
    */
   Optional<StoredOtp> findLatestActive(UserHandle userHandle, String phoneE164, Instant now);
 

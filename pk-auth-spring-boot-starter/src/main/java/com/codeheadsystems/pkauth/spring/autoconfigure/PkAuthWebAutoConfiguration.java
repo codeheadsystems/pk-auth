@@ -88,7 +88,7 @@ public class PkAuthWebAutoConfiguration {
    *
    * @param filter the JWT authentication filter bean to suppress from global registration
    * @return a disabled registration so the container does not mount the filter globally
-   * @since 2.1.0
+   * @since 2.2.0
    */
   @Bean
   @ConditionalOnMissingBean(name = "pkAuthJwtAuthenticationFilterRegistration")
