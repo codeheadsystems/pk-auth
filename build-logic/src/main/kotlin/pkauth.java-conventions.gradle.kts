@@ -68,9 +68,19 @@ tasks.named("check") {
 }
 
 // Spotless + google-java-format intermittently fails class loading
-// (`NoClassDefFoundError com/google/common/collect/ImmutableList$ReverseImmutableList`) when its
-// outputs are restored from the Gradle build cache. Disabling cache hits for the spotless tasks
-// avoids the bad-cache-state pathway; the formatter itself works correctly on a fresh run.
+// (`NoClassDefFoundError com/google/common/collect/ImmutableCollection`) when its work is served
+// from a Gradle cache instead of running fresh. This happens on BOTH cache pathways:
+//   - the build cache, on a cached-output hit (already mitigated repo-wide via
+//     `org.gradle.caching=false` in gradle.properties), and
+//   - the configuration cache, on a cache-hit run that restores the task without re-initializing
+//     the formatter's lazily-loaded Guava classes (e.g. a second `check` or a `clean check`).
+// `outputs.cacheIf { false }` closes the first pathway per-task; marking the tasks not compatible
+// with the configuration cache forces them to always run fresh, closing the second. The formatter
+// itself is correct on a fresh run — this only removes the bad-cache-state pathways.
 tasks.matching { it.name.startsWith("spotless") }.configureEach {
     outputs.cacheIf { false }
+    notCompatibleWithConfigurationCache(
+        "Spotless google-java-format lazily loads Guava classes that fail to initialize when the" +
+            " task is restored from the configuration cache; must run fresh.",
+    )
 }
