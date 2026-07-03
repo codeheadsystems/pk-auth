@@ -116,6 +116,23 @@ public final class UserItem {
     return item;
   }
 
+  /**
+   * Builds the username-uniqueness marker row: {@code pk = USERNAME#<lowercased>}, {@code sk =
+   * META}. A conditional put of this item ({@code attribute_not_exists(pk)}) is what actually
+   * enforces one handle per username — a GSI cannot, because GSIs do not enforce uniqueness.
+   * Deliberately leaves {@code gsi1pk} unset so the sparse username GSI does not index it (only the
+   * real {@link DynamoKeys#USER} row is indexed and returned by lookups); it carries {@code
+   * userHandle} so a racing loser can recover the winner's handle with a strongly-consistent read.
+   */
+  static UserItem usernameMarker(UserHandle handle, String username) {
+    UserItem item = new UserItem();
+    item.setPk(DynamoKeys.USERNAME + username.toLowerCase(java.util.Locale.ROOT));
+    item.setSk("META");
+    item.setUserHandle(Base64Url.encode(handle.value()));
+    item.setUsername(username);
+    return item;
+  }
+
   /** Renders the row as a public {@link UserView}. */
   public UserView toView() {
     return new UserView(
