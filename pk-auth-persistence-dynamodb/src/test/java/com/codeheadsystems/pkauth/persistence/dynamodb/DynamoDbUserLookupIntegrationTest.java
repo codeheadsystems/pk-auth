@@ -5,8 +5,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.codeheadsystems.pkauth.api.UserHandle;
 import com.codeheadsystems.pkauth.spi.UserLookup.UserView;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable;
@@ -59,6 +67,36 @@ class DynamoDbUserLookupIntegrationTest {
               assertThat(v.username()).isEqualTo("carol");
             });
     assertThat(users.findViewByHandle(UserHandle.random())).isEmpty();
+  }
+
+  @Test
+  void concurrentGetOrCreateForSameUsernameConvergesOnOneHandle() throws Exception {
+    int threads = 8;
+    ExecutorService pool = Executors.newFixedThreadPool(threads);
+    CountDownLatch start = new CountDownLatch(1);
+    List<Future<UserHandle>> futures = new ArrayList<>();
+    try {
+      for (int i = 0; i < threads; i++) {
+        futures.add(
+            pool.submit(
+                () -> {
+                  start.await();
+                  return users.getOrCreateHandle("erin");
+                }));
+      }
+      start.countDown(); // release all threads at once to maximise the race window
+
+      Set<UserHandle> distinct = new HashSet<>();
+      for (Future<UserHandle> f : futures) {
+        distinct.add(f.get());
+      }
+      // The username-uniqueness marker forces every racer to converge on exactly one handle...
+      assertThat(distinct).hasSize(1);
+      // ...and the persisted lookup resolves to that same single handle (no split identity).
+      assertThat(users.findHandleByUsername("erin")).hasValue(distinct.iterator().next());
+    } finally {
+      pool.shutdownNow();
+    }
   }
 
   @Test
