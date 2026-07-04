@@ -18,9 +18,9 @@ interface PendingEntry {
   rpId: string;
 }
 
-// StoredCredential is what finishRegistration persists so a later authentication ceremony can
+// Credential is what finishRegistration persists so a later authentication ceremony can
 // verify an assertion against it. Keyed by the base64url-encoded credential id.
-interface StoredCredential {
+interface Credential {
   publicKey: CryptoKey;
   userHandle: string;
   username: string;
@@ -45,14 +45,14 @@ export class CeremonyService {
   // credentials holds every credential that has completed registration, keyed by the
   // base64url-encoded credential id. This is what finishAuthentication verifies assertions
   // against — without it there would be no public key to check a signature with.
-  private readonly credentials : Map<string, StoredCredential>;
+  private readonly credentials : Map<string, Credential>;
 
   private readonly rpId : string;
   private readonly allowedUsernames : string[];
 
   constructor(rpId: string,...allowedUsernames: string[]) {
     this.pendingRegistrations = new Map<string, PendingEntry>();
-    this.credentials = new Map<string, StoredCredential>();
+    this.credentials = new Map<string, Credential>();
     this.rpId = rpId;
     this.allowedUsernames = allowedUsernames ?? [];
   }
