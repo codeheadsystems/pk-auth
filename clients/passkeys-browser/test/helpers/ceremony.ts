@@ -18,6 +18,16 @@ interface PendingEntry {
   rpId: string;
 }
 
+// StoredCredential is what finishRegistration persists so a later authentication ceremony can
+// verify an assertion against it. Keyed by the base64url-encoded credential id.
+interface StoredCredential {
+  publicKey: CryptoKey;
+  userHandle: string;
+  username: string;
+  transports: string[];
+  counter: number;
+}
+
 /*
 CeremonyService is a server side service that can:
   - start registration
@@ -29,14 +39,20 @@ A registration is started with a call to startRegistration which will produce a 
 the client must respond to with a call to finishRegistration.
  */
 export class CeremonyService {
-  // pending is the map of registrations which have been started; but not yet finished.
-  // Maps challenge id to a PendingEntry structure.
-  private readonly pending : Map<string, PendingEntry>;
+  // pendingRegistrations is the map of registrations which have been started; but not yet
+  // finished. Maps challenge id to a PendingEntry structure.
+  private readonly pendingRegistrations : Map<string, PendingEntry>;
+  // credentials holds every credential that has completed registration, keyed by the
+  // base64url-encoded credential id. This is what finishAuthentication verifies assertions
+  // against — without it there would be no public key to check a signature with.
+  private readonly credentials : Map<string, StoredCredential>;
+
   private readonly rpId : string;
   private readonly allowedUsernames : string[];
 
   constructor(rpId: string,...allowedUsernames: string[]) {
-    this.pending = new Map<string, PendingEntry>();
+    this.pendingRegistrations = new Map<string, PendingEntry>();
+    this.credentials = new Map<string, StoredCredential>();
     this.rpId = rpId;
     this.allowedUsernames = allowedUsernames ?? [];
   }
@@ -59,12 +75,12 @@ export class CeremonyService {
     };
 
     // save the requests which will be validated in finish
-    this.pending.set(challengeId, pendingEntry);
+    this.pendingRegistrations.set(challengeId, pendingEntry);
     return newStartRegistrationResponse(pendingEntry)
   }
 
   async finishRegistration(req: FinishRegistrationRequest): Promise<FinishRegistrationResponse> {
-    const entry = this.pending.get(req.challengeId);
+    const entry = this.pendingRegistrations.get(req.challengeId);
     if (!entry) {
       throw new HttpError(400, { error: `unknown challengeId: ${req.challengeId}` });
     }
@@ -87,15 +103,28 @@ export class CeremonyService {
     }
 
     const credId = attestation.authData.slice(55, 55 + attestation.credentialIdLength);
+    const base64CredId = b64u.encode(credId);
     const flags = attestation.authData[32]!;
-    this.pending.delete(req.challengeId);
+    const transports = req.response.response.transports ?? [];
+    const counter = attestation.dv.getUint32(33);
+
+    this.pendingRegistrations.delete(req.challengeId);
+    // Remember the credential so a later authentication ceremony has a public key to verify
+    // an assertion against.
+    this.credentials.set(base64CredId, {
+      publicKey: publicKey,
+      userHandle: entry.userId,
+      username: entry.username,
+      transports: transports,
+      counter: counter,
+    });
     return {
       credential: {
-        credentialId: b64u.encode(credId),
+        credentialId: base64CredId,
         userHandle: entry.userId,
         label: req.label ?? "key",
-        transports: req.response.response.transports ?? [],
-        counter: attestation.dv.getUint32(33),
+        transports: transports,
+        counter: counter,
         backupEligible: (flags & 0x08) !== 0,
         backupState: (flags & 0x10) !== 0,
         authenticatorData: b64u.encode(attestation.authData),
