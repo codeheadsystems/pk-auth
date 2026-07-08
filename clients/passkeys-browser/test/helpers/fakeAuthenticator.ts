@@ -2,18 +2,25 @@
 import {Encoder} from "cbor-x";
 import * as b64u from "../../src/base64url";
 import {BufferUint8} from "./buffer";
+import {WebAuthnType} from "./types";
 
 type StoredCredential = { keyPair: CryptoKeyPair; rawId: Uint8Array };
+
+export interface FakeAuthenticatorOptions {
+  requireConditionalMediationOnGet: boolean
+}
 
 export class FakeAuthenticator implements CredentialsContainer {
   // map id to keypair. The id is the base64 encoding of the randomly generated id [rawId].
   private readonly stored : Map<string, StoredCredential>;
+  private readonly requireConditionalMediationOnGet: boolean;
   // lastId is used when get method is invoked w/o specifying a specific id.
   private lastId: string | null;
 
-  constructor() {
+  constructor(options?: FakeAuthenticatorOptions) {
     this.stored = new Map<string, StoredCredential>();
     this.lastId = null;
+    this.requireConditionalMediationOnGet = options?.requireConditionalMediationOnGet || false;
   }
 
   async create(options: CredentialCreationOptions): Promise<PublicKeyCredential> {
@@ -50,6 +57,9 @@ export class FakeAuthenticator implements CredentialsContainer {
   }
 
   async get(options: CredentialRequestOptions): Promise<PublicKeyCredential | null> {
+    if (this.requireConditionalMediationOnGet && options?.mediation !== "conditional") {
+      throw new Error("FakeAuthenticator.get: conditional mediation required to get credential")
+    }
     const pk = options.publicKey;
     if (!pk) throw new Error("FakeAuthenticator.get: publicKey options are required");
     const rpId = pk.rpId;
@@ -208,8 +218,6 @@ function curveValue(publicKey : CryptoKey) : number {
   }
   throw new Error(`Unsupported algorithm: ${publicKey.algorithm.name}`)
 }
-
-type WebAuthnType = "webauthn.create" | "webauthn.get";
 
 function encodeClientData(challenge: Uint8Array, rpId: string, webAuthnType: WebAuthnType): Uint8Array<ArrayBuffer> {
   return new TextEncoder().encode(

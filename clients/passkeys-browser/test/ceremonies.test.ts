@@ -25,6 +25,12 @@ import {
 import * as http from "node:http";
 import {CeremonyService} from "./helpers/ceremony";
 import {FakeAuthenticator} from "./helpers/fakeAuthenticator";
+import {
+  FinishAuthenticationRequest,
+  FinishAuthenticationResponse,
+  StartAuthenticationRequest,
+  StartAuthenticationResponse
+} from "../dist/src";
 
 const CREATE_OPTIONS_JSON: PublicKeyCredentialCreationOptionsJson = {
   rp: { id: "example.com", name: "Example" },
@@ -148,7 +154,7 @@ describe("encodeAuthenticationResponse", () => {
 describe("PkAuthCeremonyClient http test", () => {
   it("when startRegistration endpoint returns 500 then the client makes no attempt to create credential", async() => {
     using server= await startHttpServer({
-      [startPath]: errorHttpHandler,
+      [registrationStartPath]: errorHttpHandler,
     });
     const credentialsContainer = noOpCredentialsContainer();
     const client = new PkAuthCeremonyClient(
@@ -164,8 +170,8 @@ describe("PkAuthCeremonyClient http test", () => {
   it("when start registration succeeds but no credential is created, then the client fails with credential cancellation", async() => {
     const registration = new CeremonyService("localhost", "alice", "bob")
     using server= await startHttpServer({
-      [startPath]: newStartHandler(registration),
-      [finishPath]: newFinishHandler(registration)
+      [registrationStartPath]: newStartHandler(registration),
+      [registrationFinishPath]: newFinishHandler(registration)
     });
     const credentialsContainer = noOpCredentialsContainer();
     const client = new PkAuthCeremonyClient(
@@ -180,8 +186,8 @@ describe("PkAuthCeremonyClient http test", () => {
   it("when finish registration fails, the credential was still created", async() => {
     const registration = new CeremonyService("localhost", "alice", "bob")
     using server= await startHttpServer({
-      [startPath]: newStartHandler(registration),
-      [finishPath]: errorHttpHandler
+      [registrationStartPath]: newStartHandler(registration),
+      [registrationFinishPath]: errorHttpHandler
     });
     const credentialsContainer = new FakeAuthenticator();
     credentialsContainer.create = vi.fn(credentialsContainer.create)
@@ -198,8 +204,8 @@ describe("PkAuthCeremonyClient http test", () => {
   it("when registering a credential, then the server returns a finished response", async() => {
     const registration = new CeremonyService("localhost", "alice", "bob")
     using server = await startHttpServer({
-      [startPath]: newStartHandler(registration),
-      [finishPath]: newFinishHandler(registration)
+      [registrationStartPath]: newStartHandler(registration),
+      [registrationFinishPath]: newFinishHandler(registration)
     });
     const authenticator = new FakeAuthenticator();
     const client = new PkAuthCeremonyClient(
@@ -225,8 +231,87 @@ describe("PkAuthCeremonyClient http test", () => {
     expect(retrievedCredential?.type).toEqual("public-key");
   })
 
-  const startPath = "/auth/passkeys/registration/start";
-  const finishPath = "/auth/passkeys/registration/finish"
+  it("when registering a credential, it can be used for authentication", async () => {
+    const server = await testServer("alice", "bob");
+    const authenticator = new FakeAuthenticator();
+    const client = new PkAuthCeremonyClient(
+      { apiBase: server.url },
+      { credentials: authenticator },
+    );
+
+    await client.register({ username: "alice", label: "key" });
+    const authenticated = await client.authenticate({ username: "alice"})
+
+    expect(authenticated.token).to.match(/\S+/); //at least one non-whitespace char
+  });
+
+  it("when failing to authenticate on start, the client fails gracefully", async () => {
+    const server = await testServer("alice");
+    const authenticator = new FakeAuthenticator();
+    const client = new PkAuthCeremonyClient(
+      { apiBase: server.url },
+      { credentials: authenticator },
+    );
+
+    await client.register({ username: "alice", label: "key" });
+
+    await expect(client.authenticate({ username: "not_alice"})).rejects.toThrow('HTTP 403: {"error":"username \'not_alice\' not allowed"}');
+  });
+
+  it("when authenticating, omit username supports any user that can respond to challenge to be authenticated", async () => {
+    const server = await testServer("alice");
+    const authenticator = new FakeAuthenticator();
+    const client = new PkAuthCeremonyClient(
+      { apiBase: server.url },
+      { credentials: authenticator },
+    );
+
+    await client.register({ username: "alice", label: "key" });
+    const authenticated = await client.authenticate({ }) // no username means any user
+
+    expect(authenticated.token).to.match(/\S+/); //at least one non-whitespace char
+  });
+
+  it("when authenticating, conditional mediation is honored by client", async () => {
+    const server = await testServer("alice");
+    const authenticator = new FakeAuthenticator({requireConditionalMediationOnGet: true});
+    const client = new PkAuthCeremonyClient(
+      { apiBase: server.url },
+      { credentials: authenticator },
+    );
+
+    await client.register({ username: "alice", label: "key" });
+    const authenticated = await client.authenticate({ conditional: true})
+
+    expect(authenticated.token).to.match(/\S+/); //at least one non-whitespace char
+  });
+
+  it("when authenticating, then failure to get a credential results in authentication cancelled", async () => {
+    const server = await testServer("alice", "bob");
+    const authenticator = new FakeAuthenticatorThatFailsGet();
+    const client = new PkAuthCeremonyClient(
+      { apiBase: server.url },
+      { credentials: authenticator },
+    );
+
+    await client.register({ username: "alice", label: "key" });
+    await expect(client.authenticate({ username: "alice"})).rejects.toThrow("pk-auth: authentication was cancelled");
+  });
+
+  const registrationStartPath = "/auth/passkeys/registration/start";
+  const registrationFinishPath = "/auth/passkeys/registration/finish";
+  const authenticationStartPath = "/auth/passkeys/authentication/start";
+  const authenticationFinishPath = "/auth/passkeys/authentication/finish";
+
+  async function testServer(...allowedUsernames: string[]) : Promise<HttpServer> {
+    const registration = new CeremonyService("localhost", ...allowedUsernames)
+    return startHttpServer({
+      [registrationStartPath]: newStartHandler(registration),
+      [registrationFinishPath]: newFinishHandler(registration),
+      [authenticationStartPath]: newAuthenticationStartHandler(registration),
+      [authenticationFinishPath]: newAuthenticationFinishHandler(registration)
+    });
+  }
 
   function noOpCredentialsContainer() : CredentialsContainer {
     return { create: vi.fn(), get: vi.fn(), preventSilentAccess: vi.fn(), store: vi.fn()};
@@ -240,6 +325,22 @@ describe("PkAuthCeremonyClient http test", () => {
   function newStartHandler(registration: CeremonyService) : HttpHandler{
     const endpoint = async (req: StartRegistrationRequest) : Promise<StartRegistrationResponse> => {
       return registration.startRegistration(req);
+    };
+    const handler = new Handler(decodePost, endpoint, encodeJson);
+    return newHttpHandler(handler);
+  }
+
+  function newAuthenticationStartHandler(registration: CeremonyService) : HttpHandler {
+    const endpoint = async (req: StartAuthenticationRequest) : Promise<StartAuthenticationResponse> => {
+      return registration.startAuthentication(req);
+    };
+    const handler = new Handler(decodePost, endpoint, encodeJson);
+    return newHttpHandler(handler);
+  }
+
+  function newAuthenticationFinishHandler(registration: CeremonyService) : HttpHandler {
+    const endpoint = async (req: FinishAuthenticationRequest) : Promise<FinishAuthenticationResponse> => {
+      return registration.finishAuthentication(req);
     };
     const handler = new Handler(decodePost, endpoint, encodeJson);
     return newHttpHandler(handler);
@@ -283,89 +384,6 @@ describe("PkAuthCeremonyClient.register (start-body contract)", () => {
   });
 });
 
-describe("PkAuthCeremonyClient.authenticate (end-to-end with stubbed credentials)", () => {
-  it("walks start -> get -> finish and returns the token", async () => {
-    const { fetchImpl, bodies, methods, urls } = ceremonyFetch({
-      "/authentication/start": { challengeId: "ch-9", publicKey: REQUEST_OPTIONS_JSON },
-      "/authentication/finish": { token: "jwt-token" },
-    });
-    const get = vi.fn(async () => fakeAssertion(new Uint8Array([42])));
-    const fakeCreds = { create: vi.fn(), get } as unknown as CredentialsContainer;
-    const client = new PkAuthCeremonyClient(
-      { apiBase: "https://x", fetch: fetchImpl as unknown as typeof fetch },
-      { credentials: fakeCreds },
-    );
-
-    const result = await client.authenticate({ username: "alice" });
-
-    expect(result.token).toBe("jwt-token");
-    expect(get).toHaveBeenCalledOnce();
-    expect(bodies["/authentication/start"]).toMatchObject({ username: "alice", challenge: null });
-    expect(bodies["/authentication/finish"]).toMatchObject({ challengeId: "ch-9" });
-    expect(methods["/authentication/start"]).toBe("POST");
-    expect(methods["/authentication/finish"]).toBe("POST");
-    expect(urls.some((u) => u.endsWith("/authentication/start"))).toBe(true);
-  });
-
-  it("defaults username to null when omitted", async () => {
-    const { fetchImpl, bodies } = ceremonyFetch({
-      "/authentication/start": { challengeId: "ch-9", publicKey: REQUEST_OPTIONS_JSON },
-      "/authentication/finish": { token: "t" },
-    });
-    const fakeCreds = {
-      create: vi.fn(),
-      get: vi.fn(async () => fakeAssertion(new Uint8Array([1]))),
-    } as unknown as CredentialsContainer;
-    const client = new PkAuthCeremonyClient(
-      { apiBase: "https://x", fetch: fetchImpl as unknown as typeof fetch },
-      { credentials: fakeCreds },
-    );
-    await client.authenticate();
-    // username ?? null  (kills the `&&` mutant): no username -> explicit null.
-    expect(bodies["/authentication/start"]).toMatchObject({ username: null });
-  });
-
-  it("requests conditional mediation only when conditional=true", async () => {
-    const responses = {
-      "/authentication/start": { challengeId: "ch-9", publicKey: REQUEST_OPTIONS_JSON },
-      "/authentication/finish": { token: "t" },
-    };
-    // conditional = true -> mediation set
-    const getCond = vi.fn(async (_options?: CredentialRequestOptions) => fakeAssertion(new Uint8Array([1])));
-    const a = ceremonyFetch(responses);
-    await new PkAuthCeremonyClient(
-      { apiBase: "https://x", fetch: a.fetchImpl as unknown as typeof fetch },
-      { credentials: { create: vi.fn(), get: getCond } as unknown as CredentialsContainer },
-    ).authenticate({ conditional: true });
-    expect(
-      (getCond.mock.calls[0]![0] as CredentialRequestOptions & { mediation?: string }).mediation,
-    ).toBe("conditional");
-
-    // conditional defaults to false -> no mediation
-    const getPlain = vi.fn(async (_options?: CredentialRequestOptions) => fakeAssertion(new Uint8Array([1])));
-    const b = ceremonyFetch(responses);
-    await new PkAuthCeremonyClient(
-      { apiBase: "https://x", fetch: b.fetchImpl as unknown as typeof fetch },
-      { credentials: { create: vi.fn(), get: getPlain } as unknown as CredentialsContainer },
-    ).authenticate();
-    expect(
-      (getPlain.mock.calls[0]![0] as CredentialRequestOptions & { mediation?: string }).mediation,
-    ).toBeUndefined();
-  });
-
-  it("rejects when the authenticator returns no credential (get cancelled)", async () => {
-    const { fetchImpl } = ceremonyFetch({
-      "/authentication/start": { challengeId: "ch-9", publicKey: REQUEST_OPTIONS_JSON },
-    });
-    const fakeCreds = { create: vi.fn(), get: vi.fn(async () => null) } as unknown as CredentialsContainer;
-    const client = new PkAuthCeremonyClient(
-      { apiBase: "https://x", fetch: fetchImpl as unknown as typeof fetch },
-      { credentials: fakeCreds },
-    );
-    await expect(client.authenticate()).rejects.toThrow(/authentication was cancelled/);
-  });
-});
-
 describe("PkAuthCeremonyClient credentials guard", () => {
   it("throws a clear error when no credentials are injected and navigator lacks them", async () => {
     // jsdom does not implement navigator.credentials, so the fallback guard
@@ -383,21 +401,10 @@ describe("PkAuthCeremonyClient credentials guard", () => {
   });
 });
 
-
-// Additional ceremony coverage driven by the StrykerJS report (PR #39, @bernata):
-// the suite previously exercised only the register() happy path, leaving
-// authenticate(), the credential create/get helpers, the cancellation branches,
-// and the navigator.credentials guard as 0%-covered (every mutant survived).
-// These ceremonies ARE unit-testable because CeremonyOptions.credentials injects
-// a fake CredentialsContainer — so we drive the full flows here.
-
-function fakeAssertion(rawId: Uint8Array): PublicKeyCredential {
-  return fakeCredential(rawId, {
-    clientDataJSON: new Uint8Array([0x7b]).buffer as ArrayBuffer,
-    authenticatorData: new Uint8Array([0x55]).buffer as ArrayBuffer,
-    signature: new Uint8Array([0x99]).buffer as ArrayBuffer,
-    userHandle: null,
-  } as unknown as AuthenticatorResponse);
+class FakeAuthenticatorThatFailsGet extends FakeAuthenticator {
+  override async get(options: CredentialRequestOptions): Promise<PublicKeyCredential | null> {
+    return null;
+  }
 }
 
 /** Records every request body keyed by the URL suffix, and serves canned responses. */
