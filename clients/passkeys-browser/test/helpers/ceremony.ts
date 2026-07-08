@@ -1,21 +1,38 @@
 
 import * as b64u from "../../src/base64url";
 import {
+  FinishAuthenticationRequest,
+  FinishAuthenticationResponse,
   FinishRegistrationRequest,
   FinishRegistrationResponse,
+  StartAuthenticationRequest,
+  StartAuthenticationResponse,
   StartRegistrationRequest,
   StartRegistrationResponse
 } from "../../src";
 import {HttpError} from "./httpServer";
 import {Encoder} from "cbor-x";
+import {WebAuthnType} from "./types";
 
-interface PendingEntry {
+interface PendingRegistrationEntry {
   displayName: string;
   username: string;
   userId: string;
   challenge: b64u.Base64Url;
   challengeId: string;
   rpId: string;
+}
+
+// PendingAuthenticationEntry tracks an authentication ceremony between start and finish. Unlike
+// PendingRegistrationEntry, the username is optional: a caller may start authentication
+// without knowing who is signing in yet (e.g. a resident/discoverable-credential flow), in
+// which case the credential itself — looked up by id in `credentials` — is what identifies
+// the user at finish time.
+interface PendingAuthenticationEntry {
+  challenge: b64u.Base64Url;
+  challengeId: string;
+  rpId: string;
+  username: string | null;
 }
 
 // Credential is what finishRegistration persists so a later authentication ceremony can
@@ -40,8 +57,11 @@ the client must respond to with a call to finishRegistration.
  */
 export class CeremonyService {
   // pendingRegistrations is the map of registrations which have been started; but not yet
-  // finished. Maps challenge id to a PendingEntry structure.
-  private readonly pendingRegistrations : Map<string, PendingEntry>;
+  // finished. Maps challenge id to a PendingRegistrationEntry structure.
+  private readonly pendingRegistrations : Map<string, PendingRegistrationEntry>;
+  // pendingAuthentications is the analogous map for authentication ceremonies:
+  // challenge id -> PendingAuthenticationEntry.
+  private readonly pendingAuthentications : Map<string, PendingAuthenticationEntry>;
   // credentials holds every credential that has completed registration, keyed by the
   // base64url-encoded credential id. This is what finishAuthentication verifies assertions
   // against — without it there would be no public key to check a signature with.
@@ -51,7 +71,8 @@ export class CeremonyService {
   private readonly allowedUsernames : string[];
 
   constructor(rpId: string,...allowedUsernames: string[]) {
-    this.pendingRegistrations = new Map<string, PendingEntry>();
+    this.pendingRegistrations = new Map<string, PendingRegistrationEntry>();
+    this.pendingAuthentications = new Map<string, PendingAuthenticationEntry>();
     this.credentials = new Map<string, Credential>();
     this.rpId = rpId;
     this.allowedUsernames = allowedUsernames ?? [];
@@ -97,7 +118,11 @@ export class CeremonyService {
 
     const attestation = decodeAttestation(req.response.response.attestationObject)
     const publicKey = await parsePublicKey(attestation.publicKeyBytes)
-    const isValid = await validateChallenge(publicKey, attestation, req.response.response.clientDataJSON)
+    const isValid =  await verifySignature(
+      publicKey,
+      attestation.authData,
+      attestation.signature,
+      req.response.response.clientDataJSON);
     if (!isValid) {
       throw new HttpError(400, { error: "invalid signature" });
     }
@@ -131,24 +156,119 @@ export class CeremonyService {
       },
     };
   }
+
+
+  async startAuthentication(req: StartAuthenticationRequest): Promise<StartAuthenticationResponse> {
+    if (req.username) {
+      if (!this.isUserCredentialExist(req.username)) {
+        throw new HttpError(403, { error: `username '${req.username}' not allowed` });
+      }
+    }
+
+    const challengeId = b64u.encode(crypto.getRandomValues(new Uint8Array(16)));
+    const challenge = b64u.encode(crypto.getRandomValues(new Uint8Array(32)));
+
+    this.pendingAuthentications.set(challengeId, {
+      challenge,
+      challengeId,
+      rpId: this.rpId,
+      username: req.username ?? null,
+    });
+
+    return {
+      challengeId,
+      publicKey: {
+        challenge,
+        rpId: this.rpId,
+        userVerification: "preferred",
+      },
+    };
+  }
+
+  async finishAuthentication(req: FinishAuthenticationRequest): Promise<FinishAuthenticationResponse> {
+    const entry = this.pendingAuthentications.get(req.challengeId);
+    if (!entry) {
+      throw new HttpError(404, { error: `unknown challengeId: ${req.challengeId}` });
+    }
+
+    const clientData = parseClientData(req.response.response.clientDataJSON);
+    if (clientData.type !== "webauthn.get") {
+      throw new HttpError(400, { error: `wrong clientDataJSON type: ${clientData.type}` });
+    }
+    if (clientData.challenge !== entry.challenge) {
+      throw new HttpError(400, { error: "challenge mismatch" });
+    }
+
+    // The credential id in the response — not the (optional) username from startAuth — is the
+    // authority on who's signing in; this also covers resident-credential flows where the
+    // username was never supplied to startAuthentication.
+    const stored = this.credentials.get(req.response.rawId);
+    if (!stored) {
+      throw new HttpError(404, { error: `unknown credential: ${req.response.rawId}` });
+    }
+    if (entry.username && stored.username !== entry.username) {
+      throw new HttpError(400, { error: `username mismatch: ${entry.username}` });
+    }
+
+    const authData = b64u.decode(req.response.response.authenticatorData);
+    const signature = b64u.decode(req.response.response.signature);
+    const isValid = await verifySignature(stored.publicKey, authData, signature, req.response.response.clientDataJSON);
+    if (!isValid) {
+      throw new HttpError(400, { error: "invalid signature" });
+    }
+
+    const flags = authData[32]!;
+    if ((flags & 0x01) === 0) {
+      throw new HttpError(400, { error: "user presence flag not set" });
+    }
+
+    const counter = new DataView(authData.buffer, authData.byteOffset).getUint32(33);
+    // Clone/replay detection: a nonzero counter must strictly increase. Authenticators that
+    // don't support counters (like this test suite's FakeAuthenticator) always report 0 —
+    // per the WebAuthn spec that case is exempt from the check.
+    if ((counter !== 0 || stored.counter !== 0) && counter <= stored.counter) {
+      throw new HttpError(400, { error: "authenticator counter did not increase" });
+    }
+    stored.counter = counter;
+
+    this.pendingAuthentications.delete(req.challengeId);
+
+    return {
+      token: b64u.encode(crypto.getRandomValues(new Uint8Array(32))),
+    };
+  }
+
+  private isUserCredentialExist(username: string) : boolean {
+    const credentials = [...this.credentials.entries()];
+    const filtered = credentials.filter(([, cred]) => cred.username === username);
+    return filtered.length > 0;
+  }
 }
 
-async function validateChallenge(publicKey: CryptoKey, attestation: Attestation, clientDataJson: string) : Promise<boolean> {
+// verifySignature checks a WebAuthn signature over authData || SHA-256(clientDataJSON) — the
+// exact bytes both attestation (registration) and assertion (authentication) responses sign.
+async function verifySignature(
+  publicKey: CryptoKey,
+  authData: Uint8Array<ArrayBufferLike>,
+  signature: Uint8Array<ArrayBuffer>,
+  clientDataJson: string,
+) : Promise<boolean> {
   const data = b64u.decode(clientDataJson);
   const clientDataHash = new Uint8Array(
     await crypto.subtle.digest("SHA-256", data),
   );
-  const verificationData = new Uint8Array(attestation.authData.length + clientDataHash.length);
-  verificationData.set(attestation.authData);
-  verificationData.set(clientDataHash, attestation.authData.length);
+  const verificationData = new Uint8Array(authData.length + clientDataHash.length);
+  verificationData.set(authData);
+  verificationData.set(clientDataHash, authData.length);
 
   return crypto.subtle.verify(
     { name: "ECDSA", hash: "SHA-256" },
     publicKey,
-    attestation.signature,
+    signature,
     verificationData,
   );
 }
+
 
 function parsePublicKey(publicKeyBytes : Uint8Array<ArrayBuffer>) : Promise<CryptoKey> {
   try {
@@ -206,14 +326,14 @@ function decodeAttestation(attestation: string) : Attestation {
   }
 }
 
-function parseClientData(clientDataJson: string) : { type:string, challenge: string } {
+function parseClientData(clientDataJson: string) : { type: WebAuthnType, challenge: string } {
   // Decode and validate clientDataJSON
   const data = b64u.decode(clientDataJson);
   try {
     return JSON.parse(new TextDecoder().decode(data)) as {
       type: string;
       challenge: string;
-    };
+    } as {type:WebAuthnType, challenge: string};
   } catch(e){
     const eMessage = e as {message: string}
     const message = eMessage && eMessage.message ? eMessage.message : "unknown error";
@@ -221,7 +341,7 @@ function parseClientData(clientDataJson: string) : { type:string, challenge: str
   }
 }
 
-function newStartRegistrationResponse(pendingEntry: PendingEntry) : StartRegistrationResponse {
+function newStartRegistrationResponse(pendingEntry: PendingRegistrationEntry) : StartRegistrationResponse {
   return {
     challengeId: pendingEntry.challengeId,
     publicKey: {
