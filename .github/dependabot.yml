@@ -37,6 +37,14 @@ updates:
         applies-to: version-updates
         patterns:
           - "*"
+    ignore:
+      # TypeScript 7.x is the native (Go) compiler; its JS compiler API is not a drop-in
+      # replacement, so the SDK toolchain breaks on it — tsup/rollup-plugin-dts fail with
+      # `Cannot read properties of undefined (reading 'useCaseSensitiveFileNames')` and
+      # Stryker with `ts.parseConfigFileTextToJson is not a function`. Stay on the 6.x line
+      # until those tools ship TS 7 support.
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: "github-actions"
     directory: "/"
