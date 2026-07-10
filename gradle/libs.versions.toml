@@ -35,10 +35,10 @@ argon2-jvm = "2.12"
 
 # Persistence
 jdbi = "3.54.0"
-flyway = "12.10.0"
+flyway = "12.11.0"
 postgresql = "42.7.13"
 hikaricp = "7.1.0"
-aws-sdk = "2.47.3"
+aws-sdk = "2.47.4"
 testcontainers = "1.21.4"
 
 # Spring Boot adapter (Phase 8). Spring Boot 4 / Spring Security 7. Spring Boot 4 standardized
@@ -78,7 +78,7 @@ jakarta-inject = "2.0.1"
 junit-jupiter = "6.1.1"
 assertj = "3.27.7"
 mockito = "5.23.0"
-logback = "1.5.37"
+logback = "1.5.38"
 
 [libraries]
 jspecify = { module = "org.jspecify:jspecify", version.ref = "jspecify" }
