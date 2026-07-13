@@ -24,7 +24,7 @@ jspecify = "1.0.0"
 # Runtime — pk-auth-core
 webauthn4j = "0.31.8.RELEASE"
 nimbus-jose-jwt = "10.9.1"
-jackson = "3.2.0"
+jackson = "3.2.1"
 jackson-annotations = "2.22"
 caffeine = "3.2.4"
 micrometer = "1.17.0"
@@ -38,7 +38,7 @@ jdbi = "3.54.0"
 flyway = "12.11.0"
 postgresql = "42.7.13"
 hikaricp = "7.1.0"
-aws-sdk = "2.47.4"
+aws-sdk = "2.47.5"
 testcontainers = "1.21.4"
 
 # Spring Boot adapter (Phase 8). Spring Boot 4 / Spring Security 7. Spring Boot 4 standardized
@@ -75,7 +75,7 @@ dagger = "2.60.1"
 jakarta-inject = "2.0.1"
 
 # Test (wired in test convention plugin; left ready for Phase 1+)
-junit-jupiter = "6.1.1"
+junit-jupiter = "6.1.2"
 assertj = "3.27.7"
 mockito = "5.23.0"
 logback = "1.5.38"
