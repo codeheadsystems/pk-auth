@@ -10,7 +10,8 @@ updates:
   - package-ecosystem: "gradle"
     directory: "/"
     schedule:
-      interval: "daily"
+      interval: "weekly"
+      day: "wednesday"
     groups:
       dev-dependencies:
         applies-to: version-updates
@@ -31,7 +32,8 @@ updates:
       - "/examples/dropwizard-demo/e2e"
       - "/examples/micronaut-demo/e2e"
     schedule:
-      interval: "daily"
+      interval: "weekly"
+      day: "wednesday"
     groups:
       npm-dependencies:
         applies-to: version-updates
