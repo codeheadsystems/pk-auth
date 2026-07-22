@@ -35,10 +35,10 @@ argon2-jvm = "2.12"
 
 # Persistence
 jdbi = "3.54.0"
-flyway = "12.11.0"
+flyway = "13.0.0"
 postgresql = "42.7.13"
 hikaricp = "7.1.0"
-aws-sdk = "2.48.2"
+aws-sdk = "2.49.0"
 testcontainers = "1.21.4"
 
 # Spring Boot adapter (Phase 8). Spring Boot 4 / Spring Security 7. Spring Boot 4 standardized
