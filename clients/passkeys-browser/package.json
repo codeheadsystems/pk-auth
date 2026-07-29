@@ -42,7 +42,7 @@
     "access": "public"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22.22.2"
   },
   "scripts": {
     "build": "tsup",

@@ -10,7 +10,7 @@ The canonical architecture reference is [`DESIGN.md`](./DESIGN.md); per-decision
 
 ## Build & test
 
-JDK 21 is required (Gradle's toolchain fetches one if absent). Node ≥ 20 + npm are needed for the browser SDK, which Gradle drives automatically.
+JDK 21 is required (Gradle's toolchain fetches one if absent). Node ≥ 22.22.2 + npm are needed for the browser SDK, which Gradle drives automatically.
 
 ```sh
 ./gradlew check                          # full gate: spotlessCheck + test + jacoco coverage verify
