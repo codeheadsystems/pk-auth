@@ -139,7 +139,7 @@ docs/                          # ADRs, operator guide, threat model
 Requirements:
 
 - **JDK 21** — Gradle's toolchain will fetch one if not present.
-- **Node ≥ 20** + **npm** — for the browser SDK build, invoked
+- **Node ≥ 22.22.2** + **npm** — for the browser SDK build, invoked
   automatically by Gradle (`./gradlew :buildPasskeysBrowserSdk`).
 
 Optional, only needed for the JDBI / DynamoDB persistence integration
