@@ -157,7 +157,7 @@ release version (the SDK speaks the same wire contract as that server release).
 
 ### Prerequisites (one-time)
 
-- **Node ≥ 20 + npm** (same toolchain the Gradle SDK build uses).
+- **Node ≥ 22.22.2 + npm** (same toolchain the Gradle SDK build uses).
 - An **npm account** that is a member of the `@pk-auth` org/scope with publish
   rights. The package is public scoped (`publishConfig.access = "public"` is set
   in `package.json`, so no `--access public` flag is needed).
