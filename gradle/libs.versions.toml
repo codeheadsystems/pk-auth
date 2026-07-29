@@ -15,7 +15,7 @@ java = "21"
 # intermittently fail class loading on Gradle 9 / JDK 21 under a *cached* build, which is why the
 # Gradle build cache stays disabled (see gradle.properties) — `./gradlew check` itself runs clean
 # on 8.x. The earlier 7.x pin (and its dependabot ignore) has been retired.
-spotless = "8.8.0"
+spotless = "8.9.0"
 errorprone-plugin = "5.1.0"
 errorprone-core = "2.50.0"
 google-java-format = "1.25.2"
@@ -38,7 +38,7 @@ jdbi = "3.54.0"
 flyway = "13.0.0"
 postgresql = "42.7.13"
 hikaricp = "7.1.0"
-aws-sdk = "2.49.0"
+aws-sdk = "2.49.5"
 testcontainers = "1.21.4"
 
 # Spring Boot adapter (Phase 8). Spring Boot 4 / Spring Security 7. Spring Boot 4 standardized
@@ -78,7 +78,7 @@ jakarta-inject = "2.0.1"
 junit-jupiter = "6.1.2"
 assertj = "3.27.7"
 mockito = "5.23.0"
-logback = "1.5.38"
+logback = "1.6.1"
 
 [libraries]
 jspecify = { module = "org.jspecify:jspecify", version.ref = "jspecify" }
