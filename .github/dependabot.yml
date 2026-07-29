@@ -24,6 +24,14 @@ updates:
         update-types: ["version-update:semver-major"]
       - dependency-name: "io.micronaut.test:*"
         update-types: ["version-update:semver-major"]
+      # logback 1.6.0 removed ch.qos.logback.classic.PatternLayout.DEFAULT_CONVERTER_MAP, which
+      # Dropwizard 5's dropwizard-request-logging reads in a static initializer — every Dropwizard
+      # app then dies at boot with NoSuchFieldError (see PR #138). Dropwizard 5.0.2 is the newest
+      # release and still resolves logback 1.5.x, so stay on the 1.5 line — patch updates still
+      # flow. Drop this once Dropwizard ships logback 1.6 support. Note the minor entry: 1.5 -> 1.6
+      # is a semver-minor bump, so ignoring majors alone would not hold the line.
+      - dependency-name: "ch.qos.logback:*"
+        update-types: ["version-update:semver-minor", "version-update:semver-major"]
 
   - package-ecosystem: "npm"
     directories:
