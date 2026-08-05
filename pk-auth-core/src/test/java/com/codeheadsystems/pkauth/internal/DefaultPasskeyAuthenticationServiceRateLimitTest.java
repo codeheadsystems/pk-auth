@@ -199,6 +199,20 @@ class DefaultPasskeyAuthenticationServiceRateLimitTest {
     verify(challengeStore).put(any(), any(), any());
   }
 
+  @Test
+  void usernameBucketKeyIsCaseFoldedSoVariantsShareOneBudget() {
+    // Regression guard: UserLookup resolves usernames case-insensitively, so case variants must
+    // not each get their own per-username budget. Keying on the raw request string let a
+    // distributed attacker multiply the 10/min allowance against one account by 2^len.
+    service.startRegistration(
+        new StartRegistrationRequest("Alice", "Alice", null, null), "1.1.1.1");
+    service.startRegistration(
+        new StartRegistrationRequest("ALICE", "Alice", null, null), "1.1.1.1");
+    service.startAuthentication(new StartAuthenticationRequest("aLiCe", null), "1.1.1.1");
+
+    assertThat(limiter.usernameCalls).containsExactly("alice", "alice", "alice");
+  }
+
   private static FinishRegistrationRequest stubFinishRegistration() {
     return new FinishRegistrationRequest(
         CHALLENGE_ID,

@@ -63,6 +63,7 @@ import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -903,7 +904,14 @@ public final class DefaultPasskeyAuthenticationService implements PasskeyAuthent
       LOG.info("{} rate-limited ip-bucket clientIp={}", phase, clientIp);
       return "ip";
     }
-    if (username != null && !rateLimiter.tryAcquireForUsername(username)) {
+    // Case-fold before bucketing. UserLookup implementations resolve usernames case-insensitively
+    // (DynamoDbUserLookup lower-cases the identity key), so keying the bucket on the raw request
+    // string gave "alice", "Alice", and "ALICE" three independent budgets against one account — an
+    // 8-character username yields 256 of them. The per-IP bucket does not compensate: the
+    // per-username bucket exists precisely for the distributed case, which is the case the split
+    // defeated. Folding here rather than inside the limiter means every CeremonyRateLimiter
+    // implementation — including a host's shared Redis one — inherits the fix.
+    if (username != null && !rateLimiter.tryAcquireForUsername(username.toLowerCase(Locale.ROOT))) {
       LOG.info("{} rate-limited username-bucket username={}", phase, username);
       return "username";
     }
