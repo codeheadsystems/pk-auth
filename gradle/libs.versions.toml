@@ -19,10 +19,10 @@ spotless = "8.9.0"
 errorprone-plugin = "5.1.0"
 errorprone-core = "2.50.0"
 google-java-format = "1.25.2"
-jspecify = "1.0.0"
+jspecify = "1.0.1"
 
 # Runtime — pk-auth-core
-webauthn4j = "0.31.8.RELEASE"
+webauthn4j = "0.31.9.RELEASE"
 nimbus-jose-jwt = "10.9.1"
 jackson = "3.2.1"
 jackson-annotations = "2.22"
@@ -35,10 +35,10 @@ argon2-jvm = "2.12"
 
 # Persistence
 jdbi = "3.54.0"
-flyway = "13.0.0"
+flyway = "13.1.0"
 postgresql = "42.7.13"
 hikaricp = "7.1.0"
-aws-sdk = "2.49.5"
+aws-sdk = "2.50.2"
 testcontainers = "1.21.4"
 
 # Spring Boot adapter (Phase 8). Spring Boot 4 / Spring Security 7. Spring Boot 4 standardized
