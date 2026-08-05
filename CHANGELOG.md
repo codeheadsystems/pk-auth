@@ -26,6 +26,19 @@ finding from that review.
   token from the result (e.g. to render their own email) must instead capture it
   in a `MessageFormatter` / `EmailSender`. `startLogin`'s enumeration-resistant
   short-circuit paths continue to return `Sent("")`.
+- **Usernames are bounded and the in-memory rate-limiter caches can no longer grow
+  without limit.** Nothing capped username length (the JDBI column is Postgres
+  `TEXT`), and both Caffeine caches used `expireAfterWrite` with no
+  `maximumSize` — so on the `permitAll` start endpoints, a caller varying its
+  username grew the maps with its own key variety rather than with the number of
+  real users, and every distinct key was retained for the full window.
+  `StartRegistrationRequest.MAX_USERNAME_LENGTH` (256, enough for an email
+  address) now bounds both start requests, and `InMemoryCeremonyRateLimiter` /
+  `InMemoryWindowCounter` cap their maps at
+  `DEFAULT_MAX_TRACKED_KEYS` (100 000). An over-long username is refused as a
+  clean **400** — covered by an adapter-level test asserting the refusal reaches
+  the client as a 400 and not a 500. `StartAuthenticationRequest` still accepts a
+  `null` username (the usernameless / discoverable-credential flow).
 
 ## [2.2.0] — 2026-06-27
 
