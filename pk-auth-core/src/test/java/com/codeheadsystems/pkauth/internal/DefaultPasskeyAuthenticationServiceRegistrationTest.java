@@ -175,6 +175,35 @@ class DefaultPasskeyAuthenticationServiceRegistrationTest {
   }
 
   @Test
+  void overlongLabelIsInvalidPayloadAndDoesNotConsumeTheChallenge() {
+    String tooLong = "x".repeat(CredentialRecord.MAX_LABEL_LENGTH + 1);
+
+    RegistrationResult result = service.finishRegistration(finishReg(cd(), tooLong));
+
+    assertThat(result)
+        .isInstanceOfSatisfying(
+            RegistrationResult.InvalidPayload.class, p -> assertThat(p.detail()).contains("64"));
+    // The label is bounded ahead of the preflight, so the single-use challenge survives a
+    // rejected label rather than forcing the user through a fresh ceremony.
+    verify(challengeStore, never()).takeOnce(any());
+    verify(credentialRepository, never()).save(any());
+  }
+
+  @Test
+  void labelExactlyAtTheBoundIsAccepted() throws Exception {
+    RegistrationData regData = mockRegistrationData(AAGUID.ZERO, null, false);
+    when(webAuthnManager.verify(
+            any(com.webauthn4j.data.RegistrationRequest.class), any(RegistrationParameters.class)))
+        .thenReturn(regData);
+    String atLimit = "x".repeat(CredentialRecord.MAX_LABEL_LENGTH);
+
+    assertThat(service.finishRegistration(finishReg(cd(), atLimit)))
+        .isInstanceOfSatisfying(
+            RegistrationResult.Success.class,
+            s -> assertThat(s.credential().label()).isEqualTo(atLimit));
+  }
+
+  @Test
   void happyPathWithZeroAaguidNullTransportsAndDefaultLabel() throws Exception {
     // AAGUID.ZERO → stored aaguid is null; null transports → empty transport set; null label →
     // "Passkey" default.

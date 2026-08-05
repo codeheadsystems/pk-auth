@@ -199,6 +199,19 @@ class DefaultAdminServiceTest {
   }
 
   @Test
+  void renameCredentialOverlongLabelRejected() {
+    saveCredential(alice, new byte[] {1});
+    String tooLong = "x".repeat(CredentialRecord.MAX_LABEL_LENGTH + 1);
+    assertThat(admin.renameCredential(alice, alice, CredentialId.of(new byte[] {1}), tooLong))
+        .isInstanceOf(AdminResult.ValidationFailed.class);
+
+    // Exactly at the bound is still accepted.
+    String atLimit = "x".repeat(CredentialRecord.MAX_LABEL_LENGTH);
+    assertThat(admin.renameCredential(alice, alice, CredentialId.of(new byte[] {1}), atLimit))
+        .isInstanceOf(AdminResult.Success.class);
+  }
+
+  @Test
   void renameCredentialOfOtherUserNotFound() {
     UserHandle bob = users.register("bob", "Bob");
     saveCredential(bob, new byte[] {1});
