@@ -30,7 +30,7 @@ public final class JdbiUserLookup implements UserLookup {
         () ->
             jdbi.withHandle(
                 h ->
-                    h.createQuery("SELECT user_handle FROM users WHERE username = :u")
+                    h.createQuery("SELECT user_handle FROM users WHERE lower(username) = lower(:u)")
                         .bind("u", username)
                         .mapTo(byte[].class)
                         .findFirst()
@@ -59,12 +59,19 @@ public final class JdbiUserLookup implements UserLookup {
         () ->
             jdbi.withHandle(
                 h -> {
+                  // ON CONFLICT infers the V12 expression index on lower(username), so a racing
+                  // insert of any case variant of the same username resolves to the one existing
+                  // row instead of minting a second handle. The no-op DO UPDATE is what makes
+                  // RETURNING yield the winner's handle on the conflict path; the stored username
+                  // keeps its original casing (EXCLUDED.username is only touched to satisfy the
+                  // UPDATE), matching how DynamoDB stores the supplied form and lower-cases only
+                  // the key.
                   byte[] handle =
                       h.createQuery(
                               "INSERT INTO users (user_handle, username, display_name) VALUES"
                                   + " (:uh, :u, :dn)"
-                                  + " ON CONFLICT (username) DO UPDATE SET username ="
-                                  + " EXCLUDED.username"
+                                  + " ON CONFLICT (lower(username)) DO UPDATE SET username ="
+                                  + " users.username"
                                   + " RETURNING user_handle")
                           .bind("uh", candidate.value())
                           .bind("u", username)

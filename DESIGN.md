@@ -313,7 +313,13 @@ SPIs.
   `V9__create_refresh_tokens.sql` add the stateful-access-token and
   refresh-token tables for the 1.1.0 SPIs; `V10__refresh_tokens_amr.sql`
   adds the `amr` (RFC 8176 authentication-method-reference) column to
-  `refresh_tokens`. `PkAuthJdbiSchema.CURRENT_SCHEMA_VERSION` is `"10"`.
+  `refresh_tokens`; `V11__challenges_user_verification.sql` persists the
+  resolved per-ceremony user-verification requirement; and
+  `V12__users_username_case_insensitive.sql` makes username uniqueness
+  case-insensitive (unique index on `lower(username)`) so the JDBI and DynamoDB
+  backends share one identity model — it refuses to run, naming the offending
+  rows, if the database already holds usernames differing only by case.
+  `PkAuthJdbiSchema.CURRENT_SCHEMA_VERSION` is `"12"`.
   Magic-link tokens are
   not persisted — the JWT itself is the credential; consumed JTIs live in a
   `ConsumedJtiStore` (in-memory by default, swap in a shared backend for
