@@ -12,6 +12,9 @@ import com.codeheadsystems.pkauth.jwt.PkAuthJwtIssuer;
 import com.codeheadsystems.pkauth.jwt.PkAuthJwtValidator;
 import com.codeheadsystems.pkauth.spi.ClockProvider;
 import com.codeheadsystems.pkauth.testkit.InMemoryUserLookup;
+import com.nimbusds.jwt.SignedJWT;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.time.Clock;
 import java.time.Duration;
@@ -75,9 +78,9 @@ class MagicLinkServiceTest {
     UserHandle user = UserHandle.random();
     MagicLinkService.SendResult send = service.startEmailVerification(user, "alice@example.com");
     assertThat(send).isInstanceOf(MagicLinkService.SendResult.Sent.class);
-    String token = ((MagicLinkService.SendResult.Sent) send).tokenJti();
     assertThat(emails.sent).hasSize(1);
     assertThat(emails.sent.get(0).subject).isEqualTo("Verify your email");
+    String token = emails.lastToken();
 
     MagicLinkService.ConsumeResult consumed = service.finishVerification(token);
     assertThat(consumed)
@@ -101,9 +104,10 @@ class MagicLinkServiceTest {
     UserHandle user = users.register("alice", "Alice", "alice@example.com");
 
     MagicLinkService.SendResult send = service.startLogin("alice", "alice@example.com");
-    String token = ((MagicLinkService.SendResult.Sent) send).tokenJti();
+    assertThat(send).isInstanceOf(MagicLinkService.SendResult.Sent.class);
     assertThat(emails.sent.get(0).subject).isEqualTo("Sign in");
     assertThat(emails.sent.get(0).to).isEqualTo("alice@example.com");
+    String token = emails.lastToken();
 
     MagicLinkService.ConsumeResult consumed = service.finishVerification(token);
     assertThat(consumed)
@@ -120,8 +124,8 @@ class MagicLinkServiceTest {
     UserHandle user = users.register("alice", "Alice", "alice@example.com");
 
     // A login-purpose token must not satisfy the email-verify consume check.
-    MagicLinkService.SendResult send = service.startLogin("alice", "alice@example.com");
-    String token = ((MagicLinkService.SendResult.Sent) send).tokenJti();
+    service.startLogin("alice", "alice@example.com");
+    String token = emails.lastToken();
 
     MagicLinkService.ConsumeResult wrong =
         service.finishVerification(token, MagicLinkService.PURPOSE_EMAIL_VERIFY);
@@ -154,9 +158,8 @@ class MagicLinkServiceTest {
         MagicLinkService.create(
             MagicLinkService.Dependencies.ofDedicatedAudience(keyset, ISSUER, emails, users, clock),
             BASE_URL);
-    String token =
-        ((MagicLinkService.SendResult.Sent) dedicated.startLogin("alice", "alice@example.com"))
-            .tokenJti();
+    dedicated.startLogin("alice", "alice@example.com");
+    String token = emails.lastToken();
 
     // A resource-server validator scoped to the application audience MUST reject the magic-link
     // token (wrong audience) — it cannot be replayed as an API bearer/access token.
@@ -168,6 +171,28 @@ class MagicLinkServiceTest {
     // The magic-link service still validates and consumes its own token.
     assertThat(dedicated.finishVerification(token, MagicLinkService.PURPOSE_LOGIN))
         .isInstanceOf(MagicLinkService.ConsumeResult.Success.class);
+  }
+
+  @Test
+  void sentCarriesTheJtiAndNeverTheToken() throws Exception {
+    // Regression guard: SendResult.Sent must expose only the opaque jti. Before 2.3.0 it carried
+    // the full signed JWT under a component named `tokenJti`, so a host logging what looked like a
+    // correlation id was publishing a working login credential.
+    UserHandle user = users.register("alice", "Alice", "alice@example.com");
+    MagicLinkService.SendResult send = service.startLogin("alice", "alice@example.com");
+
+    String jti = ((MagicLinkService.SendResult.Sent) send).jti();
+    String token = emails.lastToken();
+
+    assertThat(jti).isNotEqualTo(token);
+    assertThat(token).contains(".").startsWith("ey"); // a real compact JWS
+    assertThat(jti).doesNotContain(".");
+    // The jti genuinely identifies the emailed token.
+    assertThat(jti).isEqualTo(SignedJWT.parse(token).getJWTClaimsSet().getJWTID());
+    // And it is inert as a credential.
+    assertThat(service.finishVerification(jti))
+        .isInstanceOf(MagicLinkService.ConsumeResult.Invalid.class);
+    assertThat(user).isNotNull();
   }
 
   @Test
@@ -193,8 +218,8 @@ class MagicLinkServiceTest {
   @Test
   void tamperedTokenRejected() {
     UserHandle user = UserHandle.random();
-    MagicLinkService.SendResult send = service.startEmailVerification(user, "a@example.com");
-    String token = ((MagicLinkService.SendResult.Sent) send).tokenJti();
+    service.startEmailVerification(user, "a@example.com");
+    String token = emails.lastToken();
     String tampered = token.substring(0, token.length() - 4) + "AAAA";
     assertThat(service.finishVerification(tampered))
         .isInstanceOf(MagicLinkService.ConsumeResult.Invalid.class);
@@ -207,6 +232,19 @@ class MagicLinkServiceTest {
     @Override
     public void send(String to, String subject, String body) {
       sent.add(new Sent(to, subject, body));
+    }
+
+    /**
+     * Extracts the magic-link token from the most recently dispatched email. Since 2.3.0 the token
+     * is no longer returned on {@link MagicLinkService.SendResult.Sent} (it carries only the jti),
+     * so the emailed link is the only place a test — like a real recipient — can obtain it.
+     */
+    String lastToken() {
+      assertThat(sent).isNotEmpty();
+      String body = sent.get(sent.size() - 1).body();
+      int marker = body.indexOf("?t=");
+      assertThat(marker).isNotNegative();
+      return URLDecoder.decode(body.substring(marker + "?t=".length()), StandardCharsets.UTF_8);
     }
 
     record Sent(String to, String subject, String body) {}
