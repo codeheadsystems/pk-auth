@@ -59,6 +59,37 @@ class JdbiUserLookupIntegrationTest {
   }
 
   @Test
+  void getOrCreateHandleIsCaseInsensitiveAndPreservesOriginalCasing() {
+    // Matches DynamoDbUserLookup, which keys identity on lower(username). Before V12 the JDBI
+    // backend matched exactly, so "Alice" and "alice" were two accounts on Postgres and one on
+    // DynamoDB — the same host code produced different identity models per backend.
+    UserHandle first = users.getOrCreateHandle("Alice");
+    assertThat(users.getOrCreateHandle("alice")).isEqualTo(first);
+    assertThat(users.getOrCreateHandle("ALICE")).isEqualTo(first);
+
+    // Uniqueness folds, but the stored form keeps the casing it was created with.
+    assertThat(users.findViewByHandle(first))
+        .hasValueSatisfying(v -> assertThat(v.username()).isEqualTo("Alice"));
+  }
+
+  @Test
+  void findHandleByUsernameIsCaseInsensitive() {
+    UserHandle handle = users.getOrCreateHandle("Bob");
+    assertThat(users.findHandleByUsername("bob")).hasValue(handle);
+    assertThat(users.findHandleByUsername("BOB")).hasValue(handle);
+    assertThat(users.findHandleByUsername("bOb")).hasValue(handle);
+  }
+
+  @Test
+  void registerRejectsAUsernameDifferingOnlyByCase() {
+    users.register("dana", "Dana");
+    // The V12 unique index on lower(username) is what enforces this — without it a second row
+    // would be created and lookups would resolve non-deterministically between the two.
+    org.assertj.core.api.Assertions.assertThatThrownBy(() -> users.register("DANA", "Impostor"))
+        .isInstanceOf(com.codeheadsystems.pkauth.spi.PkAuthPersistenceException.class);
+  }
+
+  @Test
   void registerPersistsUsernameAndDisplayName() {
     UserHandle handle = users.register("dave", "Dave Display");
     assertThat(users.findHandleByUsername("dave")).hasValue(handle);

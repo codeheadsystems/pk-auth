@@ -14,6 +14,9 @@ tags.
 A security release driven by a full-project audit. Every entry below closes a
 finding from that review.
 
+**JDBI hosts pick up one new Flyway migration (V12)** which changes username
+uniqueness semantics — read the entry below before upgrading.
+
 ### Security
 
 - **Magic-link `SendResult.Sent` no longer carries the login token.** The record
@@ -51,6 +54,21 @@ finding from that review.
   `CeremonyRateLimiter` — including a host's shared Redis implementation —
   inherits the fix. The SPI documents that the argument arrives folded and MUST
   be used as given.
+- **JDBI username uniqueness is now case-insensitive, matching DynamoDB.**
+  `DynamoDbUserLookup` keys identity on `lower(username)`, so `Admin` and `admin`
+  are one account there; `JdbiUserLookup` matched exactly against a plain
+  `UNIQUE` constraint, so on Postgres they were two. Same library, same SPI, two
+  identity models — a host assuming the DynamoDB semantics, or migrating between
+  backends, could end up with look-alike accounts. **Flyway migration V12**
+  (`PkAuthJdbiSchema.CURRENT_SCHEMA_VERSION` → `12`) adds a unique index on
+  `lower(username)` and the lookup queries fold case to match. The stored
+  username keeps its original casing, so display values round-trip unchanged.
+
+  **Upgrade note:** V12 runs a pre-flight check and **refuses to migrate**, naming
+  the conflicting rows, if the database already contains usernames differing only
+  by case. Choosing which row is authoritative and what becomes of the other's
+  credentials is a business decision, not one a schema change should make
+  silently. Resolve the listed conflicts and re-run.
 
 ## [2.2.0] — 2026-06-27
 
