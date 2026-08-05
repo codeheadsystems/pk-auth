@@ -39,6 +39,18 @@ finding from that review.
   clean **400** — covered by an adapter-level test asserting the refusal reaches
   the client as a 400 and not a 500. `StartAuthenticationRequest` still accepts a
   `null` username (the usernameless / discoverable-credential flow).
+- **The per-username ceremony rate limit can no longer be bypassed by varying
+  case.** `UserLookup` implementations resolve usernames case-insensitively
+  (`DynamoDbUserLookup` lower-cases the identity key), but the ceremony service
+  passed the raw request string to `CeremonyRateLimiter.tryAcquireForUsername` —
+  so `alice`, `Alice`, and `ALICE` drew on three independent budgets against one
+  account, and an 8-character username yielded 256 of them. The per-IP bucket did
+  not compensate: the per-username bucket exists for the distributed case, which
+  is exactly the case the split defeated. The service now case-folds
+  (`toLowerCase(Locale.ROOT)`) before consulting the limiter, so **every**
+  `CeremonyRateLimiter` — including a host's shared Redis implementation —
+  inherits the fix. The SPI documents that the argument arrives folded and MUST
+  be used as given.
 
 ## [2.2.0] — 2026-06-27
 

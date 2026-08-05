@@ -60,7 +60,14 @@ public interface CeremonyRateLimiter {
    * budget. Only called by the ceremony service for {@code start*} requests that carry a username;
    * {@code finish*} requests have no username on the wire and consult only the per-IP bucket.
    *
-   * @param username the username supplied on the start ceremony request; never {@code null}
+   * <p><strong>The value arrives already case-folded</strong> ({@code toLowerCase(Locale.ROOT)}),
+   * because {@link UserLookup} implementations resolve usernames case-insensitively. Since 2.3.0
+   * the ceremony service folds it before calling, so implementations MUST use the argument as given
+   * and MUST NOT re-derive a bucket key from a differently-cased source — case variants of one
+   * username would otherwise get independent budgets and multiply the effective limit against a
+   * single account.
+   *
+   * @param username the case-folded username from the start ceremony request; never {@code null}
    * @return {@code true} when allowed; {@code false} when the per-username budget for the current
    *     window is exhausted
    * @since 0.9.1
