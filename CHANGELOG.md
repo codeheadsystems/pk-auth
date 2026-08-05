@@ -69,6 +69,18 @@ uniqueness semantics — read the entry below before upgrading.
   by case. Choosing which row is authoritative and what becomes of the other's
   credentials is a business decision, not one a schema change should make
   silently. Resolve the listed conflicts and re-run.
+- **Credential labels are bounded and no longer rendered as HTML by the demos.**
+  The label is the one free-text field an unauthenticated caller controls (set at
+  `register/finish`, changed via `PATCH /auth/admin/credentials/{id}`), it was
+  validated only for blankness, and all three demos interpolated it straight into
+  `innerHTML` when rendering the credential list — so markup stored in a label
+  executed on render, and the demos keep the access token in `localStorage`. The
+  demos now build the row from DOM nodes and assign the label via `textContent`,
+  and the library caps the label at `CredentialRecord.MAX_LABEL_LENGTH` (64
+  chars), returning `RegistrationResult.InvalidPayload` / `AdminResult
+  .ValidationFailed` — a clean 400, never a thrown exception across the sealed
+  result boundary. The bound is checked *before* the challenge preflight, so a
+  rejected label does not burn the single-use challenge.
 
 ## [2.2.0] — 2026-06-27
 

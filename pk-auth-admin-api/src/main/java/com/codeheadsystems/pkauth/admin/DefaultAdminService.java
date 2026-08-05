@@ -122,6 +122,10 @@ public final class DefaultAdminService implements AdminService {
     if (newLabel == null || newLabel.isBlank()) {
       return new AdminResult.ValidationFailed<>("label must be non-blank");
     }
+    if (newLabel.length() > CredentialRecord.MAX_LABEL_LENGTH) {
+      return new AdminResult.ValidationFailed<>(
+          "label must be at most " + CredentialRecord.MAX_LABEL_LENGTH + " characters");
+    }
     Optional<CredentialRecord> cred = credentialRepository.findByCredentialId(credentialId);
     if (cred.isEmpty() || !cred.get().userHandle().equals(target)) {
       return new AdminResult.NotFound<>();

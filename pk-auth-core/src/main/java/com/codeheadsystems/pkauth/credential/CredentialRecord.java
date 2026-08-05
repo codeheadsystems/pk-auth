@@ -43,6 +43,23 @@ public record CredentialRecord(
     Instant createdAt,
     @Nullable Instant lastUsedAt) {
 
+  /**
+   * Maximum accepted length of {@link #label}, in {@code char}s.
+   *
+   * <p>The label is the one free-text, host-visible field an unauthenticated caller controls (set
+   * at {@code register/finish}, changed via {@code PATCH /auth/admin/credentials/{id}}) and it is
+   * persisted and echoed back by {@code AdminService.listCredentials}. Bounding it keeps an
+   * arbitrarily large blob out of storage and out of every UI that renders a credential list. It is
+   * a nickname ("Work laptop", "MacBook Touch ID"), so 64 is generous.
+   *
+   * <p>This is a length bound only — it is <em>not</em> an escaping mechanism. A label is untrusted
+   * text: renderers MUST escape it for their output context (see the demos' credential list, which
+   * builds DOM nodes with {@code textContent} rather than interpolating into {@code innerHTML}).
+   *
+   * @since 2.3.0
+   */
+  public static final int MAX_LABEL_LENGTH = 64;
+
   public CredentialRecord {
     Objects.requireNonNull(credentialId, "credentialId");
     Objects.requireNonNull(userHandle, "userHandle");

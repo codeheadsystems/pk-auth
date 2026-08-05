@@ -101,18 +101,44 @@ $("btn-account").addEventListener("click", () =>
 
 $("btn-register-again").addEventListener("click", () => $("btn-register").click());
 
+// The credential label is untrusted text: it is whatever the caller supplied at
+// register/finish or via PATCH /auth/admin/credentials/{id}, stored verbatim and echoed back by
+// listCredentials. Build the row from DOM nodes and set the label through textContent —
+// interpolating it into innerHTML would execute markup that an attacker stored in their own label,
+// which in a real admin console means it fires in a staff member's session.
+function credButton(action, text, credentialId) {
+  const button = document.createElement("button");
+  button.textContent = text;
+  button.dataset.action = action;
+  button.dataset.id = credentialId;
+  return button;
+}
+
+function credentialListItem(cred) {
+  const li = document.createElement("li");
+  const name = document.createElement("b");
+  name.textContent = cred.label;
+  const id = document.createElement("small");
+  id.textContent = `${cred.credentialId.slice(0, 16)}…`;
+  li.append(
+    name,
+    " ",
+    id,
+    " ",
+    credButton("rename", "Rename", cred.credentialId),
+    " ",
+    credButton("delete", "Delete", cred.credentialId),
+  );
+  return li;
+}
+
 $("btn-creds").addEventListener("click", () =>
   run("login-out", async () => {
     const list = await pk.admin.listCredentials();
     const ul = $("cred-list");
-    ul.innerHTML = "";
+    ul.replaceChildren();
     for (const cred of list) {
-      const li = document.createElement("li");
-      li.innerHTML =
-        `<b>${cred.label}</b> <small>${cred.credentialId.slice(0, 16)}…</small> ` +
-        `<button data-action="rename" data-id="${cred.credentialId}">Rename</button> ` +
-        `<button data-action="delete" data-id="${cred.credentialId}">Delete</button>`;
-      ul.appendChild(li);
+      ul.appendChild(credentialListItem(cred));
     }
   }),
 );

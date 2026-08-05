@@ -293,6 +293,18 @@ public final class DefaultPasskeyAuthenticationService implements PasskeyAuthent
           new RegistrationResult.RateLimited("ip"),
           start);
     }
+    // Step 0: bound the caller-supplied label before anything else. Checked ahead of the challenge
+    // preflight on purpose — takeOnce is single-use, so validating first means an over-long label
+    // doesn't burn the challenge and force a full ceremony restart.
+    String label = req.label();
+    if (label != null && label.length() > CredentialRecord.MAX_LABEL_LENGTH) {
+      return outcome(
+          ChallengeValidator.Ceremony.REGISTRATION,
+          new RegistrationResult.InvalidPayload(
+              "label must be at most " + CredentialRecord.MAX_LABEL_LENGTH + " characters"),
+          start);
+    }
+
     // Step 1: challenge / origin / ceremony-type preflight.
     ChallengeValidation validation =
         challengeValidator.validate(
