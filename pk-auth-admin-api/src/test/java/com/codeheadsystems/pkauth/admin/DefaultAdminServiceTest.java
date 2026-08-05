@@ -12,7 +12,7 @@ import com.codeheadsystems.pkauth.jwt.JwtConfig;
 import com.codeheadsystems.pkauth.jwt.JwtKeyset;
 import com.codeheadsystems.pkauth.jwt.PkAuthJwtIssuer;
 import com.codeheadsystems.pkauth.jwt.PkAuthJwtValidator;
-import com.codeheadsystems.pkauth.magiclink.LoggingEmailSender;
+import com.codeheadsystems.pkauth.magiclink.EmailSender;
 import com.codeheadsystems.pkauth.magiclink.MagicLinkService;
 import com.codeheadsystems.pkauth.otp.LoggingSmsSender;
 import com.codeheadsystems.pkauth.otp.OtpService;
@@ -46,6 +46,7 @@ class DefaultAdminServiceTest {
   private InMemoryBackupCodeRepository backupCodes;
   private InMemoryOtpRepository otpRepo;
   private MagicLinkService magicLink;
+  private CapturingEmailSender emails;
   private BackupCodeService backupCodeService;
   private OtpService otpService;
   private DefaultAdminService admin;
@@ -53,6 +54,7 @@ class DefaultAdminServiceTest {
 
   @BeforeEach
   void setUp() {
+    emails = new CapturingEmailSender();
     users = new InMemoryUserLookup();
     credentials = new InMemoryCredentialRepository();
     backupCodes = new InMemoryBackupCodeRepository();
@@ -95,7 +97,7 @@ class DefaultAdminServiceTest {
             MagicLinkService.Dependencies.of(
                 new PkAuthJwtIssuer(jwtConfig, keyset, CLOCK),
                 new PkAuthJwtValidator(jwtConfig, keyset, CLOCK),
-                new LoggingEmailSender(),
+                emails,
                 users,
                 CLOCK),
             "https://app.example.com/auth/magic");
@@ -279,8 +281,8 @@ class DefaultAdminServiceTest {
 
   @Test
   void finishEmailVerificationConsumesToken() {
-    MagicLinkService.SendResult send = magicLink.startEmailVerification(alice, "alice@example.com");
-    String token = ((MagicLinkService.SendResult.Sent) send).tokenJti();
+    magicLink.startEmailVerification(alice, "alice@example.com");
+    String token = emails.lastToken();
     AdminResult<UserHandle> result = admin.finishEmailVerification(token);
     assertThat(result)
         .isInstanceOfSatisfying(
@@ -506,5 +508,26 @@ class DefaultAdminServiceTest {
             false,
             NOW,
             null));
+  }
+
+  /**
+   * Captures the emailed magic-link URL so a test can recover the token. Since 2.3.0 {@link
+   * MagicLinkService.SendResult.Sent} carries only the jti, so — as for a real recipient — the
+   * emailed link is the only route to the token.
+   */
+  private static final class CapturingEmailSender implements EmailSender {
+    private String lastBody = "";
+
+    @Override
+    public void send(String to, String subject, String body) {
+      lastBody = body;
+    }
+
+    String lastToken() {
+      int marker = lastBody.indexOf("?t=");
+      assertThat(marker).isNotNegative();
+      return java.net.URLDecoder.decode(
+          lastBody.substring(marker + "?t=".length()), java.nio.charset.StandardCharsets.UTF_8);
+    }
   }
 }

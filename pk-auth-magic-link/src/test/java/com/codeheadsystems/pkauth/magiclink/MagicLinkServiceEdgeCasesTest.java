@@ -11,6 +11,8 @@ import com.codeheadsystems.pkauth.jwt.PkAuthJwtValidator;
 import com.codeheadsystems.pkauth.spi.ClockProvider;
 import com.codeheadsystems.pkauth.spi.UserLookup;
 import com.codeheadsystems.pkauth.testkit.InMemoryUserLookup;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.time.Clock;
 import java.time.Duration;
@@ -66,6 +68,11 @@ class MagicLinkServiceEdgeCasesTest {
   }
 
   private MagicLinkService buildService(UserLookup lookup, Duration consumedJtiTtl) {
+    return buildService(lookup, consumedJtiTtl, (to, subj, body) -> {});
+  }
+
+  private MagicLinkService buildService(
+      UserLookup lookup, Duration consumedJtiTtl, EmailSender emailSender) {
     byte[] secret = new byte[32];
     new SecureRandom().nextBytes(secret);
     JwtKeyset keyset = JwtKeyset.hs256(secret);
@@ -75,7 +82,7 @@ class MagicLinkServiceEdgeCasesTest {
         MagicLinkService.Dependencies.of(
             new PkAuthJwtIssuer(config, keyset, clock),
             new PkAuthJwtValidator(config, keyset, clock),
-            (to, subj, body) -> {},
+            emailSender,
             lookup,
             clock),
         new MagicLinkService.Config(
@@ -83,6 +90,26 @@ class MagicLinkServiceEdgeCasesTest {
             5,
             new MagicLinkService.InMemoryRateLimiter(Duration.ofHours(1)),
             consumedJtiTtl));
+  }
+
+  /**
+   * Captures the emailed magic-link URL so a test can recover the token. Since 2.3.0 {@link
+   * MagicLinkService.SendResult.Sent} carries only the jti, so — as for a real recipient — the
+   * emailed link is the only route to the token.
+   */
+  private static final class CapturingEmailSender implements EmailSender {
+    private String lastBody = "";
+
+    @Override
+    public void send(String to, String subject, String body) {
+      lastBody = body;
+    }
+
+    String lastToken() {
+      int marker = lastBody.indexOf("?t=");
+      assertThat(marker).isNotNegative();
+      return URLDecoder.decode(lastBody.substring(marker + "?t=".length()), StandardCharsets.UTF_8);
+    }
   }
 
   @Test
@@ -125,11 +152,11 @@ class MagicLinkServiceEdgeCasesTest {
   void singleUseHoldsAcrossManyConsumeAttemptsWithinTtl() {
     InMemoryUserLookup lookup = new InMemoryUserLookup();
     UserHandle user = lookup.register("alice", "Alice");
-    MagicLinkService service = buildService(lookup, Duration.ofMinutes(30));
+    CapturingEmailSender emails = new CapturingEmailSender();
+    MagicLinkService service = buildService(lookup, Duration.ofMinutes(30), emails);
 
-    String token =
-        ((MagicLinkService.SendResult.Sent) service.startEmailVerification(user, "a@example.com"))
-            .tokenJti();
+    service.startEmailVerification(user, "a@example.com");
+    String token = emails.lastToken();
     assertThat(service.finishVerification(token))
         .isInstanceOf(MagicLinkService.ConsumeResult.Success.class);
 

@@ -96,8 +96,24 @@ public final class MagicLinkService {
 
   /** Result of a send attempt. */
   public sealed interface SendResult {
-    /** Email was dispatched. */
-    record Sent(String tokenJti) implements SendResult {}
+    /**
+     * Email was dispatched.
+     *
+     * <p>Carries only the token's {@code jti} — an opaque, non-secret correlation id safe to log or
+     * echo to a caller. The magic-link token itself is a bearer credential that authenticates as
+     * the user without inbox access, so it is never surfaced here; it reaches only {@link
+     * EmailSender}. Before 2.3.0 this component was named {@code tokenJti} but actually carried the
+     * full signed JWT, which meant routine logging of what looked like an id disclosed a working
+     * login credential.
+     *
+     * <p>Empty string when {@link MagicLinkService#startLogin} short-circuits (unknown user, or no
+     * bound address) — those paths return the same {@code Sent} shape to prevent account
+     * enumeration and have no token to identify.
+     *
+     * @param jti the issued token's JWT ID, or {@code ""} when no token was issued
+     * @since 2.3.0
+     */
+    record Sent(String jti) implements SendResult {}
 
     /** Rate limit hit. */
     record RateLimited(int countInWindow) implements SendResult {}
@@ -239,13 +255,13 @@ public final class MagicLinkService {
           count);
       return new SendResult.RateLimited(count);
     }
-    String token = issue(user, PURPOSE_EMAIL_VERIFY, Map.of(CLAIM_EMAIL, email));
-    String url = baseUrl + "?t=" + URLEncoder.encode(token, StandardCharsets.UTF_8);
+    Issued issued = issue(user, PURPOSE_EMAIL_VERIFY, Map.of(CLAIM_EMAIL, email));
+    String url = baseUrl + "?t=" + URLEncoder.encode(issued.token(), StandardCharsets.UTF_8);
     MagicLinkMessage message =
         messageFormatter.format(new MagicLinkContext(user, email, url, PURPOSE_EMAIL_VERIFY));
     emailSender.send(email, message.subject(), message.body());
     LOG.info("magiclink.send issued user={} purpose={}", user, PURPOSE_EMAIL_VERIFY);
-    return new SendResult.Sent(token);
+    return new SendResult.Sent(issued.jti());
   }
 
   /**
@@ -304,12 +320,12 @@ public final class MagicLinkService {
     if (count > rateLimit) {
       return new SendResult.RateLimited(count);
     }
-    String token = issue(user, PURPOSE_LOGIN, Map.of());
-    String url = baseUrl + "?t=" + URLEncoder.encode(token, StandardCharsets.UTF_8);
+    Issued issued = issue(user, PURPOSE_LOGIN, Map.of());
+    String url = baseUrl + "?t=" + URLEncoder.encode(issued.token(), StandardCharsets.UTF_8);
     MagicLinkMessage message =
         messageFormatter.format(new MagicLinkContext(user, deliveryEmail, url, PURPOSE_LOGIN));
     emailSender.send(deliveryEmail, message.subject(), message.body());
-    return new SendResult.Sent(token);
+    return new SendResult.Sent(issued.jti());
   }
 
   /**
@@ -368,14 +384,22 @@ public final class MagicLinkService {
     return new ConsumeResult.Success(claims.userHandle(), purpose, email);
   }
 
-  private String issue(UserHandle user, String purpose, Map<String, String> extras) {
+  /**
+   * A freshly-issued magic-link token paired with its {@code jti}. The token is a bearer credential
+   * and stays internal to this service (it goes only into the emailed URL); the jti is the opaque
+   * handle safe to hand back to callers via {@link SendResult.Sent}.
+   */
+  private record Issued(String token, String jti) {}
+
+  private Issued issue(UserHandle user, String purpose, Map<String, String> extras) {
     Map<String, Object> additional = new HashMap<>(extras);
     additional.put(CLAIM_PURPOSE, purpose);
     JwtClaims claims = new JwtClaims(user, AuthMethod.MAGIC_LINK, null, List.of("eml"), additional);
     // Issue with the magic-link tokenTtl (default 15m), NOT the issuer's per-audience access TTL
     // (default 1h). Inheriting the access TTL would leave the link redeemable — and replayable
     // once its single-use JTI is evicted at consumedJtiTtl — for far longer than intended.
-    return issuer.issue(claims, tokenTtl);
+    String token = issuer.issue(claims, tokenTtl);
+    return new Issued(token, jtiOf(token));
   }
 
   private static @Nullable String stringClaim(@Nullable Map<String, Object> map, String name) {
@@ -387,11 +411,17 @@ public final class MagicLinkService {
   }
 
   private static String jtiOf(String token) {
+    String jti;
     try {
-      return SignedJWT.parse(token).getJWTClaimsSet().getJWTID();
+      jti = SignedJWT.parse(token).getJWTClaimsSet().getJWTID();
     } catch (ParseException e) {
-      throw new IllegalStateException("Unable to extract jti from verified token", e);
+      throw new IllegalStateException("Unable to extract jti from a pk-auth-issued token", e);
     }
+    if (jti == null) {
+      // PkAuthJwtIssuer always sets a jti; a token without one cannot be single-use tracked.
+      throw new IllegalStateException("pk-auth-issued token carries no jti");
+    }
+    return jti;
   }
 
   /**

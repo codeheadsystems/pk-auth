@@ -9,6 +9,24 @@ The 0.x line is treated as a single pre-stable development series — see
 1.0.0 stabilisation cut; for 0.x history consult `git log` against the relevant
 tags.
 
+## [Unreleased]
+
+A security release driven by a full-project audit. Every entry below closes a
+finding from that review.
+
+### Security
+
+- **Magic-link `SendResult.Sent` no longer carries the login token.** The record
+  component was named `tokenJti` but held the complete signed magic-link JWT — a
+  bearer credential that authenticates as the user without inbox access. A host
+  logging or echoing what its name advertised as an opaque correlation id was
+  publishing a working login credential. `Sent` now carries the real `jti`; the
+  token reaches only the configured `EmailSender`. **Breaking:** the component is
+  renamed `tokenJti` → `jti` *and* its value changes, so hosts that recovered the
+  token from the result (e.g. to render their own email) must instead capture it
+  in a `MessageFormatter` / `EmailSender`. `startLogin`'s enumeration-resistant
+  short-circuit paths continue to return `Sent("")`.
+
 ## [2.2.0] — 2026-06-27
 
 A security-and-correctness release driven by two rounds of adversarial review.
