@@ -43,6 +43,18 @@ public final class InMemoryCeremonyRateLimiter implements CeremonyRateLimiter {
   /** Default window over which the per-IP and per-username counters are tracked. */
   public static final Duration DEFAULT_WINDOW = Duration.ofMinutes(1);
 
+  /**
+   * Maximum tracked keys per bucket map. Both maps are keyed by attacker-influenced values (source
+   * IP, submitted username) on {@code permitAll} endpoints, and {@code expireAfterWrite} alone
+   * retains every distinct key for the full window — so without a size bound the maps grow with the
+   * caller's key variety, not with the number of real users. Caffeine evicts near-LRU entries at
+   * the cap; an evicted counter simply restarts, which costs at most one extra allowance to the
+   * least-active key and never grants an unbounded budget to an active one.
+   *
+   * @since 2.3.0
+   */
+  public static final int DEFAULT_MAX_TRACKED_KEYS = 100_000;
+
   private static final Logger LOG = LoggerFactory.getLogger(InMemoryCeremonyRateLimiter.class);
 
   private final int perIpLimit;
@@ -83,8 +95,16 @@ public final class InMemoryCeremonyRateLimiter implements CeremonyRateLimiter {
     }
     this.perIpLimit = perIpLimit;
     this.perUsernameLimit = perUsernameLimit;
-    this.ipCounters = Caffeine.newBuilder().expireAfterWrite(window).build();
-    this.usernameCounters = Caffeine.newBuilder().expireAfterWrite(window).build();
+    this.ipCounters =
+        Caffeine.newBuilder()
+            .expireAfterWrite(window)
+            .maximumSize(DEFAULT_MAX_TRACKED_KEYS)
+            .build();
+    this.usernameCounters =
+        Caffeine.newBuilder()
+            .expireAfterWrite(window)
+            .maximumSize(DEFAULT_MAX_TRACKED_KEYS)
+            .build();
     LOG.warn(
         "ceremony.rate-limiter InMemoryCeremonyRateLimiter instantiated (perIp={} perUsername={}"
             + " window={}) — FOR DEV / SINGLE-INSTANCE USE ONLY. Production deployments with more"

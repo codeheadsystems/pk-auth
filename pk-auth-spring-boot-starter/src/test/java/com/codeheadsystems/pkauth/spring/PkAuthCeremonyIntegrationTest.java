@@ -64,6 +64,41 @@ class PkAuthCeremonyIntegrationTest {
   }
 
   @Test
+  void overlongUsernameIsRejectedAsBadRequestNotServerError() throws Exception {
+    // The username bounds a rate-limiter cache key and drives getOrCreateHandle (which persists a
+    // user row) on a permitAll endpoint, so it must be bounded. Asserting through the adapter,
+    // not just the record, because what matters is that the refusal reaches the client as a 400 —
+    // a 500 would mean the validation escaped as an unhandled exception.
+    String tooLong = "a".repeat(StartRegistrationRequest.MAX_USERNAME_LENGTH + 1);
+    mockMvc
+        .perform(
+            post("/auth/passkeys/registration/start")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"username\":\"" + tooLong + "\",\"displayName\":\"x\"}"))
+        .andExpect(status().isBadRequest());
+
+    mockMvc
+        .perform(
+            post("/auth/passkeys/authentication/start")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"username\":\"" + tooLong + "\"}"))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  void usernameExactlyAtTheBoundIsAccepted() throws Exception {
+    String atLimit = "a".repeat(StartRegistrationRequest.MAX_USERNAME_LENGTH);
+    mockMvc
+        .perform(
+            post("/auth/passkeys/registration/start")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    objectMapper.writeValueAsString(
+                        new StartRegistrationRequest(atLimit, "At Limit", null, null))))
+        .andExpect(status().isOk());
+  }
+
+  @Test
   void registrationThenAssertionMintsValidJwt() throws Exception {
     // -- 1. Start registration ----------------------------------------------------------------
     StartRegistrationRequest startReg = new StartRegistrationRequest("alice", "Alice", null, null);

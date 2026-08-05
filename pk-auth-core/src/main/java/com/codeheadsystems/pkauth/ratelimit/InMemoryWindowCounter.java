@@ -31,10 +31,22 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public final class InMemoryWindowCounter {
 
+  /**
+   * Maximum tracked keys. {@code expireAfterWrite} alone retains every distinct key for the full
+   * window, so a caller that varies its key (a submitted identifier, a source address) grows this
+   * map with its own key variety rather than with the number of real users. Caffeine evicts
+   * near-LRU entries at the cap; an evicted counter restarts, which costs at most one extra
+   * allowance to the least-active key and never grants an unbounded budget to an active one.
+   *
+   * @since 2.3.0
+   */
+  public static final int DEFAULT_MAX_TRACKED_KEYS = 100_000;
+
   private final Cache<String, AtomicInteger> counters;
 
   /**
-   * Creates a counter that drops keys after {@code window} has elapsed since their first increment.
+   * Creates a counter that drops keys after {@code window} has elapsed since their first increment,
+   * retaining at most {@link #DEFAULT_MAX_TRACKED_KEYS} keys at any moment.
    *
    * @param window expiry-after-write window; must be positive
    */
@@ -43,7 +55,11 @@ public final class InMemoryWindowCounter {
     if (window.isZero() || window.isNegative()) {
       throw new IllegalArgumentException("window must be positive");
     }
-    this.counters = Caffeine.newBuilder().expireAfterWrite(window).build();
+    this.counters =
+        Caffeine.newBuilder()
+            .expireAfterWrite(window)
+            .maximumSize(DEFAULT_MAX_TRACKED_KEYS)
+            .build();
   }
 
   /**
