@@ -24,7 +24,7 @@ jspecify = "1.0.1"
 # Runtime — pk-auth-core
 webauthn4j = "0.31.9.RELEASE"
 nimbus-jose-jwt = "10.9.1"
-jackson = "3.2.1"
+jackson = "3.2.2"
 jackson-annotations = "2.22"
 caffeine = "3.2.4"
 micrometer = "1.17.0"
@@ -35,10 +35,10 @@ argon2-jvm = "2.12"
 
 # Persistence
 jdbi = "3.54.0"
-flyway = "13.2.0"
+flyway = "13.3.0"
 postgresql = "42.7.13"
 hikaricp = "7.1.0"
-aws-sdk = "2.51.3"
+aws-sdk = "2.53.1"
 testcontainers = "1.21.4"
 
 # Spring Boot adapter (Phase 8). Spring Boot 4 / Spring Security 7. Spring Boot 4 standardized
