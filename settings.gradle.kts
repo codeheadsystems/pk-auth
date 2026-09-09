@@ -10,7 +10,7 @@ plugins {
     // Maven Central publishing via Sonatype Central Portal. The aggregation plugin is auto-applied
     // to subprojects with `maven-publish` — `./gradlew publishAggregationToCentralPortal` uploads
     // every signed publication to the Central Portal in a single bundle.
-    id("com.gradleup.nmcp.settings") version "1.6.1"
+    id("com.gradleup.nmcp.settings") version "1.6.2"
 }
 
 rootProject.name = "pk-auth"
