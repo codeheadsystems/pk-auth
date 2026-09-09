@@ -15,30 +15,30 @@ java = "21"
 # intermittently fail class loading on Gradle 9 / JDK 21 under a *cached* build, which is why the
 # Gradle build cache stays disabled (see gradle.properties) — `./gradlew check` itself runs clean
 # on 8.x. The earlier 7.x pin (and its dependabot ignore) has been retired.
-spotless = "8.10.1"
+spotless = "8.10.2"
 errorprone-plugin = "5.1.1"
 errorprone-core = "2.50.0"
 google-java-format = "1.25.2"
 jspecify = "1.0.1"
 
 # Runtime — pk-auth-core
-webauthn4j = "0.31.9.RELEASE"
+webauthn4j = "0.31.10.RELEASE"
 nimbus-jose-jwt = "10.9.1"
 jackson = "3.2.2"
 jackson-annotations = "2.22"
 caffeine = "3.2.4"
 micrometer = "1.17.1"
-slf4j = "2.0.18"
+slf4j = "2.0.19"
 
 # Alt-flow modules
 argon2-jvm = "2.12"
 
 # Persistence
 jdbi = "3.54.0"
-flyway = "13.4.0"
+flyway = "13.5.0"
 postgresql = "42.7.13"
 hikaricp = "7.1.0"
-aws-sdk = "2.54.7"
+aws-sdk = "2.54.13"
 testcontainers = "1.21.4"
 
 # Spring Boot adapter (Phase 8). Spring Boot 4 / Spring Security 7. Spring Boot 4 standardized
@@ -50,7 +50,7 @@ spring-boot = "4.1.1"
 spring-security = "7.1.1"
 # H2 in the demo so reviewers can run the spring-boot-demo without an external Postgres.
 # Confined to the demo's runtime; the starter does not pull it in.
-h2 = "2.4.240"
+h2 = "2.5.250"
 
 # Micronaut adapter (Phase 10). Micronaut 4.x line per brief §6.12. 4.10.23 is the current
 # latest 4.x. We avoid Micronaut Security entirely — its `SecurityRule<R extends HttpRequest<?>>`
