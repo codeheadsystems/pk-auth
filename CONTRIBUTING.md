@@ -2,9 +2,9 @@
 
 ## Working agreements
 
-These mirror `pk-auth-build-brief.md` §12 — read that section for the full rationale.
+The architecture reference is [`DESIGN.md`](./DESIGN.md), with per-decision rationale in [`docs/adr/`](./docs/adr/). (The original bootstrap brief is archived at [`docs/history/pk-auth-build-brief.md`](./docs/history/pk-auth-build-brief.md) for context only.)
 
-1. **Phase discipline.** Complete the acceptance criteria for phase N (see brief §10) before starting phase N+1. Run `./gradlew check` between phases.
+1. **Keep `main` releasable.** Work lands as small pull requests against `main`. Run `./gradlew check` before pushing (CI runs the same gate), and record user-visible changes under `[Unreleased]` in `CHANGELOG.md`.
 2. **Conventional commits.** Examples: `feat(core): ...`, `test(jdbi): ...`, `docs(adr): ...`, `build: ...`, `ci: ...`. Keep commits small and atomic.
 3. **ADRs.** Non-trivial cross-module decisions get an ADR under `docs/adr/`, Nygard format. Number sequentially.
 4. **Dependencies.** New libraries go through `gradle/libs.versions.toml` and are justified in the commit message or an ADR.

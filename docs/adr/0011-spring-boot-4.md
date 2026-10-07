@@ -63,5 +63,5 @@ that names the breaking change.
 
 ## Open follow-ups
 
-- Document the Jackson alignment win in `pk-auth-build-brief.md` §6.11 (the
+- Document the Jackson alignment win in `docs/history/pk-auth-build-brief.md` §6.11 (the
   brief still references Spring Boot 3 in places).

@@ -49,7 +49,7 @@ gradle.beforeProject {
     }
 }
 
-// Subprojects are added phase by phase (see pk-auth-build-brief.md §10).
+// Library modules, then the runnable example apps.
 include("pk-auth-core")
 include("pk-auth-jwt")
 include("pk-auth-backup-codes")

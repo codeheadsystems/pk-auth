@@ -6,12 +6,6 @@ plugins {
 
 description = "pk-auth magic-link: JWT-based single-use email tokens for verification + login."
 
-tasks.named<JavaCompile>("compileJava") {
-    options.compilerArgs.addAll(
-        listOf("-Xlint:-requires-automatic", "-Xlint:-requires-transitive-automatic"),
-    )
-}
-
 dependencies {
     api(project(":pk-auth-core"))
     api(project(":pk-auth-jwt"))

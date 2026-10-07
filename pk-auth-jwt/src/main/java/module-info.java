@@ -7,5 +7,6 @@ module com.codeheadsystems.pkauth.jwt {
   requires org.jspecify;
   requires org.slf4j;
 
+  exports com.codeheadsystems.pkauth.composition;
   exports com.codeheadsystems.pkauth.jwt;
 }

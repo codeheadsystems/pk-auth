@@ -12,8 +12,9 @@ For specific topics:
   sequential).
 - **Running it in production** — [`docs/operator-guide.md`](./docs/operator-guide.md).
 - **Security posture** — [`docs/threat-model.md`](./docs/threat-model.md).
-- **The original brief and phase plan** —
-  [`pk-auth-build-brief.md`](./pk-auth-build-brief.md).
+- **The original bootstrap brief and phase plan (historical)**:
+  [`docs/history/pk-auth-build-brief.md`](./docs/history/pk-auth-build-brief.md).
+  Superseded by this document and the ADRs; kept for context only.
 
 ## 1. Mission
 
@@ -174,8 +175,10 @@ framework-specific on the wire.
   (RFC 4648 §5). The core's `PkAuthObjectMappers.pkAuthModule()`
   registers serializers/deserializers for `byte[]`, `UserHandle`, and
   `ChallengeId` so adapters using Jackson 3 get the right shape
-  automatically. The Dropwizard adapter still rides Jackson 2 and uses
-  a small bridge module (`PkAuthJacksonBridge`) for the same effect.
+  automatically. The Dropwizard and Micronaut adapters still ride
+  Jackson 2 and register equivalent Jackson 2 modules for the same
+  effect (`PkAuthJacksonBridge` and the `PkAuthJacksonModule` bean,
+  respectively).
 - **Errors**: `4xx` with a JSON body `{ "outcome": "<kind>", "error":
   "<kind>", "detail": "..." }`. `outcome` and `error` both carry the
   same machine-readable tag so clients keyed off either field keep
@@ -183,8 +186,10 @@ framework-specific on the wire.
   one. Common kinds: `validation_failed`, `origin_mismatch`,
   `counter_regression`, `challenge_expired`, `conflict`, `forbidden`,
   `not_found`, `rate_limited`. `rate_limited` is paired with a
-  `Retry-After` response header. The adapter `PkAuthAdminResultMapper`
-  classes are the source of truth.
+  `Retry-After` response header. `AdminResponseMapper` in
+  `pk-auth-admin-api` is the source of truth for the admin status codes
+  and error envelope; each adapter wraps it in a thin native-HTTP
+  mapper.
 - **Idempotence**: `finish` endpoints are *not* idempotent — challenges
   are single-use (`ChallengeStore.takeOnce`).
 
@@ -220,8 +225,8 @@ surface. They are intentionally narrow.
 | `UserLookup` | `pk-auth-core` | **Yes** | Maps `(username/email) ↔ UserHandle`. Atomic find-or-create on first registration. |
 | `CredentialRepository` | `pk-auth-core` | **Yes** | Insert / list-by-user / update / delete / find-by-id. |
 | `ChallengeStore` | `pk-auth-core` | **Yes** | `create(...)`, `takeOnce(challengeId)` — atomic single-use. |
-| `BackupCodeRepository` | `pk-auth-backup-codes` | Only if backup codes are enabled | Hashed-storage CRUD + atomic claim. |
-| `OtpRepository` | `pk-auth-otp` | Only if phone OTP is enabled | Same shape as backup codes. |
+| `BackupCodeRepository` | `pk-auth-core` | Only if backup codes are enabled | Hashed-storage CRUD + atomic claim. |
+| `OtpRepository` | `pk-auth-core` | Only if phone OTP is enabled | Same shape as backup codes. |
 | `EmailSender` | `pk-auth-magic-link` | Only if magic-link is enabled | `send(to, subject, body)`. |
 | `SmsSender` | `pk-auth-otp` | Only if phone OTP is enabled | `send(phoneE164, body)`. |
 | `AccessTokenStore` | `pk-auth-jwt` | Optional (paved road for revocability) | Stateful access tokens. Issuer calls `record` on issue, validator calls `exists` on every validate. Default `AccessTokenStore.noop()` preserves stateless behaviour. JDBI + DynamoDB implementations ship in-tree. See [ADR 0015](./docs/adr/0015-stateful-access-tokens.md). |
@@ -234,7 +239,7 @@ surface. They are intentionally narrow.
 | `ClockProvider` | `pk-auth-core` | Optional | Default is `Clock.systemUTC()`. Override in tests. |
 
 For a fresh project, the testkit's in-memory implementations let
-you boot end-to-end without writing any SPI. For Phase-12-style
+you boot end-to-end without writing any SPI. For
 production, the `pk-auth-persistence-jdbi` or
 `pk-auth-persistence-dynamodb` modules already implement the
 storage SPIs against a real backend.
@@ -267,18 +272,33 @@ thing.
 
 ```java
 public class MyApp extends Application<MyConfig> {
-  public void run(MyConfig cfg, Environment env) {
-    PkAuthBundle<MyConfig> bundle = new PkAuthBundle<>(
-        myPersistenceBindings(), myAdminService());
-    bundle.run(cfg, env);  // mounts /auth/**
+  @Override
+  public void initialize(Bootstrap<MyConfig> bootstrap) {
+    PersistenceBindings persistence = PersistenceBindings.builder()
+        .credentialRepository(creds)
+        .userLookup(users)
+        .challengeStore(challenges)
+        .backupCodeRepository(backupCodes)
+        .otpRepository(otps)
+        .build();
+    AltFlowOptions altFlows = AltFlowOptions.builder()
+        .emailSender(email)
+        .smsSender(sms)
+        .adminAuthorizer(AdminAuthorizer.subjectScoped())
+        .build();
+    bootstrap.addBundle(new PkAuthBundle<>(persistence, altFlows));  // mounts /auth/**
   }
 }
 ```
 
-Wiring is Dagger 2 (compile-time DI — see
+Wiring is Dagger 2 (compile-time DI; see
 [ADR 0004](./docs/adr/0004-dagger-for-dropwizard.md)). The bundle
 expects your config to implement `HasPkAuthConfig`, and a
-`PersistenceBindings` record describing which SPIs to plug in.
+`PersistenceBindings` (a class with a builder) describing which SPIs
+to plug in. The `AltFlowOptions` constructor shown above is the
+recommended one: it builds the backup-code, magic-link, OTP, and admin
+services from config and mounts `/auth/admin/**`. A one-argument
+`PkAuthBundle(persistence)` mounts only the ceremony endpoints.
 
 ### Micronaut 4
 
@@ -335,10 +355,14 @@ SPIs.
 
 - One physical table, schema per item type via `DynamoDbTable<T>` on
   the AWS SDK v2 Enhanced client.
-- TTL attribute `expiresAt` is honored on challenges, OTPs, and
-  magic-links; 1.1.0 adds `access_tokens` and `refresh_tokens` items
-  on the same table with the DynamoDB-native `ttl` attribute set from
-  the row's `expiresAt` epoch second — provision TTL on the table.
+- DynamoDB-native TTL runs on the `ttl` attribute (epoch seconds) of
+  the core table; `DynamoDbSchemaBootstrapper` enables it there. It is
+  set on challenge, OTP, and access-token items from the row's expiry,
+  and on refresh-token items from expiry plus the cleanup retention.
+  Magic links are not persisted (see above), so they have no items.
+  Production tables provisioned via IaC must enable TTL on `ttl`.
+  Host user records live in a separate `users` table
+  (`PkAuthDynamoTables.users()`).
 - The refresh-token layout writes three items per token (primary
   jti / user-index / family-index) so listings, family-scorch, and
   user-fan-out delete can all be served by the same physical table.
@@ -391,18 +415,25 @@ end-to-end by the demos' Playwright suites.
 The default mint is **HS256** with a configurable secret
 (`pkauth.jwt.secret`, ≥ 32 bytes). One-hour TTL by default. Claims:
 
-- `sub` — base64url-encoded `UserHandle`
-- `iss` / `aud` — configurable per host; `aud` falls back to
+- `sub`: base64url-encoded `UserHandle`
+- `iss` / `aud`: configurable per host; `aud` falls back to
   `JwtConfig.defaultAudience()` when the caller's `JwtClaims.audience`
   is null
-- `iat` / `exp` — epoch seconds
-- `amr` — authentication-method tag (passkey / backup-code /
-  magic-link / otp / **refresh**)
-- `username`, `display_name` — passthrough from `UserLookup`
+- `iat` / `nbf` / `exp`: epoch seconds (`nbf` is `iat` minus
+  `JwtConfig.notBeforeSkew()`)
+- `jti`: random UUID, always set
+- `pkauth.method`: the `AuthMethod` wire value (`passkey`,
+  `backup-code`, `magic-link`, or `refresh`; there is no OTP value)
+- `pkauth.amr`: array of RFC 8176 authentication-method references
+- `pkauth.cred`: base64url credential id (passkey tokens only)
+- any host-supplied `JwtClaims.additionalClaims` (which may not
+  override the names above)
 
 JWT verification (in adapter filters / Micronaut filter / Dropwizard
-authenticator) returns a `JwtVerificationResult` sealed sum —
-`Success(JwtClaims)` or `Failure(kind, detail)`.
+authenticator) returns a `JwtVerificationResult` sealed sum:
+`Success(JwtClaims)` or one of the failure variants
+`InvalidSignature`, `Expired`, `NotYetValid`, `WrongIssuer`,
+`WrongAudience`, `Malformed`, `MissingClaim`, `Revoked`.
 
 **Per-audience TTLs (1.1.0).** `JwtConfig.ttlPolicy: TokenTtlPolicy`
 replaces the single `tokenTtl: Duration`. The default policy returns
@@ -465,17 +496,23 @@ Highlights:
 Single Gradle multi-project build with conventions in
 `build-logic/`:
 
-- `pkauth.java-conventions` — JDK 21, Error Prone, JSpecify, no-`*`-import
-  Spotless / google-java-format, `-Werror`.
-- `pkauth.library-conventions` — JPMS `module-info.java` enforcement,
-  Javadoc, jar manifest hygiene.
-- `pkauth.test-conventions` — JUnit Jupiter, AssertJ, Mockito,
-  Testcontainers wiring.
-- `pkauth.publish-conventions` — Maven Central publishing. v1.0.0
+- `pkauth.java-conventions`: JDK 21 toolchain, Error Prone, JSpecify,
+  `-Xlint:all`, Spotless / google-java-format with the SPDX header.
+  Also applied by the example apps.
+- `pkauth.library-conventions`: `java-library`, `-Werror` (plus the
+  automatic-module lint relaxations), Javadoc and sources jars, jar
+  manifest attributes. `module-info.java` is per-module, not enforced
+  by the convention.
+- `pkauth.test-conventions`: JUnit Jupiter, AssertJ, Mockito, JaCoCo
+  report and coverage gate. Testcontainers is a per-module test
+  dependency of the persistence modules, not convention wiring.
+- `pkauth.publish-conventions`: Maven Central publishing. v1.0.0
   shipped through this path; see [`RELEASE.md`](./RELEASE.md) for the
   full release workflow.
 
-JaCoCo enforces ≥ 80% line coverage on core, ≥ 70% on adapters.
+JaCoCo enforces a LINE ≥ 70% / BRANCH ≥ 55% floor on every library
+module; individual modules (core, jwt, admin-api, backup-codes, otp,
+refresh-tokens) raise it in their own `build.gradle.kts`.
 
 The version catalog is `gradle/libs.versions.toml`; Dependabot
 proposes bumps and is configured (`.github/dependabot.yml`) to ignore
@@ -496,7 +533,7 @@ Worth knowing if you're contributing:
   JSpecify is loaded; Error Prone catches violations.
 - **Public API is sealed** via `module-info.java` exports. In
   `pk-auth-core` the exported packages are `api`, `ceremony`, `config`,
-  `credential`, `error`, `json`, `lifecycle`, `metrics`, and `spi`;
+  `credential`, `error`, `json`, `lifecycle`, `metrics`, `ratelimit`, and `spi`;
   everything else is module-internal.
 - **No reflection in hot paths.** The only reflection is Jackson's,
   confined to (de)serialization boundaries.
@@ -509,6 +546,6 @@ Worth knowing if you're contributing:
   of the relevant module — they're the contract surface.
 - A specific operational concern? `docs/operator-guide.md`.
 - A specific *why*? `docs/adr/` — every non-obvious decision has one.
-- Anything else? `pk-auth-build-brief.md` is the original design
-  document and is still authoritative for parts of the system that
-  haven't yet drifted.
+- The original bootstrap brief is archived at
+  `docs/history/pk-auth-build-brief.md` for historical context only;
+  this document and the ADRs supersede it.

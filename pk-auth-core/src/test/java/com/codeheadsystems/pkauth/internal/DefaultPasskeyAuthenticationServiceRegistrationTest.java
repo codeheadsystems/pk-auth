@@ -3,6 +3,8 @@ package com.codeheadsystems.pkauth.internal;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -31,6 +33,7 @@ import com.codeheadsystems.pkauth.spi.ChallengeRecord;
 import com.codeheadsystems.pkauth.spi.ChallengeStore;
 import com.codeheadsystems.pkauth.spi.ClockProvider;
 import com.codeheadsystems.pkauth.spi.CredentialRepository;
+import com.codeheadsystems.pkauth.spi.DuplicateCredentialException;
 import com.codeheadsystems.pkauth.spi.OriginValidator;
 import com.codeheadsystems.pkauth.spi.UserLookup;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -142,7 +145,8 @@ class DefaultPasskeyAuthenticationServiceRegistrationTest {
             rp,
             ceremonyConfig,
             new ChallengeGenerator(random),
-            metrics);
+            metrics,
+            AllowAllCeremonyRateLimiter.INSTANCE);
   }
 
   @Test
@@ -292,6 +296,35 @@ class DefaultPasskeyAuthenticationServiceRegistrationTest {
             RegistrationResult.DuplicateCredential.class,
             d -> assertThat(d.credentialId()).isEqualTo(CRED_ID_VALUE));
     verify(credentialRepository, never()).save(any());
+  }
+
+  @Test
+  void duplicateCredentialRaceOnSaveIsDuplicateCredentialNotPersistenceFailure() throws Exception {
+    // The pre-check sees no credential (default stub), but a concurrent finish inserts the same id
+    // before our save() lands; the repository contract reports that as
+    // DuplicateCredentialException.
+    doThrow(new DuplicateCredentialException("duplicate credential id"))
+        .when(credentialRepository)
+        .save(any());
+    RegistrationData regData = mockRegistrationData(AAGUID.ZERO, null, false);
+    when(webAuthnManager.verify(
+            any(com.webauthn4j.data.RegistrationRequest.class), any(RegistrationParameters.class)))
+        .thenReturn(regData);
+
+    RegistrationResult result = service.finishRegistration(finishReg(cd(), "k"));
+
+    assertThat(result)
+        .isInstanceOfSatisfying(
+            RegistrationResult.DuplicateCredential.class,
+            d -> assertThat(d.credentialId()).isEqualTo(CRED_ID_VALUE));
+    verify(metrics)
+        .incrementCounter("pkauth.registration.outcome", "result", "DuplicateCredential");
+    verify(metrics)
+        .recordTimer(
+            eq("pkauth.registration.duration"),
+            any(Duration.class),
+            eq("result"),
+            eq("DuplicateCredential"));
   }
 
   @Test

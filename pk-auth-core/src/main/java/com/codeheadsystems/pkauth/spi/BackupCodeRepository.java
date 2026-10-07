@@ -8,7 +8,7 @@ import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Persistent storage for backup-code hashes (brief §6.3). One row per issued code.
+ * Persistent storage for backup-code hashes. One row per issued code.
  *
  * @since 0.9.0
  */
@@ -57,7 +57,11 @@ public interface BackupCodeRepository {
    */
   boolean consume(UserHandle userHandle, String codeId, Instant consumedAt);
 
-  /** Deletes every backup code for a user — used by {@code regenerateBackupCodes}. */
+  /**
+   * Deletes every backup code for a user. Used by the user-deletion fan-out ({@link
+   * com.codeheadsystems.pkauth.lifecycle.BackupCodeRepositoryDeletionListener}); regeneration goes
+   * through {@link #replaceAll} instead.
+   */
   void deleteByUserHandle(UserHandle userHandle);
 
   /**

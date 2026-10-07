@@ -82,8 +82,8 @@ public final class PersistenceBindings {
 
   /**
    * Returns the configured {@link RefreshTokenRepository}, or {@code null} when the host hasn't
-   * wired refresh tokens. The bundle's alt-flow auto-wiring path mounts {@code /auth/refresh} only
-   * when this is non-null; the slim-component path does not mount refresh endpoints in 1.1.0.
+   * wired refresh tokens. The bundle mounts {@code /auth/refresh} only when this is non-null, with
+   * or without alt-flow auto-wiring.
    *
    * @since 1.1.0
    */
@@ -135,14 +135,14 @@ public final class PersistenceBindings {
      *
      * @since 1.1.0
      */
-    public Builder accessTokenStore(AccessTokenStore v) {
+    public Builder accessTokenStore(@Nullable AccessTokenStore v) {
       this.accessTokenStore = v;
       return this;
     }
 
     /**
-     * Supplies a {@link RefreshTokenRepository} so the bundle's alt-flow path can mount {@code
-     * /auth/refresh}. Omit to skip refresh-token endpoint registration.
+     * Supplies a {@link RefreshTokenRepository} so the bundle mounts {@code /auth/refresh}. Omit to
+     * skip refresh-token endpoint registration.
      *
      * @since 1.1.0
      */

@@ -6,8 +6,8 @@ import java.util.Objects;
 
 /**
  * Parsed {@code authenticatorData} from a WebAuthn ceremony, exposing the byte array plus the flag
- * bits the relying party most often cares about. Phase 2 populates this from WebAuthn4J's parsed
- * structure.
+ * bits the relying party most often cares about. The ceremony service populates this from
+ * WebAuthn4J's parsed structure.
  *
  * @param raw the original authenticator-data bytes (defensively copied)
  * @param userPresent {@code UP} flag

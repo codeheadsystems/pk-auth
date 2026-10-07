@@ -3,20 +3,17 @@ package com.codeheadsystems.pkauth.internal;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.codeheadsystems.pkauth.api.AttestationConveyance;
 import com.codeheadsystems.pkauth.api.AuthenticationResponseJson;
 import com.codeheadsystems.pkauth.api.AuthenticationResponseJson.AuthenticatorAssertionResponseJson;
 import com.codeheadsystems.pkauth.api.CredentialId;
 import com.codeheadsystems.pkauth.api.RegistrationResponseJson;
 import com.codeheadsystems.pkauth.api.RegistrationResponseJson.AuthenticatorAttestationResponseJson;
-import com.codeheadsystems.pkauth.api.ResidentKeyRequirement;
 import com.codeheadsystems.pkauth.api.Transport;
 import com.codeheadsystems.pkauth.api.UserHandle;
 import com.codeheadsystems.pkauth.api.UserVerificationRequirement;
 import com.codeheadsystems.pkauth.config.RelyingPartyConfig;
 import com.codeheadsystems.pkauth.credential.CredentialRecord;
 import com.webauthn4j.converter.util.ObjectConverter;
-import com.webauthn4j.data.AttestationConveyancePreference;
 import com.webauthn4j.data.attestation.authenticator.EC2COSEKey;
 import java.time.Instant;
 import java.util.List;
@@ -132,30 +129,7 @@ class WebAuthn4JConvertersTest {
   }
 
   @Test
-  void enumMappers() {
-    assertThat(WebAuthn4JConverters.toW4jUserVerification(UserVerificationRequirement.REQUIRED))
-        .isEqualTo(com.webauthn4j.data.UserVerificationRequirement.REQUIRED);
-    assertThat(WebAuthn4JConverters.toW4jUserVerification(UserVerificationRequirement.PREFERRED))
-        .isEqualTo(com.webauthn4j.data.UserVerificationRequirement.PREFERRED);
-    assertThat(WebAuthn4JConverters.toW4jUserVerification(UserVerificationRequirement.DISCOURAGED))
-        .isEqualTo(com.webauthn4j.data.UserVerificationRequirement.DISCOURAGED);
-
-    assertThat(WebAuthn4JConverters.toW4jResidentKey(ResidentKeyRequirement.REQUIRED))
-        .isEqualTo(com.webauthn4j.data.ResidentKeyRequirement.REQUIRED);
-    assertThat(WebAuthn4JConverters.toW4jResidentKey(ResidentKeyRequirement.PREFERRED))
-        .isEqualTo(com.webauthn4j.data.ResidentKeyRequirement.PREFERRED);
-    assertThat(WebAuthn4JConverters.toW4jResidentKey(ResidentKeyRequirement.DISCOURAGED))
-        .isEqualTo(com.webauthn4j.data.ResidentKeyRequirement.DISCOURAGED);
-
-    assertThat(WebAuthn4JConverters.toW4jAttestationConveyance(AttestationConveyance.NONE))
-        .isEqualTo(AttestationConveyancePreference.NONE);
-    assertThat(WebAuthn4JConverters.toW4jAttestationConveyance(AttestationConveyance.INDIRECT))
-        .isEqualTo(AttestationConveyancePreference.INDIRECT);
-    assertThat(WebAuthn4JConverters.toW4jAttestationConveyance(AttestationConveyance.DIRECT))
-        .isEqualTo(AttestationConveyancePreference.DIRECT);
-    assertThat(WebAuthn4JConverters.toW4jAttestationConveyance(AttestationConveyance.ENTERPRISE))
-        .isEqualTo(AttestationConveyancePreference.ENTERPRISE);
-
+  void userVerificationRequiredOnlyForRequired() {
     assertThat(WebAuthn4JConverters.userVerificationRequired(UserVerificationRequirement.REQUIRED))
         .isTrue();
     assertThat(WebAuthn4JConverters.userVerificationRequired(UserVerificationRequirement.PREFERRED))

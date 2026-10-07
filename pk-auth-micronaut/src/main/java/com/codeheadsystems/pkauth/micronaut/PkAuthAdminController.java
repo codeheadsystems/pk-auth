@@ -63,14 +63,14 @@ public class PkAuthAdminController {
   public HttpResponse<?> account(HttpRequest<?> request) {
     UserHandle actor = PkAuthJwtAuthenticationFilter.attachedUserHandle(request);
     if (actor == null) return HttpResponse.status(HttpStatus.UNAUTHORIZED);
-    return map(adminService.getAccount(actor, actor));
+    return toMicronaut(adminService.getAccount(actor, actor));
   }
 
   @Get("/credentials")
   public HttpResponse<?> listCredentials(HttpRequest<?> request) {
     UserHandle actor = PkAuthJwtAuthenticationFilter.attachedUserHandle(request);
     if (actor == null) return HttpResponse.status(HttpStatus.UNAUTHORIZED);
-    return map(adminService.listCredentials(actor, actor));
+    return toMicronaut(adminService.listCredentials(actor, actor));
   }
 
   /** Renames the credential identified by its base64url-encoded id. */
@@ -80,7 +80,8 @@ public class PkAuthAdminController {
     UserHandle actor = PkAuthJwtAuthenticationFilter.attachedUserHandle(request);
     if (actor == null) return HttpResponse.status(HttpStatus.UNAUTHORIZED);
     CredentialId id = CredentialId.fromB64Url(credentialId);
-    return map(adminService.renameCredential(actor, actor, id, body == null ? "" : body.label()));
+    return toMicronaut(
+        adminService.renameCredential(actor, actor, id, body == null ? "" : body.label()));
   }
 
   /** Deletes the credential identified by its base64url-encoded id. */
@@ -90,14 +91,14 @@ public class PkAuthAdminController {
     UserHandle actor = PkAuthJwtAuthenticationFilter.attachedUserHandle(request);
     if (actor == null) return HttpResponse.status(HttpStatus.UNAUTHORIZED);
     CredentialId id = CredentialId.fromB64Url(credentialId);
-    return map(adminService.deleteCredential(actor, actor, id));
+    return toMicronaut(adminService.deleteCredential(actor, actor, id));
   }
 
   @Post("/backup-codes/regenerate")
   public HttpResponse<?> regenerateBackupCodes(HttpRequest<?> request) {
     UserHandle actor = PkAuthJwtAuthenticationFilter.attachedUserHandle(request);
     if (actor == null) return HttpResponse.status(HttpStatus.UNAUTHORIZED);
-    return map(adminService.regenerateBackupCodes(actor, actor));
+    return toMicronaut(adminService.regenerateBackupCodes(actor, actor));
   }
 
   @Get("/backup-codes/count")
@@ -114,7 +115,8 @@ public class PkAuthAdminController {
       HttpRequest<?> request, @Body StartEmailVerification body) {
     UserHandle actor = PkAuthJwtAuthenticationFilter.attachedUserHandle(request);
     if (actor == null) return HttpResponse.status(HttpStatus.UNAUTHORIZED);
-    return map(adminService.startEmailVerification(actor, actor, body == null ? "" : body.email()));
+    return toMicronaut(
+        adminService.startEmailVerification(actor, actor, body == null ? "" : body.email()));
   }
 
   /** Unauthenticated. */
@@ -131,7 +133,8 @@ public class PkAuthAdminController {
       HttpRequest<?> request, @Body StartPhoneVerification body) {
     UserHandle actor = PkAuthJwtAuthenticationFilter.attachedUserHandle(request);
     if (actor == null) return HttpResponse.status(HttpStatus.UNAUTHORIZED);
-    return map(adminService.startPhoneVerification(actor, actor, body == null ? "" : body.phone()));
+    return toMicronaut(
+        adminService.startPhoneVerification(actor, actor, body == null ? "" : body.phone()));
   }
 
   @Post("/phone/complete-verification")
@@ -139,16 +142,16 @@ public class PkAuthAdminController {
       HttpRequest<?> request, @Body FinishPhoneVerification body) {
     UserHandle actor = PkAuthJwtAuthenticationFilter.attachedUserHandle(request);
     if (actor == null) return HttpResponse.status(HttpStatus.UNAUTHORIZED);
-    return map(
+    return toMicronaut(
         adminService.finishPhoneVerification(
             actor, actor, body == null ? "" : body.phone(), body == null ? "" : body.code()));
   }
 
   /**
-   * Maps an {@link AdminResult} to a Micronaut {@link HttpResponse} via the shared {@link
-   * AdminResponseMapper}. Kept on the controller for backwards-compat with existing tests.
+   * Converts an {@link AdminResult} to a Micronaut {@link HttpResponse} via the shared {@link
+   * AdminResponseMapper}. Package-private so tests can assert the per-variant status mapping.
    */
-  static HttpResponse<?> map(AdminResult<?> result) {
+  static HttpResponse<?> toMicronaut(AdminResult<?> result) {
     return toMicronaut(AdminResponseMapper.toResponse(result));
   }
 

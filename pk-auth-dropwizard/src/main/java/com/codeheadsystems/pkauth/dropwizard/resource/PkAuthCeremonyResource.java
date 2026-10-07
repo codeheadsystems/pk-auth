@@ -19,6 +19,7 @@ import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -81,7 +82,7 @@ public class PkAuthCeremonyResource {
     return builder.build();
   }
 
-  private static String clientIp(HttpServletRequest httpRequest) {
+  private static @Nullable String clientIp(@Nullable HttpServletRequest httpRequest) {
     return httpRequest == null ? null : httpRequest.getRemoteAddr();
   }
 

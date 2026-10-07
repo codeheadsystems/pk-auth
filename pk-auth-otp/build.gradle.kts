@@ -6,12 +6,6 @@ plugins {
 
 description = "pk-auth OTP: 6-digit SMS codes for phone verification flows."
 
-tasks.named<JavaCompile>("compileJava") {
-    options.compilerArgs.addAll(
-        listOf("-Xlint:-requires-automatic", "-Xlint:-requires-transitive-automatic"),
-    )
-}
-
 dependencies {
     api(project(":pk-auth-core"))
     implementation(libs.slf4j.api)

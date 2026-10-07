@@ -35,6 +35,7 @@ class PublicApiSinceTagTest {
           "json",
           "lifecycle",
           "metrics",
+          "ratelimit",
           "spi");
 
   private static final Path SOURCE_ROOT = Path.of("src/main/java/com/codeheadsystems/pkauth");

@@ -6,12 +6,6 @@ plugins {
 
 description = "pk-auth persistence: JDBI 3 + Flyway + Postgres implementations of the core SPIs."
 
-tasks.named<JavaCompile>("compileJava") {
-    options.compilerArgs.addAll(
-        listOf("-Xlint:-requires-automatic", "-Xlint:-requires-transitive-automatic"),
-    )
-}
-
 dependencies {
     api(project(":pk-auth-core"))
     // AccessTokenStore lives in pk-auth-jwt; JdbiAccessTokenStore implements it.

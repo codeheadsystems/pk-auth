@@ -197,9 +197,9 @@ public record PkAuthConfig(
   }
 
   /**
-   * Magic-link service tunables. Mirrors Spring's {@code pkauth.magicLink} (which derives baseUrl
-   * from the first RP origin) and Micronaut's hard-coded {@code http://localhost:8080/auth/magic} —
-   * the Dropwizard adapter requires hosts to spell baseUrl out so production deploys cannot fall
+   * Magic-link service tunables. The adapters differ on the base URL: Spring derives it from the
+   * first RP origin and Micronaut currently uses a fixed {@code http://localhost:8080/auth/magic}.
+   * The Dropwizard adapter requires hosts to spell baseUrl out so production deploys cannot fall
    * through to a development default.
    *
    * @param baseUrl the URL prefix the magic-link will be assembled against — required, no default.

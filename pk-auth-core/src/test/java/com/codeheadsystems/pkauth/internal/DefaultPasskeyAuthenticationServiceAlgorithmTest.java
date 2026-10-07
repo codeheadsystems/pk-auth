@@ -188,7 +188,8 @@ class DefaultPasskeyAuthenticationServiceAlgorithmTest {
               rp,
               ceremonyConfig,
               new ChallengeGenerator(random),
-              metrics);
+              metrics,
+              AllowAllCeremonyRateLimiter.INSTANCE);
     }
   }
 

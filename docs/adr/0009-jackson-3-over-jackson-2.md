@@ -42,4 +42,4 @@ Jackson 3's `tools.jackson.databind` bundles `java.time` and `Jdk8` datatype sup
 ## Open follow-ups
 
 - Phase 9 must produce a follow-up ADR documenting the concrete strategy chosen for Dropwizard's Jackson-2 internals. See [ADR 0010](0010-dropwizard-track-latest.md) for the Dropwizard versioning decision and the `PkAuthJacksonBridge` approach at the Jackson 2/3 boundary.
-- The build brief `pk-auth-build-brief.md` §3 line "Jackson 2.x" is now historical — supersede in the next brief revision.
+- The build brief `docs/history/pk-auth-build-brief.md` §3 line "Jackson 2.x" is now historical — supersede in the next brief revision.

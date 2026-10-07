@@ -8,7 +8,7 @@ Accepted.
 
 ## Context
 
-pk-auth is a multi-module library project (per `pk-auth-build-brief.md`) targeting Spring Boot, Dropwizard, and Micronaut. Decisions made in early phases — choice of WebAuthn library, persistence stack, DI strategy per framework, stateless JWT default, single-table DynamoDB design, and others — will be hard to reverse without breaking downstream consumers. We need a lightweight, durable record of these decisions, the context in which they were made, and the consequences they imply.
+pk-auth is a multi-module library project (per `docs/history/pk-auth-build-brief.md`) targeting Spring Boot, Dropwizard, and Micronaut. Decisions made in early phases — choice of WebAuthn library, persistence stack, DI strategy per framework, stateless JWT default, single-table DynamoDB design, and others — will be hard to reverse without breaking downstream consumers. We need a lightweight, durable record of these decisions, the context in which they were made, and the consequences they imply.
 
 ## Decision
 

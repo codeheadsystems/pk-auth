@@ -1,3 +1,9 @@
+> **Historical document.** This is the original bootstrap prompt used to scaffold pk-auth
+> before 1.0. It is no longer maintained and is **not** authoritative: the current architecture is
+> described in [`DESIGN.md`](../../DESIGN.md), and per-decision rationale lives in
+> [`docs/adr/`](../adr/). Where this brief and those documents disagree, they win. Section and
+> phase numbers below are kept only so older ADRs and comments that cite them still resolve.
+
 # pk-auth — Build Brief for Claude Code
 
 > Paste this file at the root of an empty `pk-auth` repository and ask Claude Code to execute it phase by phase. Treat this document as the source of truth for architectural decisions; if you encounter a genuinely ambiguous choice not covered here, **stop and ask the human** rather than guess.

@@ -7,12 +7,6 @@ plugins {
 description =
     "pk-auth refresh tokens: rotating opaque tokens with family-based replay defense."
 
-tasks.named<JavaCompile>("compileJava") {
-    options.compilerArgs.addAll(
-        listOf("-Xlint:-requires-automatic", "-Xlint:-requires-transitive-automatic"),
-    )
-}
-
 dependencies {
     api(project(":pk-auth-core"))
     // RotateResult.Success carries data the consumer needs to mint a fresh access token via

@@ -18,7 +18,7 @@ class RefreshTtlPolicyTest {
     assertThat(policy.refreshTtl("web")).isEqualTo(Duration.ofDays(7));
     assertThat(policy.refreshTtl("cli")).isEqualTo(Duration.ofDays(7));
     assertThat(policy.knownAudiences()).isEmpty();
-    assertThat(policy.toString()).contains("single");
+    assertThat(policy.toString()).isEqualTo("RefreshTtlPolicy.single(PT168H)");
   }
 
   @Test
@@ -40,7 +40,7 @@ class RefreshTtlPolicyTest {
     assertThat(policy.refreshTtl("web")).isEqualTo(Duration.ofDays(14));
     assertThat(policy.refreshTtl("unmapped")).isEqualTo(Duration.ofDays(14)); // default fallback
     assertThat(policy.knownAudiences()).containsExactlyInAnyOrder("web", "cli");
-    assertThat(policy.toString()).contains("fixed");
+    assertThat(policy.toString()).startsWith("RefreshTtlPolicy.fixed(default=PT336H, overrides=");
   }
 
   @Test

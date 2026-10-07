@@ -3,7 +3,7 @@ package com.codeheadsystems.pkauth.jwt;
 
 /**
  * The authentication factor that produced the JWT. Wire spellings (lowercase, hyphen-separated) are
- * part of the public API and match the brief §6.2 contract.
+ * part of the public API.
  */
 public enum AuthMethod {
   PASSKEY("passkey"),
@@ -29,7 +29,11 @@ public enum AuthMethod {
     return wireValue;
   }
 
-  /** Parse a wire value back into an enum constant. Returns null on unknown input. */
+  /**
+   * Parse a wire value back into an enum constant.
+   *
+   * @throws IllegalArgumentException if {@code value} is not a known wire value
+   */
   public static AuthMethod fromWireValue(String value) {
     for (AuthMethod m : values()) {
       if (m.wireValue.equals(value)) {

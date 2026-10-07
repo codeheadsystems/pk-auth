@@ -70,8 +70,10 @@ public sealed interface RegistrationResult {
    * Returned by {@code finishRegistration} when the per-IP budget for the configured window has
    * been exhausted.
    *
-   * @param bucket which limiter bucket denied the call ({@code "ip"} or {@code "username"}) — kept
-   *     for adapter logging / diagnostics; clients receive the response without this field
+   * @param bucket which limiter bucket denied the call; the {@code finish*} path only consults the
+   *     per-IP bucket, so this is always {@code "ip"} today (the {@code "username"} bucket applies
+   *     only to {@code start*} calls). Kept for adapter logging / diagnostics; clients receive the
+   *     response without this field
    * @since 0.9.1
    */
   record RateLimited(String bucket) implements RegistrationResult {

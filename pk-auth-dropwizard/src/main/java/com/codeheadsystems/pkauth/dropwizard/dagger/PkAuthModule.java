@@ -202,6 +202,21 @@ public final class PkAuthModule {
   }
 
   /**
+   * The single {@link RefreshTokenService} shared by the refresh handler and the deletion listener.
+   * Empty when {@code PersistenceBindings.refreshTokenRepository()} is null.
+   */
+  @Provides
+  @Singleton
+  Optional<RefreshTokenService> provideRefreshTokenService(
+      RefreshTokenConfig refreshConfig, ClockProvider clockProvider) {
+    RefreshTokenRepository repo = persistence.refreshTokenRepository();
+    if (repo == null) {
+      return Optional.empty();
+    }
+    return Optional.of(new RefreshTokenService(repo, refreshConfig, clockProvider));
+  }
+
+  /**
    * Provides an {@code Optional<RefreshHandler>} threaded through Dagger so the component can
    * surface a nullable value without forcing every downstream graph to know about refresh tokens.
    * Empty when {@code PersistenceBindings.refreshTokenRepository()} is null — the bundle then skips
@@ -210,13 +225,8 @@ public final class PkAuthModule {
   @Provides
   @Singleton
   Optional<RefreshHandler> provideRefreshHandler(
-      RefreshTokenConfig refreshConfig, ClockProvider clockProvider, PkAuthJwtIssuer accessIssuer) {
-    RefreshTokenRepository repo = persistence.refreshTokenRepository();
-    if (repo == null) {
-      return Optional.empty();
-    }
-    RefreshTokenService service = new RefreshTokenService(repo, refreshConfig, clockProvider);
-    return Optional.of(new RefreshHandler(service, accessIssuer));
+      Optional<RefreshTokenService> refreshTokenService, PkAuthJwtIssuer accessIssuer) {
+    return refreshTokenService.map(service -> new RefreshHandler(service, accessIssuer));
   }
 
   /**
@@ -227,13 +237,11 @@ public final class PkAuthModule {
   @Provides
   @dagger.multibindings.ElementsIntoSet
   Set<UserDeletionListener> provideRefreshDeletionListener(
-      RefreshTokenConfig refreshConfig, ClockProvider clockProvider) {
-    RefreshTokenRepository repo = persistence.refreshTokenRepository();
-    if (repo == null) {
-      return Set.of();
-    }
-    RefreshTokenService service = new RefreshTokenService(repo, refreshConfig, clockProvider);
-    return Set.of(new RefreshTokenServiceDeletionListener(service));
+      Optional<RefreshTokenService> refreshTokenService) {
+    return refreshTokenService
+        .<Set<UserDeletionListener>>map(
+            service -> Set.of(new RefreshTokenServiceDeletionListener(service)))
+        .orElse(Set.of());
   }
 
   @Provides
