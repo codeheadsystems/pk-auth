@@ -6,7 +6,7 @@ import java.util.Objects;
 
 /**
  * RFC 4648 §5 base64url codec with padding stripped. WebAuthn JSON uses the no-padding form for
- * every binary field; pk-auth uses this codec uniformly for both serialization and any
+ * every binary field; pk-auth uses this codec uniformly for both serialisation and any
  * application-level base64url conversions.
  *
  * @since 0.9.0

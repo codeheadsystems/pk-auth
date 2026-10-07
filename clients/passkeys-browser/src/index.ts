@@ -47,7 +47,7 @@ export class PkAuthClient {
 
   /**
    * Convenience shortcut to {@link PkAuthRefreshClient#refresh}. Returns a typed
-   * {@link RefreshResult} sum — does not throw on 401.
+   * {@link RefreshResult} sum and does not throw on 401.
    *
    * @since 1.1.0
    */

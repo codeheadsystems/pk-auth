@@ -8,7 +8,7 @@ import java.util.Objects;
 /**
  * Bridges {@link AccessTokenStore#deleteAllForUser(UserHandle)} into the {@link
  * com.codeheadsystems.pkauth.lifecycle.UserDeletionService} fan-out. Lives in {@code pk-auth-jwt}
- * because the SPI does — {@code pk-auth-core} cannot depend on {@code pk-auth-jwt}.
+ * because the SPI does; {@code pk-auth-core} cannot depend on {@code pk-auth-jwt}.
  *
  * <p>Adapter modules register this listener whenever an {@link AccessTokenStore} bean is present
  * (which is always, since the default is {@link AccessTokenStore#noop()}); the noop store's {@code

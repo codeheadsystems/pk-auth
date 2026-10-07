@@ -14,8 +14,8 @@ import org.jspecify.annotations.Nullable;
  * env-var with the standard Micronaut mapping: {@code pkauth.jwt.secret} ↔ {@code
  * PKAUTH_JWT_SECRET}.
  *
- * <p>Relying-party id/name/origins and JWT issuer/audience/secret are required — there are no
- * adapter defaults. Misconfiguration surfaces as a startup failure rather than a silent dev-mode
+ * <p>Relying-party id/name/origins and JWT issuer/audience/secret are required; there are no
+ * adapter defaults. Misconfiguration surfaces as a startup failure instead of a silent dev-mode
  * boot.
  */
 @ConfigurationProperties("pkauth")
@@ -77,7 +77,7 @@ public final class PkAuthConfiguration {
 
   /**
    * Whether to enable in-memory testkit SPIs and dev-only logging senders, plus per-startup random
-   * OTP pepper auto-generation when {@code pkauth.otp.pepper} is unset. Defaults to {@code false} —
+   * OTP pepper auto-generation when {@code pkauth.otp.pepper} is unset. Defaults to {@code false};
    * production deployments must supply real SPI beans / senders / pepper.
    *
    * @return {@code true} when {@code pkauth.dev-mode=true}, {@code false} otherwise
@@ -88,7 +88,7 @@ public final class PkAuthConfiguration {
   }
 
   /**
-   * Bind the {@code pkauth.dev-mode} property.
+   * Binds the {@code pkauth.dev-mode} property.
    *
    * @param devMode whether dev-mode wiring is enabled
    * @since 0.9.1
@@ -138,7 +138,7 @@ public final class PkAuthConfiguration {
 
   /**
    * Relying-party identity nested config. {@code id}, {@code name}, and {@code origins} are all
-   * required — there are no defaults. {@link PkAuthFactory} validates them at startup.
+   * required; there are no defaults. {@link PkAuthFactory} validates them at startup.
    */
   @ConfigurationProperties("relying-party")
   public static final class RelyingParty {
@@ -173,7 +173,7 @@ public final class PkAuthConfiguration {
 
   /**
    * JWT issuance and validation config. {@code issuer}, {@code audience}, and {@code secret} are
-   * all required — there are no adapter defaults. {@link PkAuthFactory} validates them at startup.
+   * all required; there are no adapter defaults. {@link PkAuthFactory} validates them at startup.
    *
    * <p>{@code defaultTtl} sets the access-token TTL applied to audiences not listed in {@code
    * ttlsByAudience}; null defers to {@link
@@ -234,8 +234,8 @@ public final class PkAuthConfiguration {
    * OTP service tunables.
    *
    * <p>{@code pkauth.otp.pepper} is a Base64-encoded server-side HMAC pepper (≥ 16 decoded bytes;
-   * 32+ recommended). Required in production. When unset, the factory will only auto-generate a
-   * per-startup random pepper if {@code pkauth.dev-mode=true}. A per-startup pepper invalidates
+   * 32+ recommended). Required in production. When unset, the factory auto-generates a per-startup
+   * random pepper only if {@code pkauth.dev-mode=true}. A per-startup pepper invalidates
    * outstanding OTPs across restarts and across cluster instances.
    */
   @ConfigurationProperties("otp")

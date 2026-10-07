@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 /**
  * Maps the SPI exception contract (see {@link
  * com.codeheadsystems.pkauth.spi.PkAuthPersistenceException}) to a stable {@code 503 Service
- * Unavailable} response with a {@code {"error": "persistence_failure", "operation": "..."}} body —
+ * Unavailable} response with a {@code {"error": "persistence_failure", "operation": "..."}} body,
  * the same envelope used by the admin and ceremony error responses. This means a host-side DB
  * outage surfaces consistently to the {@code @pk-auth/passkeys-browser} SDK instead of leaking
  * framework-default 500 HTML.

@@ -12,9 +12,9 @@ import com.webauthn4j.converter.util.ObjectConverter;
 /**
  * Fully wired test harness: an {@link InMemoryCredentialRepository}, {@link InMemoryUserLookup},
  * {@link InMemoryChallengeStore}, a {@link FakeAuthenticator}, and a {@link
- * PasskeyAuthenticationService} built from them via the Phase 2 factory.
+ * PasskeyAuthenticationService} built from them.
  *
- * <p>Construct via {@link #defaults()} for the brief's standard config, or {@link #builder()} for
+ * <p>{@link #defaults()} constructs the brief's standard config, and {@link #builder()} gives
  * fine-grained control.
  */
 public final class InMemoryEverything {

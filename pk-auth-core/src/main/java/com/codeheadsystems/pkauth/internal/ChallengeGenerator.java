@@ -5,9 +5,9 @@ import java.security.SecureRandom;
 
 /**
  * Produces WebAuthn challenge bytes. The challenge's store handle is a separate, random {@code
- * ChallengeId} (see {@link com.codeheadsystems.pkauth.api.ChallengeId#random()}) — the id is
- * deliberately independent of the challenge bytes, so the store key never exposes the challenge and
- * the finish-time binding rests solely on the byte comparison in {@link ChallengeValidator}.
+ * ChallengeId} (see {@link com.codeheadsystems.pkauth.api.ChallengeId#random()}); the id is
+ * independent of the challenge bytes, so the store key never exposes the challenge and the
+ * finish-time binding rests solely on the byte comparison in {@link ChallengeValidator}.
  *
  * <p>32 random bytes matches the WebAuthn level 3 recommendation of "at least 16 bytes" with
  * comfortable headroom.
@@ -22,7 +22,9 @@ public final class ChallengeGenerator {
     this(new SecureRandom());
   }
 
-  /** Test seam: inject a {@link SecureRandom} for deterministic challenge generation in tests. */
+  /**
+   * Test seam that accepts a {@link SecureRandom} for deterministic challenge generation in tests.
+   */
   public ChallengeGenerator(SecureRandom random) {
     this.random = random;
   }

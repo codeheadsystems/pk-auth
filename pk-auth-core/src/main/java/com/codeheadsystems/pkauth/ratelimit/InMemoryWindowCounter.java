@@ -20,12 +20,12 @@ import java.util.concurrent.atomic.AtomicInteger;
  * <p>Each rate-limiter SPI in this project (e.g. {@code BackupCodeRateLimiter}, {@code
  * MagicLinkRateLimiter}, {@code CeremonyRateLimiter}) defines its own key signature. The
  * single-instance default implementation of each one composes a {@code String} key and delegates to
- * this counter — so the storage, TTL, and concurrency model is identical across features, while the
+ * this counter, so the storage, TTL, and concurrency model is identical across features, while the
  * caller-facing interface stays specific to the feature.
  *
- * <p><strong>FOR DEV / SINGLE-INSTANCE USE ONLY.</strong> Production multi-instance deployments
- * MUST replace the per-feature default with a shared (Redis/DB-backed) implementation. Each replica
- * holds its own counter here, so the effective limit multiplies by the cluster size.
+ * <p>This counter is for development and single-instance use only. Production multi-instance
+ * deployments must replace the per-feature default with a shared (Redis/DB-backed) implementation.
+ * Each replica holds its own counter here, so the effective limit multiplies by the cluster size.
  *
  * @since 0.9.1
  */

@@ -23,7 +23,7 @@ public record StartRegistrationRequest(
    * <p>The username is attacker-chosen on this {@code permitAll} endpoint and is retained well
    * beyond the request: it keys the per-username rate-limit bucket for the limiter's whole window,
    * and {@code startRegistration} passes it to {@link
-   * com.codeheadsystems.pkauth.spi.UserLookup#getOrCreateHandle} — which persists a user row before
+   * com.codeheadsystems.pkauth.spi.UserLookup#getOrCreateHandle}, which persists a user row before
    * any credential exists. Unbounded, both of those grow with whatever the caller sends. 256
    * comfortably covers an email address used as a username.
    *

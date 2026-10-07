@@ -15,7 +15,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * In-memory {@link RefreshTokenRepository}. Backed by a {@link ConcurrentHashMap}; the load-bearing
- * {@link #rotateAtomically} primitive speculatively inserts the successor, then serializes the
+ * {@link #rotateAtomically} primitive speculatively inserts the successor, then serialises the
  * parent's mark-used via {@link java.util.concurrent.ConcurrentMap#compute}, rolling the successor
  * back if the parent was not fresh. Exactly one of N concurrent rotators of the same parent wins.
  *

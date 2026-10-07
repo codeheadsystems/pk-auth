@@ -75,14 +75,14 @@ public interface OtpRepository {
    * scans.
    *
    * <p>Returns {@link OptionalInt#empty()} when no row exists for the supplied {@code (userHandle,
-   * otpId)} pair. Callers MUST treat the empty case as "no active OTP" — not as a zero-count
-   * attempt — so that a phantom verify against a deleted / never-issued row cannot masquerade as a
+   * otpId)} pair. Callers must treat the empty case as "no active OTP", not as a zero-count
+   * attempt, so that a phantom verify against a deleted / never-issued row cannot masquerade as a
    * successful low-attempt verification.
    *
    * @param userHandle owner of the OTP record
    * @param otpId the OTP record to increment
-   * @return the attempts value <em>after</em> the increment, or {@link OptionalInt#empty()} if the
-   *     row does not exist
+   * @return the attempts value after the increment, or {@link OptionalInt#empty()} if the row does
+   *     not exist
    * @since 0.9.1
    */
   OptionalInt incrementAttempts(UserHandle userHandle, String otpId);
@@ -103,7 +103,7 @@ public interface OtpRepository {
 
   /**
    * Returns how many OTPs were issued for the supplied (user, phone) since {@code since}. Used by
-   * the service for rate limiting (brief §6.5 — at most 3 per 15 minutes).
+   * the service for rate limiting (brief §6.5: at most 3 per 15 minutes).
    */
   int countSince(UserHandle userHandle, String phoneE164, Instant since);
 
@@ -112,7 +112,7 @@ public interface OtpRepository {
    * com.codeheadsystems.pkauth.lifecycle.UserDeletionService} during user-deletion fan-out.
    *
    * <p>Returns the number of rows removed (best-effort; used for structured logging). Must be
-   * idempotent — a call against a user with no remaining rows returns {@code 0}.
+   * idempotent: a call against a user with no remaining rows returns {@code 0}.
    *
    * @since 1.1.0
    */

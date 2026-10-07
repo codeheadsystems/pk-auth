@@ -24,8 +24,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The four WebAuthn ceremony endpoints. Mounted under {@code /auth/passkeys} — same path scheme as
- * the Spring and Micronaut adapters. Every endpoint delegates to {@link CeremonyOrchestrator},
+ * The four WebAuthn ceremony endpoints. Mounted under {@code /auth/passkeys}, the same path scheme
+ * as the Spring and Micronaut adapters. Every endpoint delegates to {@link CeremonyOrchestrator},
  * which owns the JWT-mint / label-lookup / wire-mapping pipeline shared across adapters.
  */
 @Path("/auth/passkeys")

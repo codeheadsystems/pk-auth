@@ -10,8 +10,8 @@ import com.codeheadsystems.pkauth.api.UserHandle;
  *
  * @param user the user receiving the code; never {@code null}.
  * @param phoneE164 the destination phone number in E.164 format; never {@code null}.
- * @param code the freshly generated 6-digit OTP, as plaintext digits. Formatters MUST embed this
- *     verbatim in the rendered SMS body — the user types it back to complete verification.
+ * @param code the freshly generated 6-digit OTP, as plaintext digits. Formatters must embed this
+ *     verbatim in the rendered SMS body; the user types it back to complete verification.
  * @since 0.9.1
  */
 public record OtpContext(UserHandle user, String phoneE164, String code) {}

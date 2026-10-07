@@ -18,9 +18,9 @@ import org.jspecify.annotations.Nullable;
  *
  * <p>{@link #knownAudiences()} declares which audiences this policy is configured for. The
  * validator (and adapters that want to enumerate accepted audiences for documentation or OpenAPI
- * surfaces) reads this set. Returning an empty set is the conservative default — the validator
- * falls back to accepting only {@link JwtConfig#defaultAudience()} in that case. The built-in
- * {@link #fixed(Duration, Map)} factory wires this automatically from the override map's keys.
+ * surfaces) reads this set. Returning an empty set is the conservative default; the validator falls
+ * back to accepting only {@link JwtConfig#defaultAudience()} in that case. The built-in {@link
+ * #fixed(Duration, Map)} factory wires this automatically from the override map's keys.
  */
 public interface TokenTtlPolicy {
 
@@ -44,7 +44,7 @@ public interface TokenTtlPolicy {
    * defaultTtl} for any audience not present in the map.
    *
    * <p>{@link #knownAudiences()} on the returned policy is the union of {@code overrides.keySet()}.
-   * The default TTL audience is not implied — a token issued for an audience that is neither in the
+   * The default TTL audience is not implied; a token issued for an audience that is neither in the
    * override map nor equal to {@link JwtConfig#defaultAudience()} will use {@code defaultTtl} but
    * will not be accepted by the validator unless the host declares the audience another way.
    */
@@ -89,7 +89,7 @@ public interface TokenTtlPolicy {
    * Builds a policy from optional host configuration: {@link #single(Duration)} when {@code
    * overrides} is {@code null} or empty, otherwise {@link #fixed(Duration, Map)}. This is the
    * single-vs-fixed dispatch every adapter performs when translating its per-audience TTL config;
-   * centralizing it keeps that decision identical across adapters.
+   * centralising it keeps that decision identical across adapters.
    *
    * @param defaultTtl the fallback TTL for any audience not in {@code overrides}.
    * @param overrides per-audience TTL overrides, or {@code null}/empty for a uniform TTL.

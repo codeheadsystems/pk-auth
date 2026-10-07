@@ -306,12 +306,12 @@ public final class DefaultAdminService implements AdminService {
   /**
    * Holder of the {@link DefaultAdminService} collaborators. {@code credentialRepository} and
    * {@code userLookup} are always required; the three alt-flow services ({@code backupCodeService},
-   * {@code magicLinkService}, {@code otpService}) are <b>optional</b> — pass {@code null} for any
-   * feature a passkey-only host does not run. Admin operations for an absent feature return {@link
+   * {@code magicLinkService}, {@code otpService}) are optional; pass {@code null} for any feature a
+   * passkey-only host does not run. Admin operations for an absent feature return {@link
    * AdminResult.ValidationFailed} ("… is not configured"), and the {@code deleteCredential}
    * anti-lockout guard treats an absent backup-code service as zero remaining codes (fail-closed).
    *
-   * <p>Pass an instance to {@link #create(Dependencies)} (or the {@link #create(Dependencies,
+   * <p>An instance is passed to {@link #create(Dependencies)} (or the {@link #create(Dependencies,
    * Config)} overload) to construct a service. Using a record keeps construction sites concise and
    * self-documenting through Java's named component syntax.
    *
@@ -323,7 +323,7 @@ public final class DefaultAdminService implements AdminService {
       @Nullable BackupCodeService backupCodeService,
       @Nullable MagicLinkService magicLinkService,
       @Nullable OtpService otpService) {
-    /** Compact constructor — enforces non-null on the two always-required collaborators. */
+    /** Compact constructor that enforces non-null on the two always-required collaborators. */
     public Dependencies {
       Objects.requireNonNull(credentialRepository, "credentialRepository");
       Objects.requireNonNull(userLookup, "userLookup");
@@ -350,7 +350,7 @@ public final class DefaultAdminService implements AdminService {
    * @since 0.9.1
    */
   public record Config(AdminAuthorizer authorizer, AdminSafetyConfig safetyConfig) {
-    /** Compact constructor — enforces non-null on every field. */
+    /** Compact constructor that enforces non-null on every field. */
     public Config {
       Objects.requireNonNull(authorizer, "authorizer");
       Objects.requireNonNull(safetyConfig, "safetyConfig");

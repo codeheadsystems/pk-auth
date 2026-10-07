@@ -9,25 +9,23 @@ Accepted.
 ## Context
 
 The Dropwizard adapter (`pk-auth-dropwizard`, Phase 9) must wire pk-auth's framework-neutral
-services — `PasskeyAuthenticationService`, the JWT issuer/validator, the optional `AdminService`,
-the pk-auth services and JWT types — into Jersey resources and a Dropwizard `ConfiguredBundle`. Dropwizard
-itself does not ship an opinionated DI container. The realistic options were:
+services (`PasskeyAuthenticationService`, the JWT issuer and validator, and the optional
+`AdminService`) into Jersey resources and a Dropwizard `ConfiguredBundle`. Dropwizard itself does
+not ship an opinionated DI container. The realistic options were:
 
-1. **Hand-rolled wiring.** A `PkAuthBundle` constructor that news everything up directly.
-2. **Guice + dropwizard-guice.** Familiar to many Dropwizard users, runtime reflection,
-   `@Inject` everywhere.
-3. **HK2.** Jersey's own DI container. Reflection-based, surfaces in error messages in confusing
-   ways, magical scoping.
-4. **Dagger 2.** Compile-time annotation-processed DI; the generated component is a plain Java
-   class you can read.
+1. Hand-rolled wiring: a `PkAuthBundle` constructor that news everything up directly.
+2. Guice with dropwizard-guice: familiar to many Dropwizard users, uses runtime reflection, and
+   needs `@Inject` everywhere.
+3. HK2: Jersey's own DI container. It is reflection-based, surfaces in error messages in confusing
+   ways, and uses magical scoping.
+4. Dagger 2: compile-time, annotation-processed DI. The generated component is a plain Java class
+   that can be read directly.
 
-The brief (`docs/history/pk-auth-build-brief.md` §3) calls out Dagger explicitly:
+The brief (`docs/history/pk-auth-build-brief.md` §3) names Dagger explicitly:
 
-> Spring Boot → Spring DI. Micronaut → Micronaut DI. **Dropwizard → Dagger 2 (compile-time,
-> annotation-processed).** Do not use Guice or HK2 except where Jersey itself requires HK2 wiring
+> Spring Boot → Spring DI. Micronaut → Micronaut DI. Dropwizard → Dagger 2 (compile-time,
+> annotation-processed). Do not use Guice or HK2 except where Jersey itself requires HK2 wiring
 > under the hood.
-
-This ADR records the rationale.
 
 ## Decision
 
@@ -38,74 +36,75 @@ object and an optional `AdminService`, and the bundle internally builds a `PkAut
 larger `PkAuthFullComponent` when the alt-flow modules are auto-wired) whose provision methods
 Jersey resources consume.
 
-The Dagger module structure is intentionally small:
+The Dagger module structure is small:
 
-- `PkAuthModule` — provides `PasskeyAuthenticationService`, `JwtConfig` / `JwtKeyset` /
-  `PkAuthJwtIssuer` / `PkAuthJwtValidator`, `PkAuthDropwizardAuthenticator`, and the
-  `PkAuthCeremonyResource`. Bound to the runtime `PkAuthConfig` block via constructor injection
+- `PkAuthModule` provides `PasskeyAuthenticationService`, `JwtConfig`, `JwtKeyset`,
+  `PkAuthJwtIssuer`, `PkAuthJwtValidator`, `PkAuthDropwizardAuthenticator`, and the
+  `PkAuthCeremonyResource`. It binds to the runtime `PkAuthConfig` block via constructor injection
   on the module itself.
-- `PkAuthComponent` — the `@Component` whose provision methods expose what the bundle hands to
+- `PkAuthComponent` is the `@Component` whose provision methods expose what the bundle hands to
   Jersey: `ceremonyResource()`, `passkeyAuthenticator()`, `jwtIssuer()`, `jwtValidator()`,
   `userDeletionService()`, and `refreshHandler()`.
-- The optional admin path (when `pk-auth-admin-api` is on the classpath): when the alt-flow modules
-  are auto-wired the bundle builds `PkAuthFullComponent` (`PkAuthModule` + `AltFlowsModule`), which
-  adds `adminResource()`; when a host supplies its own `AdminService` the bundle instantiates
-  `PkAuthAdminResource` directly. Either way the admin module's compile-time dependency stays
-  optional.
+- The optional admin path applies when `pk-auth-admin-api` is on the classpath. When the alt-flow
+  modules are auto-wired, the bundle builds `PkAuthFullComponent` (`PkAuthModule` plus
+  `AltFlowsModule`), which adds `adminResource()`. When a host supplies its own `AdminService`, the
+  bundle instantiates `PkAuthAdminResource` directly. In both cases the admin module's compile-time
+  dependency stays optional.
 
-Generated classes live in `com.codeheadsystems.pkauth.dropwizard.dagger` and are excluded from
-the JaCoCo coverage report (they're auto-generated boilerplate that should not skew the
-adapter-tier ≥70% gate).
+Generated classes live in `com.codeheadsystems.pkauth.dropwizard.dagger` and are excluded from the
+JaCoCo coverage report, because auto-generated boilerplate would skew the adapter-tier 70% gate.
 
 ## Consequences
 
 ### Positive
 
-- **Compile-time validation.** Missing bindings, cycles, and duplicate providers are caught by
-  the annotation processor and surface as ordinary Java compile errors. Compare with Guice
-  (`CreationException` thrown at injector boot) and HK2 (silent fallback to no-op providers).
-- **No runtime reflection.** Dagger generates a plain `DaggerPkAuthComponent` class that
-  `new`s the dependency graph in straight-line code. Easy to read; easy to step through in a
-  debugger; zero classpath scanning overhead at startup.
-- **Smaller runtime footprint.** No Guice / Spring / HK2 jar on the consumer's classpath beyond
-  the ~50 KB `dagger` runtime.
-- **No HK2 magic in our code.** Dropwizard still wires Jersey's HK2 internally — we can't avoid
-  that — but pk-auth itself does not register anything via HK2. The seam is contained.
-- **Clean public API.** Host applications interact with `PkAuthBundle`, `PersistenceBindings`,
-  and the four public records. They never see a `Component` or `@Module` annotation in their
-  call sites.
+- Validation happens at compile time. The annotation processor catches missing bindings, cycles,
+  and duplicate providers, and reports them as ordinary Java compile errors. Guice throws a
+  `CreationException` at injector boot, and HK2 falls back silently to no-op providers.
+- Dagger uses no runtime reflection. It generates a plain `DaggerPkAuthComponent` class that
+  `new`s the dependency graph in straight-line code. The code is easy to read and to step through
+  in a debugger, and startup has no classpath-scanning overhead.
+- The runtime footprint is small. No Guice, Spring, or HK2 jar reaches the consumer's classpath
+  beyond the roughly 50 KB `dagger` runtime.
+- pk-auth's own code contains no HK2 wiring. Dropwizard still wires Jersey's HK2 internally, but
+  pk-auth does not register anything via HK2, so the seam is contained.
+- The public API is clean. Host applications interact with `PkAuthBundle`, `PersistenceBindings`,
+  and the four public records. A `Component` or `@Module` annotation never appears in their call
+  sites.
 
 ### Negative
 
-- **Annotation processor in the build.** Spotless / Error Prone interact with the
-  Dagger-generated sources. We mitigate by excluding `Dagger*` and `*_Factory*` patterns from
-  both the JaCoCo report and the spotless target.
-- **No runtime override.** Tests cannot just swap a binding the way Guice's `Modules.override`
-  allows; they need a separate Dagger module variant. For pk-auth this is fine because
-  `PersistenceBindings` already centralizes the SPI bag, so the in-memory testkit wiring works
-  through the same component.
-- **Static graph.** Dynamic features (e.g. swapping the JWT keyset at runtime) need a layer of
-  indirection (a `Supplier<JwtKeyset>` provider). The same pattern works in Guice but is more
-  obvious there.
+- The build gains an annotation processor. Spotless and Error Prone interact with the
+  Dagger-generated sources. The build mitigates this by excluding `Dagger*` and `*_Factory*`
+  patterns from both the JaCoCo report and the Spotless target.
+- Bindings cannot be overridden at runtime. Tests cannot swap a binding the way Guice's
+  `Modules.override` allows; they need a separate Dagger module variant. For pk-auth the effect is
+  small because `PersistenceBindings` already centralises the SPI bag, so the in-memory testkit
+  wiring works through the same component.
+- The graph is static. Dynamic features (for example swapping the JWT keyset at runtime) need a
+  layer of indirection, such as a `Supplier<JwtKeyset>` provider. The same pattern works in Guice,
+  where it is more obvious.
 
 ### Neutral
 
-- **Dagger 2 vs Dagger Hilt vs Anvil.** Hilt is Android-specific; Anvil targets Kotlin. Plain
-  Dagger 2 is the right tool for a JVM library.
-- **Future Java module system.** Dagger generates code that uses `dagger.internal.Provider` etc.;
-  if pk-auth-dropwizard ever ships a `module-info.java`, those packages need to be reachable.
-  Not a blocker for v0.x — neither the JDBI nor the admin-api modules ship a module-info either.
+- Dagger Hilt is Android-specific and Anvil targets Kotlin, so plain Dagger 2 is the fit for a JVM
+  library.
+- Dagger generates code that uses `dagger.internal.Provider` and similar types. If
+  `pk-auth-dropwizard` ever ships a `module-info.java`, those packages need to be reachable. This
+  does not block v0.x, because neither the JDBI module nor the admin-api module ships a
+  `module-info.java` either.
 
 ## Alternatives considered
 
-| Option | Why we said no |
+| Option | Reason rejected |
 |---|---|
-| Hand-rolled `new`s in the bundle | Works for the current ~10-binding graph but becomes brittle as the admin / persistence wirings expand. Dagger gives us the same code-shape with compile-time checking for free. |
-| Guice | Runtime reflection, surfaces injection errors at boot instead of compile, drags in a heavier runtime, conflicts with HK2's class loader expectations in some Jersey setups. |
-| HK2 directly | Jersey's own DI container, but its error messages are notoriously opaque and Dropwizard explicitly recommends against using it as the host-application DI. |
+| Hand-rolled `new`s in the bundle | Works for the current graph of about 10 bindings but becomes brittle as the admin and persistence wirings expand. Dagger gives the same code shape with compile-time checking. |
+| Guice | Uses runtime reflection, surfaces injection errors at boot instead of compile time, drags in a heavier runtime, and conflicts with the HK2 class loader expectations in some Jersey setups. |
+| HK2 directly | Jersey's own DI container, but its error messages are opaque and Dropwizard recommends against using it as the host-application DI. |
 
 ## References
 
 - Brief §3 (non-negotiable tech choices) and §6.11 (Dropwizard module brief).
 - [Dagger 2 documentation](https://dagger.dev/dev-guide/).
-- Phase 9 implementation lives in `pk-auth-dropwizard/src/main/java/com/codeheadsystems/pkauth/dropwizard/dagger/`.
+- The Phase 9 implementation lives in
+  `pk-auth-dropwizard/src/main/java/com/codeheadsystems/pkauth/dropwizard/dagger/`.

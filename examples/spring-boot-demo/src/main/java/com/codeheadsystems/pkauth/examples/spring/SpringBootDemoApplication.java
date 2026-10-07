@@ -7,7 +7,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 /**
  * Runnable entry point for the pk-auth Spring Boot demo. The auto-configuration in
  * pk-auth-spring-boot-starter wires every ceremony and admin endpoint; relying-party identity is
- * configured via {@code pkauth.relying-party.*} in {@code application.yml} — no custom
+ * configured via {@code pkauth.relying-party.*} in {@code application.yml}; no custom
  * {@code @Bean @Primary RelyingPartyConfig} override is needed. To run:
  *
  * <pre>

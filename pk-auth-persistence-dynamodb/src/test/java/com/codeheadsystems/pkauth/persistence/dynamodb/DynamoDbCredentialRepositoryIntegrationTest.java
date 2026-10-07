@@ -18,7 +18,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 /**
  * Direct CRUD against {@link DynamoDbCredentialRepository}, covering the mutation paths ({@code
  * updateSignCount}, {@code updateLabel}, {@code delete}, {@code deleteByUserHandle}) the shared
- * ceremony scenarios don't exercise — including the clone-detection counter guard and the
+ * ceremony scenarios do not exercise, including the clone-detection counter guard and the
  * ownership-mismatch no-ops.
  */
 @Testcontainers

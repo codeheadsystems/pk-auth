@@ -10,7 +10,7 @@ import org.jspecify.annotations.Nullable;
 /**
  * Framework-neutral mapper from {@link AdminResult} to an HTTP response shape. Each adapter
  * (Spring, Dropwizard, Micronaut) holds a thin wrapper that converts the returned {@link
- * AdminResponse} into its native HTTP type — {@link AdminResponseMapper} owns the status codes, the
+ * AdminResponse} into its native HTTP type; {@link AdminResponseMapper} owns the status codes, the
  * {@code Retry-After} header floor, and the unified error envelope shape.
  *
  * <p>Before this helper existed each adapter hand-rolled the same {@code switch} over the {@link

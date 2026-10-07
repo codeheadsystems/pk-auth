@@ -21,7 +21,7 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 /**
- * Drives the authenticated admin endpoints the smoke tests don't reach, covering the {@code actor
+ * Drives the authenticated admin endpoints the smoke tests do not reach, covering the {@code actor
  * != null} happy branch and the non-null request-body path of each handler.
  */
 @MicronautTest

@@ -18,10 +18,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Backend-agnostic acceptance scenarios for {@link OtpRepository}, focused on the atomic single-use
- * ({@code consume}) contract. Run against the in-memory testkit repo and every real backend (JDBI,
- * DynamoDB) so the double-spend guarantee — an OTP can be verified at most once — cannot regress in
- * one implementation while passing in another. Mirrors {@link RefreshTokenScenarios}'s concurrent
- * rotation race for the refresh-token path.
+ * ({@code consume}) contract. The scenarios run against the in-memory testkit repo and every real
+ * backend (JDBI, DynamoDB) so the double-spend guarantee (an OTP can be verified at most once)
+ * cannot regress in one implementation while passing in another. Mirrors {@link
+ * RefreshTokenScenarios}'s concurrent rotation race for the refresh-token path.
  *
  * @since 2.0.0
  */

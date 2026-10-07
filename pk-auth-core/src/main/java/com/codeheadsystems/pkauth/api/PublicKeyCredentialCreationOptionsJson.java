@@ -11,11 +11,11 @@ import org.jspecify.annotations.Nullable;
  * Server payload for {@code navigator.credentials.create()}. Mirrors the WebAuthn JSON Spec §5.1.3
  * "PublicKeyCredentialCreationOptionsJSON".
  *
- * <p><strong>Privacy invariant:</strong> {@code excludeCredentials} is always non-null and is
- * serialized as a JSON array (possibly empty). Emitting {@code null} (or omitting the field) for
- * brand-new users while emitting a populated list for existing users would create an
- * account-enumeration oracle on the public {@code permitAll} start-registration endpoint. Callers
- * MUST pass an empty list rather than {@code null} when there are no credentials to exclude.
+ * <p>Privacy invariant: {@code excludeCredentials} is always non-null and is serialised as a JSON
+ * array (possibly empty). Emitting {@code null} (or omitting the field) for brand-new users while
+ * emitting a populated list for existing users would create an account-enumeration oracle on the
+ * public {@code permitAll} start-registration endpoint. Callers must pass an empty list rather than
+ * {@code null} when there are no credentials to exclude.
  *
  * @since 0.9.1
  */

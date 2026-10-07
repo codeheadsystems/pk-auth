@@ -10,13 +10,13 @@ import dagger.Component;
 import jakarta.inject.Singleton;
 
 /**
- * Dagger component that wires the passkey ceremony graph <em>and</em> the alt-flow services
- * (backup-codes, magic-link, OTP) plus an {@link AdminService} and the {@link PkAuthAdminResource}.
+ * Dagger component that wires the passkey ceremony graph and the alt-flow services (backup-codes,
+ * magic-link, OTP) plus an {@link AdminService} and the {@link PkAuthAdminResource}.
  *
  * <p>The ceremony provision methods are inherited from {@link PkAuthCeremonyGraph}. Hosts that only
  * need the four ceremony endpoints stay on {@link PkAuthComponent}. Hosts that want the admin
- * endpoint surface auto-wired register the bundle with the alt-flow constructor — the bundle then
- * materializes this component instead.
+ * endpoint surface auto-wired register the bundle with the alt-flow constructor; the bundle then
+ * materialises this component instead.
  *
  * <p>Generated wire compatibility is verified by {@code PkAuthBundleAltFlowsIntegrationTest}.
  *

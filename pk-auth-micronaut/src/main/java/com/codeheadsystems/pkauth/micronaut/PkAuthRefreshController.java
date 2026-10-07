@@ -18,7 +18,7 @@ import io.micronaut.scheduling.annotation.ExecuteOn;
 /**
  * Mounts the refresh endpoint at {@code POST /auth/refresh}. Only registered when a {@link
  * RefreshHandler} bean is present (which itself requires a {@code RefreshTokenRepository}). The
- * controller is a thin wrapper around the shared handler — rotation logic and error mapping live in
+ * controller is a thin wrapper around the shared handler; rotation logic and error mapping live in
  * {@code pk-auth-refresh-tokens}.
  *
  * @since 1.1.0

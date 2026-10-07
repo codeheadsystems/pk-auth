@@ -16,11 +16,11 @@ public sealed interface AssertionResult {
    * policy).
    */
   enum CounterStatus {
-    /** Counter advanced as expected — no anomaly detected. */
+    /** Counter advanced as expected; no anomaly detected. */
     OK,
     /**
      * Counter regressed but was accepted because {@code CounterRegressionPolicy.WARN} is active.
-     * Operators should alert on this status; the stored counter was NOT advanced.
+     * Operators should alert on this status; the stored counter was not advanced.
      */
     REGRESSED_WARN
   }
@@ -29,14 +29,13 @@ public sealed interface AssertionResult {
    * Assertion succeeded; the credential's sign count and lastUsedAt should be updated.
    *
    * <p>Check {@link #counterStatus()} to distinguish a clean success from one accepted despite
-   * counter regression under WARN policy. Callers MUST supply {@code counterStatus} explicitly —
-   * the prior convenience constructor that defaulted to {@link CounterStatus#OK} was removed in
-   * 0.9.1 to force the counter-status decision to be visible at every call site.
+   * counter regression under WARN policy. Callers must supply {@code counterStatus} explicitly; the
+   * convenience constructor that defaulted to {@link CounterStatus#OK} was removed in 0.9.1.
    *
    * <p>The {@code credentialId} component is the type-safe {@link CredentialId} value class (was
    * raw {@code byte[]} prior to 0.9.1). Adapter mappers and JWT helpers consume the value class
    * directly; wire JSON is unchanged because {@link CredentialId} has a registered Jackson
-   * (de)serializer that emits base64url.
+   * (de)serialiser that emits base64url.
    *
    * @since 0.9.1
    */
@@ -83,16 +82,14 @@ public sealed interface AssertionResult {
   }
 
   /**
-   * Received counter is less than or equal to the stored counter — authenticator cloning risk.
+   * Received counter is less than or equal to the stored counter (authenticator cloning risk).
    *
-   * <p><b>No compact constructor:</b> this record intentionally accepts any pair of {@code long}
-   * values, including negatives, equal values, and {@code received > stored}. The variant is
-   * constructed at exactly one site ({@code
-   * DefaultPasskeyAuthenticationService.handleCounterRegression}) where the inputs are already
-   * validated against the authenticator-supplied sign count and the stored credential row; an extra
-   * compact-ctor invariant here would only hide a bug at the construction site, not catch one at
-   * the boundary. Treat {@code stored} and {@code received} as informational telemetry fields, not
-   * as enforced contracts.
+   * <p>This record has no compact constructor and accepts any pair of {@code long} values,
+   * including negatives, equal values, and {@code received > stored}. The variant is constructed at
+   * one site ({@code DefaultPasskeyAuthenticationService.handleCounterRegression}) where the inputs
+   * are already validated against the authenticator-supplied sign count and the stored credential
+   * row. The {@code stored} and {@code received} fields are informational telemetry, not enforced
+   * contracts.
    *
    * @since 0.9.1
    */

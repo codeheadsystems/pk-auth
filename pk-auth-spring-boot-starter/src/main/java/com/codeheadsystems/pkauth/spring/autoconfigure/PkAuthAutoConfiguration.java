@@ -61,20 +61,20 @@ import org.springframework.context.annotation.Bean;
  * <ul>
  *   <li>Core service ({@code PasskeyAuthenticationService}) via the {@link PkAuthComposition}
  *       framework-neutral wiring helper.
- *   <li>SPI implementations — {@code CredentialRepository} / {@code UserLookup} / {@code
+ *   <li>SPI implementations: {@code CredentialRepository} / {@code UserLookup} / {@code
  *       ChallengeStore} / {@code BackupCodeRepository} / {@code OtpRepository}. Each is provided
- *       only when no host-app bean of the same type exists ({@link ConditionalOnMissingBean}) AND
- *       the host has explicitly opted in to the in-memory testkit defaults by setting {@code
+ *       only when no host-app bean of the same type exists ({@link ConditionalOnMissingBean}) and
+ *       the host has opted in to the in-memory testkit defaults by setting {@code
  *       pkauth.dev-mode=true}. Without that flag, a host that fails to declare its own SPI beans
- *       will fail to start — preventing accidental production deploys backed by single-JVM,
+ *       fails to start, which prevents accidental production deploys backed by single-JVM,
  *       non-persistent storage. Host apps that want JDBI or DynamoDB declare those beans themselves
  *       (typically in their own {@code @Configuration}).
  *   <li>JWT issuer + validator backed by {@link JwtKeyset#hs256(byte[])}. {@code pkauth.jwt.secret}
- *       is required — there is no random-key fallback. Hosts that need ES256 supply a {@code
+ *       is required; there is no random-key fallback. Hosts that need ES256 supply a {@code
  *       JwtKeyset} bean themselves.
  *   <li>Default sender beans ({@link LoggingEmailSender}, {@link LoggingSmsSender}) so the alt-flow
- *       services compose. Per brief §12 #7, "Don't write production-quality email/SMS senders" —
- *       the logging shims are deliberate.
+ *       services compose. Per brief §12 #7, "Don't write production-quality email/SMS senders", so
+ *       only logging shims are provided.
  * </ul>
  *
  * <p>Web-tier wiring (the ceremony controller, JWT filter, admin controller) lives in {@link
@@ -172,8 +172,8 @@ public class PkAuthAutoConfiguration {
   }
 
   /**
-   * Default in-memory ceremony rate limiter. Hosts MUST replace this with a shared (Redis /
-   * DB-backed) {@link CeremonyRateLimiter} bean in multi-replica deployments — see {@link
+   * Default in-memory ceremony rate limiter. Hosts must replace this with a shared (Redis /
+   * DB-backed) {@link CeremonyRateLimiter} bean in multi-replica deployments; see {@link
    * InMemoryCeremonyRateLimiter}'s class javadoc.
    *
    * @since 0.9.1
@@ -281,7 +281,7 @@ public class PkAuthAutoConfiguration {
     return new CredentialRepositoryDeletionListener(repository);
   }
 
-  /** Listener: deletes every backup code owned by the user — only when a repository is wired. */
+  /** Listener: deletes every backup code owned by the user; only when a repository is wired. */
   @Bean
   @ConditionalOnBean(BackupCodeRepository.class)
   public UserDeletionListener pkAuthBackupCodeRepositoryDeletionListener(
@@ -289,7 +289,7 @@ public class PkAuthAutoConfiguration {
     return new BackupCodeRepositoryDeletionListener(repository);
   }
 
-  /** Listener: deletes every OTP row owned by the user — only when a repository is wired. */
+  /** Listener: deletes every OTP row owned by the user; only when a repository is wired. */
   @Bean
   @ConditionalOnBean(OtpRepository.class)
   public UserDeletionListener pkAuthOtpRepositoryDeletionListener(OtpRepository repository) {
@@ -307,7 +307,7 @@ public class PkAuthAutoConfiguration {
   /**
    * Collects every {@link UserDeletionListener} bean and wires the fan-out service. Hosts can
    * register additional listeners by declaring their own {@code @Bean UserDeletionListener
-   * myCustomListener(...)} — Spring auto-collects all beans of the interface type.
+   * myCustomListener(...)}; Spring auto-collects all beans of the interface type.
    */
   @Bean
   @ConditionalOnMissingBean
@@ -332,7 +332,7 @@ public class PkAuthAutoConfiguration {
         refresh.defaultTtl(), refresh.ttlsByAudience(), refresh.cleanupRetention());
   }
 
-  /** {@link RefreshTokenService} bean — only when a {@link RefreshTokenRepository} is wired. */
+  /** {@link RefreshTokenService} bean; only when a {@link RefreshTokenRepository} is wired. */
   @Bean
   @ConditionalOnMissingBean
   @ConditionalOnBean(RefreshTokenRepository.class)
@@ -361,13 +361,13 @@ public class PkAuthAutoConfiguration {
   // -- Alt-flow services -----------------------------------------------------------------------
 
   /**
-   * Logging email/SMS senders are dev-only: they write the full message body — which contains the
-   * magic-link token or OTP code — to the application log. Gating them behind {@code
+   * Logging email/SMS senders are dev-only: they write the full message body (which contains the
+   * magic-link token or OTP code) to the application log. Gating them behind {@code
    * pkauth.dev-mode=true} prevents an accidental production deploy from silently leaking single-use
    * credentials to log aggregation systems. A host without a real {@code EmailSender} / {@code
    * SmsSender} bean (and without {@code dev-mode=true}) simply does not get the downstream {@code
-   * MagicLinkService} / {@code OtpService} beans — those are {@link ConditionalOnBean} on their
-   * sender/repository — so a passkey-only host boots cleanly. The admin service then reports those
+   * MagicLinkService} / {@code OtpService} beans (those are {@link ConditionalOnBean} on their
+   * sender/repository), so a passkey-only host boots cleanly. The admin service then reports those
    * flows as "not configured" rather than the application failing to start.
    */
   @Bean

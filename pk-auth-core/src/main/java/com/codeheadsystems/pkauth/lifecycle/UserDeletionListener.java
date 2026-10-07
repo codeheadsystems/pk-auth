@@ -8,14 +8,14 @@ import com.codeheadsystems.pkauth.api.UserHandle;
  * deleted. Implementations are typically thin adapters around a repository / store, deleting all
  * rows owned by the supplied {@link UserHandle}.
  *
- * <p><strong>Contract.</strong>
+ * <p>Contract:
  *
  * <ul>
- *   <li><b>Idempotent.</b> A listener may be invoked more than once for the same user (e.g. a retry
- *       after a transient failure). Calls must converge on "all rows for this user are absent"
- *       without throwing on second-and-later invocations.
- *   <li><b>Best-effort isolated.</b> Each listener runs in its own scope; failures are logged and
- *       the service continues with remaining listeners. Listeners must not assume earlier listeners
+ *   <li>Idempotent: a listener may be invoked more than once for the same user (e.g. a retry after
+ *       a transient failure). Calls must converge on "all rows for this user are absent" without
+ *       throwing on second-and-later invocations.
+ *   <li>Best-effort isolated: each listener runs in its own scope; failures are logged and the
+ *       service continues with remaining listeners. Listeners must not assume earlier listeners
  *       succeeded.
  * </ul>
  *

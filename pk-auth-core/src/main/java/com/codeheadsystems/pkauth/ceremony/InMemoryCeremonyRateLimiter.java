@@ -15,16 +15,16 @@ import org.slf4j.LoggerFactory;
  * Tracks two independent fixed-window buckets (per-IP and per-username), each an {@link
  * InMemoryWindowCounter} expiring after the configured window.
  *
- * <p><strong>FOR DEV / SINGLE-INSTANCE USE ONLY.</strong> Production deployments MUST replace this
- * with a shared (Redis/DB-backed) {@link CeremonyRateLimiter} implementation, otherwise per-replica
- * counters multiply by the cluster size. For example, with a limit of 30 starts per minute and a
- * 3-node cluster, an attacker can issue up to 90 starts per minute because each replica tracks its
- * own independent counter. Wire a production-grade implementation via the {@code
- * PasskeyAuthenticationServices.Builder#ceremonyRateLimiter(...)} seam.
+ * <p>This implementation is for development and single-instance use only. Production deployments
+ * must replace it with a shared (Redis/DB-backed) {@link CeremonyRateLimiter} implementation,
+ * otherwise per-replica counters multiply by the cluster size. For example, with a limit of 30
+ * starts per minute and a 3-node cluster, an attacker can issue up to 90 starts per minute because
+ * each replica tracks its own independent counter. Wire a production-grade implementation via the
+ * {@code PasskeyAuthenticationServices.Builder#ceremonyRateLimiter(...)} seam.
  *
- * <p>The defaults are intentionally generous so legitimate UX (a user fumbling their authenticator,
- * a flaky network forcing a retry) does not trip the limiter, but are tight enough to throttle
- * single-source enumeration / brute-force at a meaningful rate. Hosts that want different limits
+ * <p>The defaults are generous enough that ordinary use (a user fumbling their authenticator, a
+ * flaky network forcing a retry) does not trip the limiter, and tight enough to throttle
+ * single-source enumeration and brute force at a meaningful rate. Hosts that want different limits
  * should construct this class with explicit values or supply their own SPI implementation.
  *
  * @since 0.9.1
@@ -43,7 +43,7 @@ public final class InMemoryCeremonyRateLimiter implements CeremonyRateLimiter {
   /**
    * Maximum tracked keys per bucket map. Both maps are keyed by attacker-influenced values (source
    * IP, submitted username) on {@code permitAll} endpoints, and {@code expireAfterWrite} alone
-   * retains every distinct key for the full window — so without a size bound the maps grow with the
+   * retains every distinct key for the full window; without a size bound the maps grow with the
    * caller's key variety, not with the number of real users. Caffeine evicts near-LRU entries at
    * the cap; an evicted counter simply restarts, which costs at most one extra allowance to the
    * least-active key and never grants an unbounded budget to an active one. Same value as (and

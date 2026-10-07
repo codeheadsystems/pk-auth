@@ -22,12 +22,13 @@ import com.codeheadsystems.pkauth.spi.UserLookup;
 import java.util.Optional;
 
 /**
- * Shared ceremony scenarios used as the acceptance bar for Phase 3 (in-memory) and Phase 5 (JDBI,
- * DynamoDB). Persistence modules drive a real backend through the same flow that {@code
+ * Shared ceremony scenarios used as the acceptance bar for the in-memory, JDBI, and DynamoDB
+ * backends. Persistence modules drive a real backend through the same flow that {@code
  * DefaultPasskeyAuthenticationService} runs in production.
  *
- * <p>Construct with a {@link PasskeyAuthenticationService}, a {@link FakeAuthenticator}, and direct
- * access to the repositories the service was built from. Then invoke the named scenarios.
+ * <p>The constructor takes a {@link PasskeyAuthenticationService}, a {@link FakeAuthenticator}, and
+ * direct access to the repositories the service was built from. The named scenarios are then
+ * invoked.
  */
 public final class CeremonyScenarios {
 
@@ -84,7 +85,7 @@ public final class CeremonyScenarios {
 
   /**
    * Usernameless flow: startAuthentication with a null username returns options with an empty
-   * {@code allowCredentials} list (never {@code null} — account-enumeration guard); the
+   * {@code allowCredentials} list (never {@code null}; account-enumeration guard); the
    * FakeAuthenticator picks the sole registered credential and assertion succeeds.
    */
   public void usernamelessFlowSucceedsWithSingleCredential() {
@@ -116,7 +117,7 @@ public final class CeremonyScenarios {
 
   /**
    * Anti-forgery: a single tampered byte in the assertion signature must be rejected as {@link
-   * AssertionResult.InvalidSignature} — driven end-to-end through real WebAuthn4J verification, not
+   * AssertionResult.InvalidSignature}, driven end-to-end through real WebAuthn4J verification, not
    * an injected exception. The credential's stored sign-count must be unchanged afterwards (a
    * failed assertion does not advance the counter).
    */

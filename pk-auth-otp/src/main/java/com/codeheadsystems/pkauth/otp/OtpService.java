@@ -35,9 +35,10 @@ import org.slf4j.LoggerFactory;
  * pepper (never stored in the database) means a DB dump alone cannot enumerate codes; the attacker
  * also needs the pepper secret.
  *
- * <p>Construct via {@link #create(Dependencies, Config)} (or {@link #create(Dependencies, byte[])}
- * for the all-default case). Required collaborators (repository, sender, clock, formatter) live in
- * {@link Dependencies}; tunables (pepper, TTL, attempt caps, rate-limit) live in {@link Config}.
+ * <p>Instances are built via {@link #create(Dependencies, Config)} (or {@link #create(Dependencies,
+ * byte[])} for the all-default case). Required collaborators (repository, sender, clock, formatter)
+ * live in {@link Dependencies}; tunables (pepper, TTL, attempt caps, rate-limit) live in {@link
+ * Config}.
  */
 public final class OtpService {
 
@@ -94,7 +95,7 @@ public final class OtpService {
 
   /**
    * Server-side pepper used as the HMAC key when hashing OTP codes. This value must never be stored
-   * in the database — a DB dump alone cannot enumerate codes without it. The 10^6 search space is
+   * in the database; a DB dump alone cannot enumerate codes without it. The 10^6 search space is
    * manageable only if an attacker also possesses the pepper; combined with per-attempt limiting
    * this provides defence-in-depth.
    */
@@ -132,7 +133,7 @@ public final class OtpService {
 
   /**
    * Convenience overload that builds a {@link Config} with all defaults and the supplied {@code
-   * pepper}. The pepper has no sensible library default — hosts must supply a Base64-encoded ≥16
+   * pepper}. The pepper has no sensible library default; hosts must supply a Base64-encoded ≥16
    * byte secret.
    *
    * @since 0.9.1
@@ -294,9 +295,9 @@ public final class OtpService {
    *
    * <p>The {@code messageFormatter} renders the {@link OtpContext} (user, phone, generated code)
    * into an {@link OtpMessage} that is passed verbatim to {@link SmsSender#send(String, String)}.
-   * Pass {@link DefaultOtpFormatter} to keep the historical hard-coded {@code "Your verification
-   * code is XXXXXX"} body, or supply a host-specific formatter to brand or localize the SMS copy
-   * without forking this service.
+   * Supplying {@link DefaultOtpFormatter} keeps the historical hard-coded {@code "Your verification
+   * code is XXXXXX"} body; a host-specific formatter can brand or localise the SMS copy without
+   * forking this service.
    *
    * @since 0.9.1
    */
@@ -305,7 +306,7 @@ public final class OtpService {
       SmsSender smsSender,
       ClockProvider clockProvider,
       MessageFormatter<OtpContext, OtpMessage> messageFormatter) {
-    /** Compact constructor — enforces non-null on all required collaborators. */
+    /** Compact constructor that enforces non-null on all required collaborators. */
     public Dependencies {
       Objects.requireNonNull(repository, "repository");
       Objects.requireNonNull(smsSender, "smsSender");
@@ -314,7 +315,7 @@ public final class OtpService {
     }
 
     /**
-     * Convenience factory that wires {@link DefaultOtpFormatter} as the message formatter — the
+     * Convenience factory that wires {@link DefaultOtpFormatter} as the message formatter, the
      * historical default body.
      *
      * @since 0.9.1
@@ -328,8 +329,8 @@ public final class OtpService {
   /**
    * Tunable configuration for {@link OtpService}.
    *
-   * <p>The HMAC {@code pepper} is required (no library default) — hosts must supply a
-   * Base64-encoded ≥16 byte secret. Every other field has a sensible default exposed via {@link
+   * <p>The HMAC {@code pepper} is required (no library default); hosts must supply a Base64-encoded
+   * ≥16 byte secret. Every other field has a sensible default exposed via {@link
    * #defaults(byte[])}.
    *
    * @since 0.9.1
@@ -341,7 +342,7 @@ public final class OtpService {
       int maxAttempts,
       int rateLimit,
       Duration rateWindow) {
-    /** Compact constructor — validates pepper length, field ranges, and non-null fields. */
+    /** Compact constructor that validates pepper length, field ranges, and non-null fields. */
     public Config {
       Objects.requireNonNull(random, "random");
       Objects.requireNonNull(pepper, "pepper");

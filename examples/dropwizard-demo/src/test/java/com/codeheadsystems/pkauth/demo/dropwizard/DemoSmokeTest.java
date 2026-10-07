@@ -14,8 +14,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
- * Smoke test: spin the demo app up and verify the static asset, ceremony endpoints, and admin
- * endpoint surfaces are all reachable. Uses an ephemeral port so CI doesn't collide on 8080.
+ * Smoke test that starts the demo app and verifies the static asset, ceremony endpoints, and admin
+ * endpoint surfaces are all reachable. Uses an ephemeral port so CI does not collide on 8080.
  */
 @ExtendWith(DropwizardExtensionsSupport.class)
 final class DemoSmokeTest {

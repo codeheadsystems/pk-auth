@@ -40,8 +40,8 @@ final class DynamoDbSupport {
 
   /**
    * Encodes an {@link Instant} to its ISO-8601 storage form. This is the single definition of the
-   * table's instant encoding; it is deliberately {@link Instant#toString()} so existing rows remain
-   * readable (see {@code RefreshTokenItem} for why ordering still uses epoch seconds, not this).
+   * table's instant encoding; it is {@link Instant#toString()} so existing rows remain readable
+   * (see {@code RefreshTokenItem} for why ordering still uses epoch seconds, not this).
    *
    * @param instant the instant to encode.
    * @return the ISO-8601 string stored on the item.

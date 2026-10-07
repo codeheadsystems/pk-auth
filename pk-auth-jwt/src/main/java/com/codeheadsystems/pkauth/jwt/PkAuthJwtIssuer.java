@@ -22,8 +22,8 @@ import org.jspecify.annotations.Nullable;
  * claims plus {@code pkauth.method}, {@code pkauth.cred}, {@code pkauth.amr}.
  *
  * <p>If a non-noop {@link AccessTokenStore} is bound, each issued token's jti is persisted in the
- * store before {@link #issue(JwtClaims)} returns. A store failure propagates — partial state
- * (signed token returned but unrecorded) is intentionally not tolerated.
+ * store before {@link #issue(JwtClaims)} returns. A store failure propagates; partial state (signed
+ * token returned but unrecorded) is not tolerated.
  */
 public final class PkAuthJwtIssuer {
 
@@ -53,8 +53,8 @@ public final class PkAuthJwtIssuer {
 
   /**
    * Constructs an issuer that records each issued JTI through the supplied {@link
-   * AccessTokenStore}. Use this constructor when the host needs server-side revocation of access
-   * tokens; pair with a {@link PkAuthJwtValidator} configured with the same store so {@link
+   * AccessTokenStore}. Hosts that need server-side revocation of access tokens use this constructor
+   * together with a {@link PkAuthJwtValidator} configured with the same store, so {@link
    * AccessTokenStore#exists(String)} is consulted at validation time.
    *
    * @since 1.1.0
@@ -75,9 +75,9 @@ public final class PkAuthJwtIssuer {
    * JwtClaims#audience()} when set, falling back to {@link JwtConfig#defaultAudience()}; the
    * access-token TTL is then looked up via {@link JwtConfig#ttlPolicy()} keyed by that audience.
    *
-   * <p>The issued jti is recorded in the configured {@link AccessTokenStore} <em>before</em> the
-   * wire token is returned. If recording fails, the exception propagates and no token is surfaced
-   * to the caller — the host must retry or surface the failure upstream.
+   * <p>The issued jti is recorded in the configured {@link AccessTokenStore} before the wire token
+   * is returned. If recording fails, the exception propagates and no token is surfaced to the
+   * caller; the host must retry or surface the failure upstream.
    */
   public String issue(JwtClaims claims) {
     return issue(claims, null);
@@ -85,16 +85,16 @@ public final class PkAuthJwtIssuer {
 
   /**
    * Issues a signed JWT whose lifetime is {@code ttlOverride} instead of the per-audience
-   * access-token TTL resolved from {@link JwtConfig#ttlPolicy()}. Use this for short-lived,
-   * single-purpose tokens (e.g. magic links) that must NOT inherit the full access-token validity
-   * window — a magic link minted at the 1-hour access TTL stays redeemable as a bearer token (and
+   * access-token TTL resolved from {@link JwtConfig#ttlPolicy()}. This suits short-lived,
+   * single-purpose tokens (e.g. magic links) that must not inherit the full access-token validity
+   * window: a magic link minted at the 1-hour access TTL stays redeemable as a bearer token (and
    * replayable past its single-use JTI retention) far longer than intended. A {@code null} {@code
    * ttlOverride} falls back to the audience's access TTL, making this exactly equivalent to {@link
    * #issue(JwtClaims)}.
    *
    * @param claims the claims to sign
    * @param ttlOverride the token lifetime, or {@code null} to use the audience access TTL
-   * @return the serialized, signed JWT
+   * @return the serialised, signed JWT
    * @since 2.2.0
    */
   public String issue(JwtClaims claims, @Nullable Duration ttlOverride) {

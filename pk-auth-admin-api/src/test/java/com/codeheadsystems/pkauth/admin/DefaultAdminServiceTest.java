@@ -525,7 +525,7 @@ class DefaultAdminServiceTest {
 
   /**
    * Captures the emailed magic-link URL so a test can recover the token. Since 2.3.0 {@link
-   * MagicLinkService.SendResult.Sent} carries only the jti, so — as for a real recipient — the
+   * MagicLinkService.SendResult.Sent} carries only the jti, so, as for a real recipient, the
    * emailed link is the only route to the token.
    */
   private static final class CapturingEmailSender implements EmailSender {

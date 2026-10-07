@@ -8,8 +8,8 @@ import com.codeheadsystems.pkauth.credential.CredentialRecord;
 import org.junit.jupiter.api.Test;
 
 /**
- * Phase 3 acceptance test: drive {@link CeremonyScenarios} against the in-memory implementations.
- * The same scenarios are also driven against JDBI and DynamoDB backends in Phase 5.
+ * Acceptance test that drives {@link CeremonyScenarios} against the in-memory implementations. The
+ * same scenarios are also driven against the JDBI and DynamoDB backends.
  */
 class FullCeremonyTest {
 

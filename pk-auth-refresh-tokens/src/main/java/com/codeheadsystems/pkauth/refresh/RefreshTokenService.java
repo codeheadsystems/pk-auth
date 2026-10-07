@@ -16,15 +16,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Issues, rotates, and revokes refresh tokens. See ADR 0013 for the family-based replay-defense
+ * Issues, rotates, and revokes refresh tokens. See ADR 0013 for the family-based replay-defence
  * design and the operational invariants this implementation must preserve.
  *
  * <p>Wire format is {@code "{refreshId}.{secret}"} where both halves are base64url. Only the
  * SHA-256 hash of the raw secret bytes is persisted; the wire token never gets logged.
  *
- * <p>This service does NOT issue access tokens itself — {@link #rotate(String)} returns the data
- * the caller needs to mint a fresh JWT via {@link com.codeheadsystems.pkauth.jwt.PkAuthJwtIssuer}.
- * The two primitives stay composable.
+ * <p>This service does not issue access tokens itself; {@link #rotate(String)} returns the data the
+ * caller needs to mint a fresh JWT via {@link com.codeheadsystems.pkauth.jwt.PkAuthJwtIssuer}. The
+ * two primitives stay composable.
  *
  * @since 1.1.0
  */
@@ -53,7 +53,7 @@ public final class RefreshTokenService {
 
   /**
    * Convenience constructor using a fresh {@link SecureRandom}. Production deployments typically
-   * pick this — the explicit-RNG ctor exists for tests with deterministic seeds.
+   * use this; the explicit-RNG ctor exists for tests with deterministic seeds.
    */
   public RefreshTokenService(
       RefreshTokenRepository repository, RefreshTokenConfig config, ClockProvider clockProvider) {
@@ -64,7 +64,7 @@ public final class RefreshTokenService {
    * Issues a fresh refresh token belonging to a new family (root of the rotation chain), defaulting
    * the carried {@code amr} to {@code ["user"]}.
    *
-   * @deprecated since 1.3.0 — prefer {@link #issue(UserHandle, String, Optional, List)} so the
+   * @deprecated since 1.3.0; prefer {@link #issue(UserHandle, String, Optional, List)} so the
    *     refresh family records the original authentication method references (RFC 8176) and
    *     refreshed access tokens reflect how the session was first established instead of a generic
    *     {@code ["user"]}. Retained for source compatibility.
@@ -76,8 +76,8 @@ public final class RefreshTokenService {
 
   /**
    * Issues a fresh refresh token belonging to a new family (root of the rotation chain). Returns
-   * the wire token plus the persisted record summary. The supplied {@code amr} — RFC 8176
-   * authentication method references describing how the user just authenticated — is stored on the
+   * the wire token plus the persisted record summary. The supplied {@code amr} (RFC 8176
+   * authentication method references describing how the user just authenticated) is stored on the
    * family and carried verbatim into every access token minted from a rotation of this token.
    *
    * @since 1.3.0

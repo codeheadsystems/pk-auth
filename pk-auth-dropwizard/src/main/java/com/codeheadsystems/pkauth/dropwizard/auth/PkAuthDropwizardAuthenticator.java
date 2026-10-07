@@ -13,11 +13,11 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Dropwizard {@link Authenticator} that validates a pk-auth JWT and surfaces a {@link
- * PkAuthPasskeyPrincipal}. Brief §6.11 — "Dropwizard → a Jersey {@code Authenticator}".
+ * PkAuthPasskeyPrincipal}. Brief §6.11: "Dropwizard → a Jersey {@code Authenticator}".
  *
  * <p>Verification failures (bad signature, expired, wrong issuer/audience) return {@link
  * Optional#empty()}, which causes {@link PkAuthDropwizardAuthFilter} to emit a 401. Malformed
- * payloads are intentionally treated the same: we never leak the underlying reason to the client.
+ * payloads are treated the same; the underlying reason is never leaked to the client.
  */
 public final class PkAuthDropwizardAuthenticator
     implements Authenticator<PkAuthPasskeyCredentials, PkAuthPasskeyPrincipal> {

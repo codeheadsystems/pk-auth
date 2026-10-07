@@ -20,16 +20,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Single-page Dropwizard demo for pk-auth. Boots with in-memory persistence by default; the brief
- * §6.14 calls for {@code --persistence=jdbi} (default) and {@code --persistence=dynamodb} flavors —
- * both are stubbed below; the JDBI variant routes to the in-memory SPIs in v0.x so the demo runs
- * without external Postgres. A real JDBI / DynamoDB wiring lands when the JDBI and DynamoDB modules
- * surface a higher-level {@code build()} factory (Phase 12 polish).
+ * Single-page Dropwizard demo for pk-auth. The persistence flavour is read from the {@code
+ * PKAUTH_PERSISTENCE} environment variable, then from the {@code pkauth.persistence} system
+ * property, and defaults to {@code memory}. Every flavour, including {@code jdbi} and {@code
+ * dynamodb}, currently routes to the testkit's in-memory SPIs, so the demo runs without external
+ * services. Real JDBI and DynamoDB wiring awaits a higher-level {@code build()} factory in those
+ * modules.
  *
- * <p>As of pk-auth 0.9.1 the demo uses {@link PkAuthBundle}'s alt-flow auto-wiring constructor —
- * the bundle internally builds the backup-code, magic-link, OTP, and admin services from the YAML
- * config plus the senders handed in via {@link AltFlowOptions}. The previous hand-wiring done by
- * the demo (~30 lines) is now done once inside the bundle and shared across the three adapters.
+ * <p>The demo uses {@link PkAuthBundle}'s alt-flow auto-wiring constructor, and the bundle
+ * internally builds the backup-code, magic-link, OTP, and admin services from the YAML config plus
+ * the senders handed in via {@link AltFlowOptions}. The bundle performs this wiring once, shared
+ * across the three adapters, so the demo carries no hand-wiring.
  */
 public final class DemoApplication extends Application<DemoConfiguration> {
 

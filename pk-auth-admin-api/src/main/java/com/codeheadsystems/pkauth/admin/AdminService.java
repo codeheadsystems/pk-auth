@@ -25,7 +25,7 @@ public interface AdminService {
    * COSE algorithm identifier, e.g. {@code -7} for ES256). Read-side support for a crypto-agility /
    * post-quantum re-enrollment campaign: an operator can enumerate which credentials still use a
    * Shor-vulnerable algorithm and prompt those users to re-enroll. The algorithm is read from the
-   * already-stored COSE key — no schema change. See ADR 0019.
+   * already-stored COSE key; no schema change. See ADR 0019.
    *
    * @since 2.1.0
    */
@@ -56,8 +56,8 @@ public interface AdminService {
   AdminResult<Void> startEmailVerification(UserHandle actor, UserHandle target, String email);
 
   /**
-   * Consumes a magic-link token and marks the user's email verified. Intentionally takes no {@code
-   * actor} — the brief mounts this endpoint as unauthenticated.
+   * Consumes a magic-link token and marks the user's email verified. Takes no {@code actor}; the
+   * brief mounts this endpoint as unauthenticated.
    *
    * @since 0.9.1
    */

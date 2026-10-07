@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 /**
- * Rotating refresh tokens with family-based replay defense.
+ * Rotating refresh tokens with family-based replay defence.
  *
  * <p>The {@link com.codeheadsystems.pkauth.refresh.RefreshTokenService} is the public entry point:
  * issue a token for a user, rotate it on every refresh, revoke a family on logout, or revoke every
@@ -12,8 +12,8 @@
  * <p>Wire format is {@code "{refreshId}.{secret}"} where both halves are base64url; only the
  * SHA-256 hash of the secret is persisted. The {@link
  * com.codeheadsystems.pkauth.refresh.spi.RefreshTokenRepository} SPI declares the atomic mark-used
- * contract that backs the replay defense — a single conditional UPDATE / DynamoDB conditional write
- * that succeeds iff the token is fresh.
+ * contract that backs the replay defence; it is a single conditional UPDATE / DynamoDB conditional
+ * write that succeeds iff the token is fresh.
  *
  * <p>The service does not call {@link com.codeheadsystems.pkauth.jwt.PkAuthJwtIssuer} on its own.
  * It returns the data the consumer needs to mint a fresh access token, keeping the two primitives

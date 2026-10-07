@@ -11,7 +11,7 @@ import java.util.Optional;
 
 /**
  * Provision methods shared by {@link PkAuthComponent} and {@link PkAuthFullComponent}: everything
- * {@link PkAuthModule} materializes for the ceremony endpoints, the auth filter, and the optional
+ * {@link PkAuthModule} materialises for the ceremony endpoints, the auth filter, and the optional
  * refresh endpoint. The bundle registers Jersey resources against this type so both components
  * share one registration path.
  *

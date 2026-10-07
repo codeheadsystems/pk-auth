@@ -27,7 +27,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * @param otp OTP service tunables (optional)
  * @param devMode {@code true} to enable in-memory testkit SPIs and logging email/SMS senders, plus
  *     auto-generation of a per-startup OTP pepper when {@code otp.pepper} is unset. Defaults to
- *     {@code false} — production deployments must supply real SPI beans, real senders, and a
+ *     {@code false}; production deployments must supply real SPI beans, real senders, and a
  *     configured pepper. {@code @since 0.9.1}
  */
 @ConfigurationProperties("pkauth")
@@ -41,8 +41,8 @@ public record PkAuthProperties(
 
   /**
    * Normalises the optional blocks ({@code ceremony}, {@code otp}, {@code refresh}) to their
-   * defaults so callers don't have to null-check. Required blocks ({@code relyingParty}, {@code
-   * jwt}) are left as the framework bound them — if absent, downstream wiring fails fast with a
+   * defaults so callers do not have to null-check. Required blocks ({@code relyingParty}, {@code
+   * jwt}) are left as the framework bound them; if absent, downstream wiring fails fast with a
    * clear message.
    */
   public PkAuthProperties {
@@ -58,7 +58,7 @@ public record PkAuthProperties(
   }
 
   /**
-   * Relying-party identity. All three fields are required (no defaults) — set {@code
+   * Relying-party identity. All three fields are required (no defaults); set {@code
    * pkauth.relying-party.id}, {@code .name}, and at least one {@code .origins[]} value.
    *
    * @param id WebAuthn relying-party id (typically the registrable domain, e.g. {@code
@@ -70,8 +70,8 @@ public record PkAuthProperties(
 
   /**
    * JWT issuance and validation. {@code issuer}, {@code audience}, and {@code secret} are all
-   * required — there is no random-key fallback. Only HS256 is configurable from properties;
-   * adapters needing ES256 wire a {@code JwtKeyset} bean explicitly.
+   * required; there is no random-key fallback. Only HS256 is configurable from properties; adapters
+   * needing ES256 wire a {@code JwtKeyset} bean explicitly.
    *
    * @param issuer the {@code iss} claim (required)
    * @param audience the default {@code aud} claim, used when {@link
@@ -93,11 +93,11 @@ public record PkAuthProperties(
 
   /**
    * Ceremony tunables forwarded to {@code CeremonyConfig}. Every field is optional; any left unset
-   * falls back to {@link com.codeheadsystems.pkauth.config.CeremonyConfig#defaults()} — notably
+   * falls back to {@link com.codeheadsystems.pkauth.config.CeremonyConfig#defaults()}; notably
    * {@code userVerification} defaults to {@code REQUIRED} and {@code counterRegression} to {@code
    * REJECT}, matching the framework-neutral core defaults (and the Micronaut/Dropwizard adapters).
    * These are security-load-bearing; relaxing them (e.g. {@code user-verification: preferred} for
-   * UV-less security keys) must be an explicit, deliberate host choice.
+   * UV-less security keys) must be an explicit host choice.
    *
    * @param challengeTtl how long an issued challenge remains valid (default 5 minutes)
    * @param userVerification WebAuthn UV requirement (default {@code REQUIRED})
@@ -108,7 +108,7 @@ public record PkAuthProperties(
    *     RS256); must be a subset of {@code acceptedAlgorithms}
    * @param acceptedAlgorithms COSE algorithms accepted on registration verify (default the
    *     historical union ES256, EdDSA, RS256, ES384, RS384); narrowing this can reject
-   *     already-registered credentials, so change deliberately
+   *     already-registered credentials, so narrowing is an explicit host choice
    * @since 2.0.0
    */
   public record Ceremony(
@@ -130,7 +130,7 @@ public record PkAuthProperties(
    *
    * @param pepper Base64-encoded server-side HMAC pepper for OTP code hashing. Decoded bytes must
    *     be at least 16 bytes (32+ recommended). Required in production. When unset, the starter
-   *     will only auto-generate a per-startup random pepper if {@code pkauth.dev-mode=true}. A
+   *     auto-generates a per-startup random pepper only if {@code pkauth.dev-mode=true}. A
    *     per-startup pepper invalidates outstanding OTPs across restarts and across cluster
    *     instances, which is unsafe in production.
    */
@@ -146,7 +146,7 @@ public record PkAuthProperties(
    * present in the application context (the JDBI and DynamoDB persistence modules each provide
    * one).
    *
-   * @param defaultTtl how long an issued refresh token lasts when its audience isn't listed in
+   * @param defaultTtl how long an issued refresh token lasts when its audience is not listed in
    *     {@code ttlsByAudience}. Null defaults to {@code 14d}.
    * @param ttlsByAudience per-audience refresh TTL overrides (e.g. {@code web=PT336H,
    *     cli=PT2160H}). Empty/null means every audience uses {@code defaultTtl}.

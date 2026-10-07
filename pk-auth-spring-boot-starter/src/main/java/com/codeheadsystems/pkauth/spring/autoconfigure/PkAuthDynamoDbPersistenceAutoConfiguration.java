@@ -26,13 +26,13 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
  * <ul>
  *   <li>{@code pk-auth-persistence-dynamodb} is on the classpath,
  *   <li>{@link DynamoDbEnhancedClient}, {@link DynamoDbClient}, and {@link PkAuthDynamoTables} are
- *       host-supplied beans (the AWS SDK is bring-your-own — we never construct the client because
- *       it owns credentials and region).
+ *       host-supplied beans (the AWS SDK is bring-your-own; the starter never constructs the client
+ *       because it owns credentials and region).
  * </ul>
  *
  * <p>Per brief §6.10, "if both jdbi and dynamodb are on the classpath, jdbi wins". This autoconfig
  * implements that as: {@link PkAuthJdbiPersistenceAutoConfiguration} runs first ({@code before =
- * PkAuthAutoConfiguration.class}); its beans register and we skip ours via {@code
+ * PkAuthAutoConfiguration.class}); its beans register and this autoconfig skips its own via {@code
  * ConditionalOnMissingBean}.
  */
 @AutoConfiguration(after = PkAuthJdbiPersistenceAutoConfiguration.class)

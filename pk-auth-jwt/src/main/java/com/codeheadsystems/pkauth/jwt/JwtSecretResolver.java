@@ -6,10 +6,9 @@ import java.nio.charset.StandardCharsets;
 /**
  * Shared JWT-secret resolution policy for every adapter (Spring, Micronaut, Dropwizard).
  *
- * <p>pk-auth's HS256 JWT issuer/validator need a stable signing key. A randomly-minted per-startup
- * key — previously the Spring starter's silent fallback when {@code pkauth.jwt.secret} was unset —
- * is unsafe: it breaks multi-instance deployments, invalidates outstanding tokens across restarts,
- * and silently masks misconfiguration. This resolver enforces a fail-fast policy:
+ * <p>pk-auth's HS256 JWT issuer/validator need a stable signing key. A randomly generated
+ * per-startup key is unsafe: it breaks multi-instance deployments, invalidates outstanding tokens
+ * across restarts, and silently masks misconfiguration. This resolver enforces a fail-fast policy:
  *
  * <ul>
  *   <li>Configured secret present → require ≥ 32 bytes when interpreted as UTF-8.
@@ -30,7 +29,7 @@ public final class JwtSecretResolver {
   }
 
   /**
-   * Validate the configured shared secret and return its UTF-8 bytes.
+   * Validates the configured shared secret and returns its UTF-8 bytes.
    *
    * @param configured the raw value of {@code pkauth.jwt.secret} (may be {@code null} or blank)
    * @return the secret encoded as UTF-8 bytes (≥ 32 bytes)

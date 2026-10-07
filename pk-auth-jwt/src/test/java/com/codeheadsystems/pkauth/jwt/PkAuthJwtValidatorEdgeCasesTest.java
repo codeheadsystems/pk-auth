@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test;
 
 /**
  * Exercises the malformed / missing-claim / wrong-shape branches of {@link
- * PkAuthJwtValidator#validate(String)} that the happy-path round-trip tests don't reach. Each test
+ * PkAuthJwtValidator#validate(String)} that the happy-path round-trip tests do not reach. Each test
  * hand-builds a structurally valid, correctly signed JWT and then perturbs exactly one claim so the
  * validator's defensive branch fires.
  */

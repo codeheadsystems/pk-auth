@@ -3,15 +3,15 @@ package com.codeheadsystems.pkauth.error;
 
 /**
  * Stable string codes that adapter modules map to HTTP error responses. Each code's string value is
- * the wire contract — do not rename without bumping the public API version.
+ * the wire contract; renaming a code requires bumping the public API version.
  *
- * <p><b>Reserved wire vocabulary.</b> Not every constant defined here is emitted by the currently
- * shipped adapter mappers. Codes that are not yet wired through (for example {@link
- * #CONFIGURATION}, {@link #ILLEGAL_STATE}, {@link #CREDENTIAL_DUPLICATE}, {@link #ORIGIN_MISMATCH},
- * {@link #ATTESTATION_REJECTED}, {@link #COUNTER_REGRESSION}, {@link #USER_VERIFICATION_REQUIRED},
- * {@link #INVALID_SIGNATURE}) are intentionally reserved as part of the wire contract — the library
- * may begin emitting them in a future release. Consumers should treat the full enum as the source
- * of truth, not the subset currently observable in production traffic.
+ * <p>Not every constant defined here is emitted by the currently shipped adapter mappers. Codes
+ * that are not yet wired through (for example {@link #CONFIGURATION}, {@link #ILLEGAL_STATE},
+ * {@link #CREDENTIAL_DUPLICATE}, {@link #ORIGIN_MISMATCH}, {@link #ATTESTATION_REJECTED}, {@link
+ * #COUNTER_REGRESSION}, {@link #USER_VERIFICATION_REQUIRED}, {@link #INVALID_SIGNATURE}) are
+ * reserved as part of the wire contract, and the library may begin emitting them in a future
+ * release. Consumers should treat the full enum as the source of truth, not the subset currently
+ * observable in production traffic.
  *
  * @since 0.9.0
  */

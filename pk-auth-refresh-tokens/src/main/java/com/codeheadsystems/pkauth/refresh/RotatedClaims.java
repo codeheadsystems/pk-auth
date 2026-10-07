@@ -9,9 +9,9 @@ import java.util.Optional;
 /**
  * Data the consumer needs to mint a fresh access token after a successful refresh-token rotation.
  * Returned inside {@link RotateResult.Success} so the caller (typically the refresh HTTP endpoint)
- * can hand the values to {@link com.codeheadsystems.pkauth.jwt.PkAuthJwtIssuer} — {@link
- * com.codeheadsystems.pkauth.refresh.RefreshTokenService} deliberately does NOT call the issuer
- * itself, to keep the two primitives composable.
+ * can hand the values to {@link com.codeheadsystems.pkauth.jwt.PkAuthJwtIssuer}; {@link
+ * com.codeheadsystems.pkauth.refresh.RefreshTokenService} does not call the issuer itself, which
+ * keeps the two primitives composable.
  *
  * @param userHandle owning user (from the rotated token's row)
  * @param audience audience the new access token should be scoped to (same as the rotated token's)

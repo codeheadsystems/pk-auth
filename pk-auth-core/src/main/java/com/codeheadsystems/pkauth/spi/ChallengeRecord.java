@@ -42,7 +42,7 @@ public record ChallengeRecord(
   }
 
   /**
-   * Back-compatible constructor for callers that don't carry a resolved user-verification
+   * Back-compatible constructor for callers that do not carry a resolved user-verification
    * requirement; equivalent to passing {@code null} for {@code userVerification}.
    *
    * @since 2.2.0
@@ -77,7 +77,7 @@ public record ChallengeRecord(
    * Which ceremony issued this challenge. Host-facing vocabulary matches the {@code
    * /auth/authentication/*} URL family rather than WebAuthn's internal "assertion" wording.
    *
-   * @since 0.9.1 — renamed from {@code ASSERTION}; pre-1.0 break with no deprecation.
+   * @since 0.9.1, renamed from {@code ASSERTION}; pre-1.0 break with no deprecation.
    */
   public enum Purpose {
     REGISTRATION,

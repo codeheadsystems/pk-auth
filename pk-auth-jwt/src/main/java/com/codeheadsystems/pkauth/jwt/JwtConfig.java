@@ -13,18 +13,17 @@ import org.jspecify.annotations.Nullable;
  *
  * <p>The {@code defaultAudience} is the audience the issuer uses when {@link JwtClaims#audience()}
  * is null on a call to {@link PkAuthJwtIssuer#issue(JwtClaims)}, and is always accepted by the
- * validator. Additional accepted audiences come from {@link TokenTtlPolicy#knownAudiences()} — see
+ * validator. Additional accepted audiences come from {@link TokenTtlPolicy#knownAudiences()}; see
  * {@link #allowedAudiences()} for the resolved set.
  *
- * <p><strong>Access-token TTL is your revocation window in stateless mode.</strong> With the
- * default {@link AccessTokenStore#noop() no-op access-token store}, pk-auth issues stateless JWTs
- * that cannot be invalidated before their {@code exp} — a logout or user-disable only stops
- * <em>new</em> tokens, while already-issued access tokens stay valid until they expire. The access
- * TTL ({@link #DEFAULT_TOKEN_TTL} = 1 hour by default, or per-audience via {@link TokenTtlPolicy})
- * is therefore the worst-case window an attacker keeps access after credentials are pulled; keep it
- * short (minutes-to-an-hour) and pair it with rotating refresh tokens for long sessions. Hosts that
- * need <em>immediate</em> revocation must bind a real {@link AccessTokenStore} (stateful mode); see
- * ADR 0015.
+ * <p>In stateless mode, the access-token TTL is the revocation window. With the default {@link
+ * AccessTokenStore#noop() no-op access-token store}, pk-auth issues stateless JWTs that cannot be
+ * invalidated before their {@code exp}; a logout or user-disable only stops new tokens, while
+ * already-issued access tokens stay valid until they expire. The access TTL ({@link
+ * #DEFAULT_TOKEN_TTL} = 1 hour by default, or per-audience via {@link TokenTtlPolicy}) is therefore
+ * the worst-case window an attacker keeps access after credentials are pulled. A short TTL (minutes
+ * to an hour) paired with rotating refresh tokens suits long sessions. Hosts that need immediate
+ * revocation must bind a real {@link AccessTokenStore} (stateful mode); see ADR 0015.
  *
  * @param issuer the {@code iss} claim value
  * @param defaultAudience the audience used when {@link JwtClaims#audience()} is absent at issue
@@ -85,8 +84,8 @@ public record JwtConfig(
   }
 
   /**
-   * Convenience constructor with the documented defaults — a single-TTL policy and the standard
-   * skew values.
+   * Convenience constructor with the documented defaults: a single-TTL policy and the standard skew
+   * values.
    */
   public static JwtConfig defaults(String issuer, String audience) {
     return new JwtConfig(
@@ -104,7 +103,7 @@ public record JwtConfig(
    * single-TTL policy, otherwise a per-audience policy (see {@link TokenTtlPolicy#from}).
    *
    * <p>This is the host-config-to-domain-config translation every framework adapter performs.
-   * Centralizing it ensures all adapters issue tokens with identical skew windows — a divergence
+   * Centralising it ensures all adapters issue tokens with identical skew windows; a divergence
    * here would be a silent, security-relevant inconsistency.
    *
    * @param issuer the {@code iss} claim value.

@@ -237,7 +237,7 @@ class MagicLinkServiceTest {
     /**
      * Extracts the magic-link token from the most recently dispatched email. Since 2.3.0 the token
      * is no longer returned on {@link MagicLinkService.SendResult.Sent} (it carries only the jti),
-     * so the emailed link is the only place a test — like a real recipient — can obtain it.
+     * so the emailed link is the only place a test, like a real recipient, can obtain it.
      */
     String lastToken() {
       assertThat(sent).isNotEmpty();

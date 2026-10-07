@@ -21,9 +21,9 @@ import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
- * Covers {@link DynamoDbUserLookup}'s registration / lookup surface — {@code getOrCreateHandle}
+ * Covers {@link DynamoDbUserLookup}'s registration / lookup surface: {@code getOrCreateHandle}
  * (create + idempotent re-fetch), {@code findHandleByUsername}, {@code register}, and {@code
- * findViewByHandle} — which the ceremony scenarios only touch via {@code getOrCreateHandle}.
+ * findViewByHandle}. The ceremony scenarios only touch this surface via {@code getOrCreateHandle}.
  */
 @Testcontainers
 @DisabledIfEnvironmentVariable(named = "PKAUTH_SKIP_TESTCONTAINERS", matches = "1")

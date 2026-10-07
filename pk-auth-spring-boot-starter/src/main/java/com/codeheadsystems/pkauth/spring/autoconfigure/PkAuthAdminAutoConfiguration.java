@@ -24,7 +24,7 @@ import org.springframework.context.annotation.Bean;
  *
  * <p>The {@link ConditionalOnClass} guard uses the class-name string form so this autoconfig can be
  * loaded without {@code pk-auth-admin-api} present without triggering {@code NoClassDefFoundError}
- * on the {@code @Bean} return types — Spring resolves the class names lazily.
+ * on the {@code @Bean} return types; Spring resolves the class names lazily.
  */
 @AutoConfiguration(after = PkAuthAutoConfiguration.class)
 @ConditionalOnClass(name = "com.codeheadsystems.pkauth.admin.AdminService")
@@ -38,7 +38,7 @@ public class PkAuthAdminAutoConfiguration {
 
   /**
    * Wires the admin service. The three alt-flow services are injected via {@link ObjectProvider} so
-   * a passkey-only host — one that wired no backup-code / OTP / magic-link feature — still gets a
+   * a passkey-only host (one that wired no backup-code / OTP / magic-link feature) still gets a
    * working admin service for credential management; the absent flows surface as {@code
    * ValidationFailed("… is not configured")} (see {@link DefaultAdminService.Dependencies}).
    */

@@ -10,16 +10,16 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortK
  * share this bean, distinguished by the {@code pk}/{@code sk} pattern:
  *
  * <ul>
- *   <li>Primary: {@code pk = "RT#<refreshId>"}, {@code sk = "RT#<refreshId>"} — fast lookup by
+ *   <li>Primary: {@code pk = "RT#<refreshId>"}, {@code sk = "RT#<refreshId>"}; fast lookup by
  *       refreshId. The load-bearing row for rotation.
- *   <li>User-index: {@code pk = "USER#<userHandleB64u>"}, {@code sk = "RT#<refreshId>"} — listing
+ *   <li>User-index: {@code pk = "USER#<userHandleB64u>"}, {@code sk = "RT#<refreshId>"}; listing
  *       and {@code revokeAllForUser} fan-out alongside this user's other state.
- *   <li>Family-index: {@code pk = "RTF#<familyId>"}, {@code sk = "RT#<refreshId>"} — fast scorch of
+ *   <li>Family-index: {@code pk = "RTF#<familyId>"}, {@code sk = "RT#<refreshId>"}; fast scorch of
  *       every member of a family.
  * </ul>
  *
  * <p>Two epoch-second attributes drive the lifecycle. {@code expiresAtEpoch} is the token's hard
- * expiry and is what the {@code rotateAtomically} freshness condition compares against — a numeric
+ * expiry and is what the {@code rotateAtomically} freshness condition compares against; a numeric
  * compare avoids the variable-precision pitfall of comparing {@code Instant.toString()} ISO
  * strings. {@code ttl} is {@code expiresAt + cleanupRetention}.epochSecond and is the attribute
  * DynamoDB's native TTL prunes on, so used / revoked / expired rows survive the forensic-retention

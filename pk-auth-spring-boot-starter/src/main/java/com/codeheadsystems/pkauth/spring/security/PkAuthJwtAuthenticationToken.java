@@ -14,9 +14,8 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
  * {@link UserHandle}; the underlying {@link JwtClaims} is available via {@link #getClaims()} for
  * downstream controllers that want to inspect the authentication method or credential id.
  *
- * <p>This is intentionally permissive — the filter sets it once the JWT signature and standard
- * claims (iss / aud / exp) have been validated by {@link com.codeheadsystems.pkauth.jwt
- * .PkAuthJwtValidator}.
+ * <p>This token is permissive: the filter sets it once the JWT signature and standard claims (iss /
+ * aud / exp) have been validated by {@link com.codeheadsystems.pkauth.jwt .PkAuthJwtValidator}.
  */
 public final class PkAuthJwtAuthenticationToken extends AbstractAuthenticationToken {
 

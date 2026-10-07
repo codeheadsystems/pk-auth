@@ -41,16 +41,16 @@ public interface BackupCodeRepository {
    * the partition under which the code lives; implementations use it to address the row directly
    * instead of scanning.
    *
-   * <p>Implementations MUST guarantee single-use semantics: the guarded UPDATE (or conditional
+   * <p>Implementations must guarantee single-use semantics: the guarded UPDATE (or conditional
    * write) must only succeed when an unconsumed row for {@code (userHandle, codeId)} exists.
-   * Concurrent callers observing the same code as unconsumed must NOT both receive {@code true} —
+   * Concurrent callers observing the same code as unconsumed must not both receive {@code true};
    * exactly one must win. Return value:
    *
    * <ul>
-   *   <li>{@code true} — this call atomically transitioned an unconsumed row to consumed and the
+   *   <li>{@code true}: this call atomically transitioned an unconsumed row to consumed and the
    *       caller is the unique winner. The caller may now mint a credential / JWT from this code.
-   *   <li>{@code false} — the row does not exist, was already consumed, or a concurrent caller won
-   *       the race. The caller MUST treat this as a verification miss.
+   *   <li>{@code false}: the row does not exist, was already consumed, or a concurrent caller won
+   *       the race. The caller must treat this as a verification miss.
    * </ul>
    *
    * @since 0.9.1
@@ -68,10 +68,11 @@ public interface BackupCodeRepository {
    * Atomically replaces all backup codes for a user: deletes every existing code and inserts the
    * supplied records in a single logical unit of work.
    *
-   * <p>Implementations MUST execute the delete and the inserts as a single atomic operation. A
-   * mid-operation failure must NOT leave the user with a partial or empty set of codes — readers
-   * must observe either the original set or the new set in its entirety. Use a database transaction
-   * (JDBI), {@code TransactWriteItems} (DynamoDB), or equivalent locking (in-memory).
+   * <p>Implementations must execute the delete and the inserts as a single atomic operation. A
+   * mid-operation failure must not leave the user with a partial or empty set of codes; readers
+   * must observe either the original set or the new set in its entirety. Implementations use a
+   * database transaction (JDBI), {@code TransactWriteItems} (DynamoDB), or equivalent locking
+   * (in-memory).
    *
    * @param userHandle the user whose codes are being replaced; must be non-null
    * @param records the new set of codes (may be empty)

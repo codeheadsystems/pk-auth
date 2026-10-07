@@ -17,8 +17,9 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 /**
  * Verifies the JDBI persistence autoconfig activates iff a {@link Jdbi} bean is present, and
- * registers every SPI bean once activated. We don't run real queries — Jdbi is wired against an H2
- * datasource that's never touched, since the test only inspects the application context.
+ * registers every SPI bean once activated. The test does not run real queries; Jdbi is wired
+ * against an H2 datasource that is never touched, since the test only inspects the application
+ * context.
  */
 class PkAuthJdbiPersistenceAutoConfigurationTest {
 

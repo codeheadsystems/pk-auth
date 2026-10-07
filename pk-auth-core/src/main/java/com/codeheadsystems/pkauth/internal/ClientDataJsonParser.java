@@ -11,9 +11,9 @@ import tools.jackson.databind.json.JsonMapper;
  * {@code origin} fields out of a registration or assertion response before handing the rest off to
  * WebAuthn4J for full cryptographic verification.
  *
- * <p>This parser intentionally does <em>not</em> validate the contents — it just exposes the fields
- * pk-auth needs to look up the {@code ChallengeRecord} in the store. All real validation
- * (signature, RP id, origin allow-list, counter, attestation) happens inside WebAuthn4J.
+ * <p>This parser does not validate the contents; it exposes the fields pk-auth needs to look up the
+ * {@code ChallengeRecord} in the store. All real validation (signature, RP id, origin allow-list,
+ * counter, attestation) happens inside WebAuthn4J.
  */
 public final class ClientDataJsonParser {
 
@@ -29,7 +29,7 @@ public final class ClientDataJsonParser {
     return MAPPER.readValue(json, ClientData.class);
   }
 
-  /** A subset of WebAuthn's {@code CollectedClientData} — only the fields pk-auth reads. */
+  /** A subset of WebAuthn's {@code CollectedClientData}: only the fields pk-auth reads. */
   public record ClientData(String type, String challenge, String origin) {
 
     /** Decodes the base64url-encoded challenge into raw bytes. */

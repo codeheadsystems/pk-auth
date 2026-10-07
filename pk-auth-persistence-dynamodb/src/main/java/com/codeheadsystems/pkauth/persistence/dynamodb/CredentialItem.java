@@ -191,7 +191,7 @@ public final class CredentialItem {
     this.version = version;
   }
 
-  /** Translates one of our {@link CredentialRecord} values into a DynamoDB item. */
+  /** Translates a {@link CredentialRecord} value into a DynamoDB item. */
   public static CredentialItem fromRecord(CredentialRecord r) {
     String credIdB64 = r.credentialId().b64url();
     String userB64 = Base64Url.encode(r.userHandle().value());

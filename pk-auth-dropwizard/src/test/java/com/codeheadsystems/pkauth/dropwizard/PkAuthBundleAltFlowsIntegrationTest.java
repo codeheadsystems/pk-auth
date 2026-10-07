@@ -32,7 +32,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 /**
  * Integration test for {@link PkAuthBundle}'s alt-flow auto-wiring constructor. Asserts that the
  * bundle builds the alt-flow services and admin resource entirely from {@link PkAuthConfig} +
- * {@link AltFlowOptions} — the host has zero hand-wiring code.
+ * {@link AltFlowOptions}; the host has zero hand-wiring code.
  */
 @ExtendWith(DropwizardExtensionsSupport.class)
 final class PkAuthBundleAltFlowsIntegrationTest {

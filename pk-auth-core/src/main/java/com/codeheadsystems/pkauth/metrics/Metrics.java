@@ -13,10 +13,10 @@ import java.util.Objects;
  */
 public interface Metrics {
 
-  /** Increment a counter, optionally tagged with key/value pairs. */
+  /** Increments a counter, optionally tagged with key/value pairs. */
   void incrementCounter(String name, String... tags);
 
-  /** Record a timing measurement. */
+  /** Records a timing measurement. */
   void recordTimer(String name, Duration duration, String... tags);
 
   /** Returns a metrics implementation that drops every measurement. */

@@ -1,21 +1,20 @@
 # pk-auth Spring Boot demo
 
 A single-page exercise of every flow in the pk-auth credential layer: passkey registration
-(including multi-passkey), passkey login, list/rename/delete credentials, regenerate
-backup codes (view-once), magic-link email verification, SMS OTP phone verification, and
-account summary. The post-login UI also decodes the issued JWT so you can see the claims.
+(including multi-passkey), passkey login, list/rename/delete credentials, regenerate backup codes
+(view-once), magic-link email verification, SMS OTP phone verification, and account summary. The
+post-login UI also decodes the issued JWT and displays the claims.
 
 ## Running
 
-The default profile boots with the testkit's in-memory adapters and needs no external
-services:
+The default profile boots with the testkit's in-memory adapters and needs no external services:
 
 ```sh
 ./gradlew :examples:spring-boot-demo:bootRun
 # open http://localhost:8080
 ```
 
-Use the `application` plugin's `run` task interchangeably:
+The `application` plugin's `run` task is interchangeable with `bootRun`:
 
 ```sh
 ./gradlew :examples:spring-boot-demo:run
@@ -23,8 +22,8 @@ Use the `application` plugin's `run` task interchangeably:
 
 ### Switching persistence backends
 
-Brief §6.14 requires both JDBI and DynamoDB variants. Start the external services with
-`docker compose up -d`, then point the demo at one or the other:
+Both JDBI and DynamoDB variants are selectable. `docker compose up -d` starts the external
+services, and the `demo.persistence` property selects one or the other:
 
 ```sh
 # Postgres-backed (Flyway migrations run at startup):
@@ -34,39 +33,37 @@ Brief §6.14 requires both JDBI and DynamoDB variants. Start the external servic
 ./gradlew :examples:spring-boot-demo:bootRun --args='--demo.persistence=dynamodb'
 ```
 
-> The wiring beans for `jdbi` and `dynamodb` are stubbed out in this demo — at the
-> moment the runtime flag toggles the property, but the actual `Jdbi` / `DynamoDbClient`
-> beans need to be supplied by the host app. A future iteration of this demo will ship
-> those as profile-conditional `@Configuration` classes. For now, the `memory` profile
-> is the supported runnable path; the JDBI / DynamoDB autoconfigs in the starter are
-> validated by the starter's tests.
+The wiring beans for `jdbi` and `dynamodb` are stubbed out in this demo. The runtime flag toggles
+the property, and the host application supplies the actual `Jdbi` and `DynamoDbClient` beans. The
+`memory` profile is the supported runnable path. The starter's tests validate the JDBI and DynamoDB
+autoconfigs.
 
 ## Endpoint surface
 
-The demo's HTML hits the standard pk-auth endpoints — there's no demo-specific REST
-surface beyond `GET /` returning the SPA. The endpoint table:
+The demo's HTML uses the standard pk-auth endpoints. The only demo-specific route is `GET /`, which
+returns the SPA.
 
-| Method | Path                                              | Purpose |
-|--------|---------------------------------------------------|---------|
-| POST   | /auth/passkeys/registration/start                 | Begin registration |
-| POST   | /auth/passkeys/registration/finish                | Finish registration |
-| POST   | /auth/passkeys/authentication/start               | Begin assertion |
-| POST   | /auth/passkeys/authentication/finish              | Finish assertion (mints JWT) |
-| GET    | /auth/admin/account                               | Current user summary |
-| GET    | /auth/admin/credentials                           | List passkeys |
-| PATCH  | /auth/admin/credentials/{credentialId}            | Rename a passkey |
-| DELETE | /auth/admin/credentials/{credentialId}            | Delete a passkey |
-| POST   | /auth/admin/backup-codes/regenerate               | View-once plaintext codes |
-| GET    | /auth/admin/backup-codes/count                    | Remaining count |
-| POST   | /auth/admin/email/start-verification              | Send magic link |
-| POST   | /auth/admin/email/complete-verification           | Consume token (unauth) |
-| POST   | /auth/admin/phone/start-verification              | Send OTP |
-| POST   | /auth/admin/phone/complete-verification           | Verify OTP |
+| Method | Path | Purpose |
+|--------|------|---------|
+| `POST` | `/auth/passkeys/registration/start` | Begin registration |
+| `POST` | `/auth/passkeys/registration/finish` | Finish registration |
+| `POST` | `/auth/passkeys/authentication/start` | Begin assertion |
+| `POST` | `/auth/passkeys/authentication/finish` | Finish assertion (mints JWT) |
+| `GET` | `/auth/admin/account` | Current user summary |
+| `GET` | `/auth/admin/credentials` | List passkeys |
+| `PATCH` | `/auth/admin/credentials/{credentialId}` | Rename a passkey |
+| `DELETE` | `/auth/admin/credentials/{credentialId}` | Delete a passkey |
+| `POST` | `/auth/admin/backup-codes/regenerate` | View-once plaintext codes |
+| `GET` | `/auth/admin/backup-codes/count` | Remaining count |
+| `POST` | `/auth/admin/email/start-verification` | Send magic link |
+| `POST` | `/auth/admin/email/complete-verification` | Consume token (unauthenticated) |
+| `POST` | `/auth/admin/phone/start-verification` | Send OTP |
+| `POST` | `/auth/admin/phone/complete-verification` | Verify OTP |
 
 ## End-to-end tests
 
-Playwright drives the full registration → login → manage passkeys → backup codes →
-magic link → OTP flow against Chrome's CDP virtual WebAuthn authenticator. Run with:
+Playwright drives the full registration, login, passkey management, backup codes, magic link, and
+OTP flow against Chrome's CDP virtual WebAuthn authenticator:
 
 ```sh
 (cd examples/spring-boot-demo/e2e && npm install)
@@ -74,17 +71,17 @@ magic link → OTP flow against Chrome's CDP virtual WebAuthn authenticator. Run
 ```
 
 The Playwright config's `webServer` block starts the demo on demand via
-`./gradlew :examples:spring-boot-demo:run`. To run against a pre-started demo (e.g.
-in CI alongside Postgres / DynamoDB Local), set `PK_DEMO_EXTERNAL=1`.
+`./gradlew :examples:spring-boot-demo:run`. With `PK_DEMO_EXTERNAL=1`, the suite runs against a
+pre-started demo, for example in CI alongside Postgres and DynamoDB Local.
 
 ## Notes
 
-- Magic-link tokens and SMS OTPs are logged to the server console (the demo's senders
-  are `LoggingEmailSender` / `LoggingSmsSender`). Copy them out of the log and paste
-  back into the form to complete the corresponding flow.
-- The demo's SPA lives in `src/main/resources/static/index.html` and `demo.js`, both of
-  which consume the `@pk-auth/passkeys-browser` SDK (bundled into the demo's static
-  resources at build time by the `processResources` Copy task).
-- WebAuthn requires a secure origin. `http://localhost:8080` is secure-by-loopback in
-  every major browser. Running the demo behind a remote host needs HTTPS.
-- Virtual threads are enabled (`spring.threads.virtual.enabled=true`) per brief §11.
+- Magic-link tokens and SMS OTPs are logged to the server console by the demo's senders,
+  `LoggingEmailSender` and `LoggingSmsSender`. The token or code is copied from the log and pasted
+  into the form to complete the corresponding flow.
+- The demo's SPA lives in `src/main/resources/static/index.html` and `demo.js`, both of which
+  consume the `@pk-auth/passkeys-browser` SDK. The `processResources` Copy task bundles the SDK into
+  the demo's static resources at build time.
+- WebAuthn requires a secure origin. `http://localhost:8080` is secure-by-loopback in every major
+  browser. Running the demo behind a remote host needs HTTPS.
+- Virtual threads are enabled with `spring.threads.virtual.enabled=true`.

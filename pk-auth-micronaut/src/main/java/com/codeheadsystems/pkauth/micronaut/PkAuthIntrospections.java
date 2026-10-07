@@ -33,9 +33,9 @@ import io.micronaut.core.annotation.Introspected;
 
 /**
  * Registers Micronaut bean-introspection metadata for every pk-auth wire type that crosses the
- * Micronaut serialization boundary. The records live in {@code pk-auth-core} so we can't annotate
- * them in place; the {@code @Introspected(classes = …)} sweep on this placeholder class teaches
- * Micronaut's compile-time processor to generate introspection adapters for each one.
+ * Micronaut serialisation boundary. The records live in {@code pk-auth-core} so they cannot be
+ * annotated in place; the {@code @Introspected(classes = …)} sweep on this placeholder class
+ * teaches Micronaut's compile-time processor to generate introspection adapters for each one.
  */
 @Introspected(
     classes = {

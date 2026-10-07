@@ -18,8 +18,8 @@ import org.jspecify.annotations.Nullable;
  * com.codeheadsystems.pkauth.dropwizard.HasPkAuthConfig}) and the bundle pulls it out at {@code
  * run()} time.
  *
- * <p>Defaults are intentionally not provided here — every field is required so misconfiguration
- * fails at start-up rather than silently using a dev-only value in production.
+ * <p>Defaults are not provided here: every field is required, so misconfiguration fails at start-up
+ * instead of silently using a dev-only value in production.
  *
  * <p>The alt-flow blocks ({@link Otp}, {@link MagicLink}, {@link BackupCode}) are optional at the
  * record level so a host that only ships passkey ceremony endpoints does not have to provide them.
@@ -172,9 +172,9 @@ public record PkAuthConfig(
   /**
    * OTP service tunables. Mirrors Spring's {@code pkauth.otp} and Micronaut's {@code pkauth.otp}.
    *
-   * <p>{@code pepper} is the server-side HMAC pepper for OTP-code hashing — required in production,
-   * no default. Decoded bytes must be at least 16 (32+ recommended). A captured DB dump without
-   * this value cannot brute-force outstanding codes.
+   * <p>{@code pepper} is the server-side HMAC pepper for OTP-code hashing; required in production,
+   * with no default. Decoded bytes must be at least 16 (32+ recommended). A captured DB dump
+   * without this value cannot brute-force outstanding codes.
    *
    * @param pepper raw pepper bytes; ≥ 16 bytes required.
    * @since 0.9.1
@@ -202,7 +202,7 @@ public record PkAuthConfig(
    * The Dropwizard adapter requires hosts to spell baseUrl out so production deploys cannot fall
    * through to a development default.
    *
-   * @param baseUrl the URL prefix the magic-link will be assembled against — required, no default.
+   * @param baseUrl the URL prefix the magic-link will be assembled against; required, no default.
    * @since 0.9.1
    */
   public record MagicLink(String baseUrl) {
@@ -217,8 +217,8 @@ public record PkAuthConfig(
   /**
    * Backup-code service tunables. The current {@code BackupCodeService} surface has no required
    * configuration beyond its SPI collaborators, so this block exists purely as a future seam
-   * (matching Spring / Micronaut's symmetric block shape). Pass an empty record if you want the
-   * service auto-wired with library defaults.
+   * (matching Spring / Micronaut's symmetric block shape). An empty record auto-wires the service
+   * with library defaults.
    *
    * @since 0.9.1
    */
@@ -229,7 +229,7 @@ public record PkAuthConfig(
    * com.codeheadsystems.pkauth.refresh.spi.RefreshTokenRepository} via {@link
    * com.codeheadsystems.pkauth.dropwizard.dagger.PersistenceBindings.Builder#refreshTokenRepository}.
    *
-   * @param defaultTtl how long a refresh token lasts when its audience isn't in {@code
+   * @param defaultTtl how long a refresh token lasts when its audience is not in {@code
    *     ttlsByAudience}; null defaults to {@link RefreshTokenConfig#DEFAULT_REFRESH_TTL}.
    * @param ttlsByAudience per-audience refresh TTL overrides.
    * @param cleanupRetention forensic-retention window; null defaults to {@link

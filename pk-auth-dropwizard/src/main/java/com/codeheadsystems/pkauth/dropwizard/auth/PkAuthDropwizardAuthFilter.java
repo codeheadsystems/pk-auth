@@ -14,11 +14,11 @@ import org.jspecify.annotations.Nullable;
 /**
  * Bearer-token {@link io.dropwizard.auth.AuthFilter} that extracts a JWT from the {@code
  * Authorization: Bearer ...} header and delegates verification to a {@link
- * PkAuthDropwizardAuthenticator}. Brief §6.11 — "JWT validation via a Jersey filter".
+ * PkAuthDropwizardAuthenticator}. Brief §6.11: "JWT validation via a Jersey filter".
  *
- * <p>We hand-roll this rather than use Dropwizard's bundled {@code OAuthCredentialAuthFilter}
- * because we want the wire-credential type to be {@link PkAuthPasskeyCredentials} (strongly typed
- * in the bundle's DI graph) rather than {@code String}.
+ * <p>This filter is hand-rolled instead of using Dropwizard's bundled {@code
+ * OAuthCredentialAuthFilter}, so that the wire-credential type is {@link PkAuthPasskeyCredentials}
+ * (strongly typed in the bundle's DI graph) rather than {@code String}.
  */
 @Priority(Priorities.AUTHENTICATION)
 public final class PkAuthDropwizardAuthFilter
@@ -26,7 +26,7 @@ public final class PkAuthDropwizardAuthFilter
 
   private static final String BEARER_PREFIX = "Bearer ";
 
-  /** Builder honoring the standard {@link AuthFilter.AuthFilterBuilder} contract. */
+  /** Builder honouring the standard {@link AuthFilter.AuthFilterBuilder} contract. */
   public static final class Builder
       extends AuthFilterBuilder<
           PkAuthPasskeyCredentials, PkAuthPasskeyPrincipal, PkAuthDropwizardAuthFilter> {

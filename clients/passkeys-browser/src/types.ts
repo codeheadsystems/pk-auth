@@ -2,7 +2,7 @@
 
 import type { Base64Url } from "./base64url";
 
-/** Caller-supplied bearer-token accessor. Returns null when there's no session yet. */
+/** Caller-supplied bearer-token accessor. Returns null when no session exists. */
 export type TokenAccessor = () => string | null;
 
 /** Construction options shared by the ceremony and admin clients. */
@@ -14,11 +14,11 @@ export interface ClientOptions {
    * ceremony operations are anonymous and will not call it.
    */
   getToken?: TokenAccessor;
-  /** Override the global fetch (handy for tests). */
+  /** Replacement for the global `fetch`, used in tests. */
   fetch?: typeof fetch;
 }
 
-// -- Ceremony wire shapes ----------------------------------------------------
+// Ceremony wire shapes
 
 export interface RpEntity {
   id: string;
@@ -118,7 +118,7 @@ export interface FinishAuthenticationRequest {
   response: AuthenticationResponseJson;
 }
 
-/** Server returns the wrapped RegistrationResult; relevant fields are surfaced here. */
+/** The server returns the wrapped RegistrationResult; the relevant fields are surfaced here. */
 export interface FinishRegistrationResponse {
   credential: {
     credentialId: Base64Url;
@@ -137,7 +137,7 @@ export interface FinishAuthenticationResponse {
   token: string;
 }
 
-// -- Admin wire shapes --------------------------------------------------------
+// Admin wire shapes
 
 export interface CredentialSummary {
   credentialId: Base64Url;
@@ -171,13 +171,13 @@ export interface BackupCodeCount {
 export interface EmailDispatchResult {
   /** Implementation-defined token / link reference returned by the dispatcher. */
   dispatchId?: string;
-  /** Magic-link token (testkit / dev only — real dispatchers send it out of band). */
+  /** Magic-link token (testkit and development only; real dispatchers send it out of band). */
   token?: string;
 }
 
 export interface PhoneDispatchResult {
   dispatchId?: string;
-  /** OTP code (testkit / dev only — real dispatchers send it via SMS). */
+  /** OTP code (testkit and development only; real dispatchers send it via SMS). */
   code?: string;
 }
 

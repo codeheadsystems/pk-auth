@@ -152,7 +152,7 @@ public final class OtpItem {
     return item;
   }
 
-  /** Materializes the row as a {@link StoredOtp}. */
+  /** Materialises the row as a {@link StoredOtp}. */
   public StoredOtp toRecord() {
     return new StoredOtp(
         otpId,

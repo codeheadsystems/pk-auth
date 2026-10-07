@@ -4,19 +4,17 @@ package com.codeheadsystems.pkauth.config;
 /**
  * The COSE signature algorithms pk-auth can offer to an authenticator and accept on a passkey
  * registration. This is the single, framework-neutral vocabulary that both the create-options
- * ceremony and the WebAuthn4J verification path map from (see {@link CeremonyConfig}); it replaces
- * the two formerly-divergent hardcoded lists.
+ * ceremony and the WebAuthn4J verification path map from (see {@link CeremonyConfig}).
  *
  * <p>Each constant carries its <a href="https://www.iana.org/assignments/cose/cose.xhtml">IANA COSE
  * algorithm identifier</a> (the negative integer that appears as label {@code 3} in a COSE key and
  * in {@code PublicKeyCredentialParameters.alg} on the wire).
  *
- * <p><strong>Post-quantum note.</strong> Every algorithm here (ECDSA, EdDSA, RSA-PKCS1) is
- * Shor-vulnerable. No post-quantum signature scheme is yet standardized in the WebAuthn/COSE/FIDO2
- * stack or implemented by WebAuthn4J, so none can be added today. This enum is the seam through
- * which a quantum-safe COSE algorithm would be introduced once the ecosystem supports it — without
- * touching the ceremony or verification code. See {@code docs/threat-model.md} (Post-quantum
- * readiness) and ADR 0019.
+ * <p>Post-quantum note: every algorithm here (ECDSA, EdDSA, RSA-PKCS1) is Shor-vulnerable. No
+ * post-quantum signature scheme is yet standardised in the WebAuthn/COSE/FIDO2 stack or implemented
+ * by WebAuthn4J, so none can be added today. This enum is the seam through which a quantum-safe
+ * COSE algorithm would be introduced once the ecosystem supports it, without touching the ceremony
+ * or verification code. See {@code docs/threat-model.md} (Post-quantum readiness) and ADR 0019.
  *
  * @since 2.1.0
  */

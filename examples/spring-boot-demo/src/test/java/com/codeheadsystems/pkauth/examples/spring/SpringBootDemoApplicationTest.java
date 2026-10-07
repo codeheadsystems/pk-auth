@@ -20,8 +20,8 @@ import org.springframework.test.web.servlet.MockMvc;
  * <ul>
  *   <li>the application context refreshes cleanly,
  *   <li>the SPA index page is served at {@code /},
- *   <li>the starter's ceremony endpoint is reachable (the demo doesn't redefine it — this proves
- *       the starter wiring is present in the demo's classpath).
+ *   <li>the starter's ceremony endpoint is reachable (the demo does not redefine it, so this
+ *       confirms the starter wiring is present on the demo's classpath).
  * </ul>
  *
  * <p>Full ceremony coverage lives in {@code pk-auth-spring-boot-starter}'s integration tests.

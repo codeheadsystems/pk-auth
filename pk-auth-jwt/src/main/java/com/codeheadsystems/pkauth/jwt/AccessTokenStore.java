@@ -6,9 +6,9 @@ import java.time.Instant;
 import java.util.Optional;
 
 /**
- * SPI for persisting issued JWT JTIs ("stateful access tokens"). Bind a real implementation when
- * the host needs server-side revocation of access tokens — e.g. an immediate logout that rejects
- * the bearer's still-unexpired JWT, or a "log out everywhere" admin action.
+ * SPI for persisting issued JWT JTIs ("stateful access tokens"). Hosts bind a real implementation
+ * when they need server-side revocation of access tokens, for example an immediate logout that
+ * rejects the bearer's still-unexpired JWT, or a "log out everywhere" admin action.
  *
  * <p>{@link PkAuthJwtIssuer#issue(JwtClaims)} calls {@link #record record} for every issued token;
  * {@link PkAuthJwtValidator#validate(String)} calls {@link #exists exists} after signature and
@@ -17,19 +17,19 @@ import java.util.Optional;
  * persists nothing, preserving stateless-JWT behaviour for hosts that want it.
  *
  * <p>Contrast with {@link RevocationCheck}: that SPI is a fast deny-list ("is this jti blocked?").
- * {@code AccessTokenStore} is the inverse — a positive allow-list ("did we issue this jti and has
- * it not been deleted?"). The two coexist intentionally:
+ * {@code AccessTokenStore} is the inverse: a positive allow-list ("was this jti issued, and has it
+ * not been deleted?"). The two coexist:
  *
  * <ul>
- *   <li><b>Stateless mode</b> — no store bound (i.e. {@link #noop()} active). Tokens are valid
- *       until {@code exp}. Hosts that want lightweight invalidation use {@link RevocationCheck} to
- *       consult a small in-memory deny-list of revoked jtis.
- *   <li><b>Stateful mode</b> — a real store is bound. Every issued token has a row; deleting the
- *       row (e.g. on logout) immediately invalidates the bearer.
+ *   <li>Stateless mode: no store bound (i.e. {@link #noop()} active). Tokens are valid until {@code
+ *       exp}. Hosts that want lightweight invalidation use {@link RevocationCheck} to consult a
+ *       small in-memory deny-list of revoked jtis.
+ *   <li>Stateful mode: a real store is bound. Every issued token has a row; deleting the row (e.g.
+ *       on logout) immediately invalidates the bearer.
  * </ul>
  *
  * <p>Implementations must be safe to call from many threads concurrently. Failures from {@link
- * #record} must propagate so issuance fails — partial state is unacceptable. See ADR 0015.
+ * #record} must propagate so issuance fails; partial state is unacceptable. See ADR 0015.
  *
  * @since 1.1.0
  */
@@ -65,23 +65,23 @@ public interface AccessTokenStore {
    * <p>The {@link #noop()} implementation returns {@code true} unconditionally so stateless
    * deployments behave as if no store were involved.
    *
-   * <p><strong>Fail closed on outage.</strong> If the backing store is unreachable, throw rather
-   * than returning {@code true}: a thrown exception propagates out of {@link
+   * <p>Fail closed on outage: if the backing store is unreachable, implementations throw rather
+   * than return {@code true}: a thrown exception propagates out of {@link
    * PkAuthJwtValidator#validate(String)} so the host's filter rejects the request (no token
-   * accepted), whereas returning {@code true} would fail <em>open</em> and accept a
-   * possibly-revoked token during the outage. Host integrations must therefore treat a thrown
-   * {@code validate(...)} as an authentication failure, not swallow it into success.
+   * accepted), whereas returning {@code true} would fail open and accept a possibly-revoked token
+   * during the outage. Host integrations must therefore treat a thrown {@code validate(...)} as an
+   * authentication failure, not swallow it into success.
    */
   boolean exists(String jti);
 
   /**
    * Removes the row for the given {@code jti}, but only if it is owned by {@code userHandle}.
    * Idempotent. Returns {@code true} iff a row was deleted; an ownership mismatch returns {@code
-   * false} (silent — same shape as "not found", so callers can't use this to probe for jti
-   * existence across users). The {@code userHandle} scope is defense-in-depth on top of the
+   * false} (silent, with the same shape as "not found", so callers cannot use this to probe for jti
+   * existence across users). The {@code userHandle} scope is defence in depth on top of the
    * service-layer ownership check: even with a 122-bit random JTI making cross-user collision
    * implausible, requiring the owner on the predicate ensures a future caller forwarding a
-   * client-supplied jti without an ownership check can't escalate into IDOR.
+   * client-supplied jti without an ownership check cannot escalate into IDOR.
    */
   boolean delete(UserHandle userHandle, String jti);
 
@@ -95,16 +95,16 @@ public interface AccessTokenStore {
 
   /**
    * Operator cleanup hook: removes rows whose {@code expires_at} is strictly less than {@code
-   * before}. Stateful access tokens have a natural pruning window — once {@code exp} has passed,
-   * the bearer is rejected on the {@code exp} check anyway, so the row is no longer load-bearing.
-   * Schedule this as a periodic job; see {@code docs/operator-guide.md}.
+   * before}. Stateful access tokens have a natural pruning window: once {@code exp} has passed, the
+   * bearer is rejected on the {@code exp} check anyway, so the row is no longer load-bearing. Hosts
+   * schedule this as a periodic job; see {@code docs/operator-guide.md}.
    */
   int deleteExpiredBefore(Instant before);
 
   /**
    * Returns a no-op store: {@link #record} discards, {@link #exists} returns {@code true} for every
    * jti, and the delete/cleanup methods all return zero. This is the default binding when the host
-   * has not supplied a real implementation — issuance and validation behave as if no server-side
+   * has not supplied a real implementation; issuance and validation behave as if no server-side
    * state existed.
    */
   static AccessTokenStore noop() {

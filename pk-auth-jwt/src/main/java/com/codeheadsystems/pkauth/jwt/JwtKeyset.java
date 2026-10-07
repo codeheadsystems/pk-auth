@@ -36,12 +36,12 @@ public final class JwtKeyset {
 
   /**
    * HS256 (symmetric) keyset. Appropriate whenever the issuer and verifier share a trust boundary
-   * (the common single-issuer/single-verifier deployment) — not a "dev-only" mode. The supplied
-   * secret must be at least 256 bits per RFC 7518 §3.2; Nimbus rejects shorter keys. With a {@code
-   * >= 256}-bit key HMAC-SHA256 is also the quantum-conservative choice (Shor does not apply;
-   * Grover leaves ~128-bit effective security). Use {@link #es256(ECKey, ECKey...)} instead only
-   * when an untrusted third party must verify tokens without the power to mint them. See the
-   * package Javadoc and {@code docs/threat-model.md} (Post-quantum readiness).
+   * (the common single-issuer/single-verifier deployment); it is not a "dev-only" mode. The
+   * supplied secret must be at least 256 bits per RFC 7518 §3.2; Nimbus rejects shorter keys. With
+   * a {@code >= 256}-bit key HMAC-SHA256 is also the quantum-conservative choice (Shor does not
+   * apply; Grover leaves ~128-bit effective security). {@link #es256(ECKey, ECKey...)} is the
+   * alternative when an untrusted third party must verify tokens without the power to mint them.
+   * See the package Javadoc and {@code docs/threat-model.md} (Post-quantum readiness).
    */
   public static JwtKeyset hs256(byte[] secret) {
     Objects.requireNonNull(secret, "secret");
@@ -58,8 +58,8 @@ public final class JwtKeyset {
 
   /**
    * ES256 keyset. {@code current} is the active signing key; tokens it issues are signed by it.
-   * Each entry in {@code retired} remains valid for verification — typical pattern for graceful key
-   * rotation.
+   * Each entry in {@code retired} remains valid for verification; this is the typical pattern for
+   * graceful key rotation.
    */
   public static JwtKeyset es256(ECKey current, ECKey... retired) {
     Objects.requireNonNull(current, "current");

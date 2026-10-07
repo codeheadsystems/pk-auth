@@ -11,11 +11,11 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * Runs all preflight checks on a registration- or authentication-finish request <em>before</em> the
- * heavy WebAuthn4J verification is invoked.
+ * Runs all preflight checks on a registration- or authentication-finish request before the heavy
+ * WebAuthn4J verification is invoked.
  *
  * <p>Extracted from {@code DefaultPasskeyAuthenticationService} so the ceremony methods read as
- * {@code validate → verify → map → emit} instead of an inlined wall of bail-out branches.
+ * {@code validate → verify → map → emit} without inlined bail-out branches.
  *
  * <p>The validator is stateless beyond its collaborators. Each {@link #validate} call:
  *
@@ -23,8 +23,8 @@ import java.util.Optional;
  *   <li>parses the client-supplied {@code clientDataJSON};
  *   <li>checks the ceremony marker (registration vs authentication);
  *   <li>checks the origin against {@link OriginValidator};
- *   <li>consumes the {@link ChallengeRecord} via {@link ChallengeStore#takeOnce} (one-shot — even
- *       on later failure the record is gone), keyed by the opaque {@link ChallengeId} the client
+ *   <li>consumes the {@link ChallengeRecord} via {@link ChallengeStore#takeOnce} (one-shot; even on
+ *       later failure the record is gone), keyed by the opaque {@link ChallengeId} the client
  *       round-trips from the start response;
  *   <li>checks the stored record's purpose, byte equality (the cryptographic binding between the
  *       stored challenge and the bytes the authenticator signed), and expiry.
@@ -111,7 +111,7 @@ public final class ChallengeValidator {
   }
 
   /**
-   * Validate a finish-ceremony request.
+   * Validates a finish-ceremony request.
    *
    * @param ceremony which ceremony this finish belongs to
    * @param challengeId the explicit challenge id sent on the request

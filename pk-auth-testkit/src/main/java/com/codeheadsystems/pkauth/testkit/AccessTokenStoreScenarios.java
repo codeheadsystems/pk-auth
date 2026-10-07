@@ -14,7 +14,8 @@ import java.util.Optional;
  * InMemoryAccessTokenStoreTest}, JDBI integration tests, and DynamoDB integration tests so every
  * backend behaves identically.
  *
- * <p>Construct with a fresh, empty store and invoke each scenario from a {@code @Test} method.
+ * <p>Each scenario runs from a {@code @Test} method against a fresh, empty store passed to the
+ * constructor.
  *
  * @since 1.1.0
  */
@@ -39,7 +40,9 @@ public final class AccessTokenStoreScenarios {
     assertThat(store.delete(user, "jti-A")).isFalse();
   }
 
-  /** Ownership mismatch is a silent no-op — caller can't probe for jti existence across users. */
+  /**
+   * Ownership mismatch is a silent no-op; the caller cannot probe for jti existence across users.
+   */
   public void deleteRejectsForeignOwner() {
     UserHandle alice = UserHandle.of(new byte[] {1});
     UserHandle bob = UserHandle.of(new byte[] {2});

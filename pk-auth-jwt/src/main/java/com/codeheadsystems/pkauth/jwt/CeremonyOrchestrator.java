@@ -22,13 +22,12 @@ import org.slf4j.LoggerFactory;
 /**
  * Framework-neutral orchestrator for the four WebAuthn ceremony endpoints. Adapters (Spring,
  * Dropwizard, Micronaut) hold a single instance of this class and delegate each endpoint to one
- * method here, so the post-processing — JWT minting on a successful assertion, credential-label
- * lookup, and {@link CeremonyWireMapper} dispatch — lives in exactly one place.
+ * method here, so the post-processing (JWT minting on a successful assertion, credential-label
+ * lookup, and {@link CeremonyWireMapper} dispatch) lives in one place.
  *
- * <p>Before this helper existed each adapter's controller hand-rolled the same
- * finish-authentication pipeline (call service, switch on {@link AssertionResult}, mint JWT, look
- * up label, map to wire shape), with subtle drift between them. This orchestrator removes that
- * drift.
+ * <p>The orchestrator holds the finish-authentication pipeline (call service, switch on {@link
+ * AssertionResult}, mint JWT, look up label, map to wire shape), so the three adapters share one
+ * implementation.
  *
  * <p>{@code start*} endpoints are pass-throughs to {@link PasskeyAuthenticationService}; they live
  * here purely for symmetry so adapters can hold one dependency instead of three.

@@ -24,14 +24,14 @@ import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 /**
- * Guards the production-safety invariant: the testkit's in-memory SPI defaults must NOT activate
+ * Guards the production-safety invariant: the testkit's in-memory SPI defaults must not activate
  * unless the host opts in via {@code pkauth.dev-mode=true}. Without the flag, a host that forgets
  * to declare persistence beans should fail to start rather than silently boot against per-JVM
  * in-memory storage.
  *
  * <p>Required adapter config (RP id/name/origins, JWT issuer/audience/secret) is set explicitly on
- * every case so we reach the dev-mode guard rather than tripping the new fail-fast guards on those
- * properties.
+ * every case so the test reaches the dev-mode guard rather than tripping the new fail-fast guards
+ * on those properties.
  */
 class PkAuthDevModeGuardTest {
 

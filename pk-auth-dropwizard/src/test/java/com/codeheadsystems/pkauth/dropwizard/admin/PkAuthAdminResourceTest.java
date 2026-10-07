@@ -20,7 +20,7 @@ import org.junit.jupiter.api.Test;
 
 /**
  * Direct unit coverage of {@link PkAuthAdminResource}'s missing-body branches, which are awkward to
- * reach over HTTP (e.g. PATCH isn't supported by the default JAX-RS client connector).
+ * reach over HTTP (e.g. PATCH is not supported by the default JAX-RS client connector).
  */
 class PkAuthAdminResourceTest {
 

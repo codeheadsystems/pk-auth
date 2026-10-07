@@ -10,10 +10,10 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortK
  * pk/sk addresses:
  *
  * <ul>
- *   <li>Primary: {@code pk = "AT#<jti>"}, {@code sk = "AT#<jti>"} — fast lookup by jti for {@code
+ *   <li>Primary: {@code pk = "AT#<jti>"}, {@code sk = "AT#<jti>"}; fast lookup by jti for {@code
  *       exists} and {@code delete}.
- *   <li>User-index: {@code pk = "USER#<userHandleB64u>"}, {@code sk = "AT#<jti>"} — fan-out path
- *       for {@code deleteAllForUser} alongside this user's other state.
+ *   <li>User-index: {@code pk = "USER#<userHandleB64u>"}, {@code sk = "AT#<jti>"}; fan-out path for
+ *       {@code deleteAllForUser} alongside this user's other state.
  * </ul>
  *
  * <p>The {@code ttl} attribute is set to {@code expiresAt.epochSecond}, so DynamoDB's native TTL

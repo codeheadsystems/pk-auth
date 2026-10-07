@@ -65,7 +65,7 @@ public sealed interface ChallengeValidation {
     }
   }
 
-  /** No record exists for the challenge id — unknown, expired, or already consumed. */
+  /** No record exists for the challenge id: unknown, expired, or already consumed. */
   record MissingOrConsumed() implements ChallengeValidation {
     public String detail() {
       return "unknown, expired, or already-consumed challenge";
