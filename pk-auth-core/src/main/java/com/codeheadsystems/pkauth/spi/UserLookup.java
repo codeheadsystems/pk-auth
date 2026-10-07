@@ -46,15 +46,17 @@ public interface UserLookup {
   UserHandle getOrCreateHandle(String username);
 
   /**
-   * Returns the email address bound to {@code handle} if the host has one — used by {@link
-   * com.codeheadsystems.pkauth.spi /*magiclink*} flows to guarantee that the email the caller
-   * supplies for an email-verification magic-link actually belongs to the target user (instead of
-   * trusting a caller-supplied address that an attacker could substitute).
+   * Returns the email address bound to {@code handle} if the host has one — used by {@code
+   * MagicLinkService} flows to guarantee that the email the caller supplies for an
+   * email-verification magic-link actually belongs to the target user (instead of trusting a
+   * caller-supplied address that an attacker could substitute).
    *
    * <p>Default returns {@link Optional#empty()}; in that case {@code MagicLinkService} logs a
    * warning and proceeds with the caller-supplied email — the host is responsible for binding
    * elsewhere. Hosts that store an email on the user record should override this to return it so
    * magic-link verification can reject mismatched addresses.
+   *
+   * @since 0.9.0
    */
   default Optional<String> emailFor(UserHandle handle) {
     return Optional.empty();

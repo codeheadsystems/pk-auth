@@ -3,8 +3,10 @@ package com.codeheadsystems.pkauth.api;
 
 import com.codeheadsystems.pkauth.credential.CredentialRecord;
 import com.codeheadsystems.pkauth.json.Base64Url;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -63,6 +65,10 @@ public final class CeremonyWireMapper {
    * <p>The {@code headers} component was added in 2.1.0; the two-arg constructor preserves the
    * prior {@code (status, body)} call sites with no headers.
    *
+   * <p>Both maps are copied into unmodifiable views that keep the caller's iteration order, so the
+   * ordered bodies this mapper builds serialize with {@code outcome} first (since 2.3.0; earlier
+   * versions used {@code Map.copyOf}, which drops order). Null keys and values are still rejected.
+   *
    * @param status the HTTP status code
    * @param body the JSON-serializable response body
    * @param headers response headers to copy onto the native HTTP response (since 2.1.0)
@@ -70,8 +76,15 @@ public final class CeremonyWireMapper {
   public record CeremonyResponse(
       int status, Map<String, Object> body, Map<String, String> headers) {
     public CeremonyResponse {
-      body = Map.copyOf(body);
-      headers = Map.copyOf(headers);
+      body = orderedCopy(body);
+      headers = orderedCopy(headers);
+    }
+
+    private static <V> Map<String, V> orderedCopy(Map<String, V> source) {
+      Map<String, V> copy = new LinkedHashMap<>();
+      source.forEach(
+          (k, v) -> copy.put(Objects.requireNonNull(k, "key"), Objects.requireNonNull(v, "value")));
+      return Collections.unmodifiableMap(copy);
     }
 
     /**

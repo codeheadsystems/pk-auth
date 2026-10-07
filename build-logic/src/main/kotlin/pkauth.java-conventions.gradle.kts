@@ -25,10 +25,9 @@ dependencies {
 
 tasks.withType<JavaCompile>().configureEach {
     options.encoding = "UTF-8"
-    // -Werror is intentionally omitted in Phase 0: build-logic compilation already runs with strict
-    // settings, and adapter modules may need to fine-tune lints per-module. The brief calls for
-    // -Xlint:all -Werror on production modules — that gets layered on in library-conventions where
-    // we know it is safe.
+    // -Werror is deliberately not set here: this convention is also applied to the example apps,
+    // and modules may need to fine-tune lints. Published library modules get -Werror (plus the
+    // automatic-module lint relaxations) from pkauth.library-conventions.
     //
     // -XDaddTypeAnnotationsToSymbol=true is required by Error Prone 2.27+ on JDK 21 so that
     // type-use annotations (e.g. JSpecify's @Nullable) are visible on symbols at analysis time.

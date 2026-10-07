@@ -6,12 +6,6 @@ plugins {
 
 description = "pk-auth admin API: framework-neutral credential & account management service."
 
-tasks.named<JavaCompile>("compileJava") {
-    options.compilerArgs.addAll(
-        listOf("-Xlint:-requires-automatic", "-Xlint:-requires-transitive-automatic"),
-    )
-}
-
 dependencies {
     api(project(":pk-auth-core"))
     api(project(":pk-auth-backup-codes"))

@@ -1,22 +1,19 @@
 // SPDX-License-Identifier: MIT
 package com.codeheadsystems.pkauth.ceremony;
 
+import com.codeheadsystems.pkauth.ratelimit.InMemoryWindowCounter;
 import com.codeheadsystems.pkauth.spi.CeremonyRateLimiter;
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
 import java.time.Duration;
-import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Simple Caffeine-backed in-memory {@link CeremonyRateLimiter} suitable for single-instance / dev
- * deployments. Tracks two independent counter maps (per-IP and per-username), each expiring after a
- * configured window.
+ * Simple in-memory {@link CeremonyRateLimiter} suitable for single-instance / dev deployments.
+ * Tracks two independent fixed-window buckets (per-IP and per-username), each an {@link
+ * InMemoryWindowCounter} expiring after the configured window.
  *
  * <p><strong>FOR DEV / SINGLE-INSTANCE USE ONLY.</strong> Production deployments MUST replace this
  * with a shared (Redis/DB-backed) {@link CeremonyRateLimiter} implementation, otherwise per-replica
@@ -49,18 +46,19 @@ public final class InMemoryCeremonyRateLimiter implements CeremonyRateLimiter {
    * retains every distinct key for the full window — so without a size bound the maps grow with the
    * caller's key variety, not with the number of real users. Caffeine evicts near-LRU entries at
    * the cap; an evicted counter simply restarts, which costs at most one extra allowance to the
-   * least-active key and never grants an unbounded budget to an active one.
+   * least-active key and never grants an unbounded budget to an active one. Same value as (and
+   * enforced by) {@link InMemoryWindowCounter#DEFAULT_MAX_TRACKED_KEYS}.
    *
    * @since 2.3.0
    */
-  public static final int DEFAULT_MAX_TRACKED_KEYS = 100_000;
+  public static final int DEFAULT_MAX_TRACKED_KEYS = InMemoryWindowCounter.DEFAULT_MAX_TRACKED_KEYS;
 
   private static final Logger LOG = LoggerFactory.getLogger(InMemoryCeremonyRateLimiter.class);
 
   private final int perIpLimit;
   private final int perUsernameLimit;
-  private final Cache<String, AtomicInteger> ipCounters;
-  private final Cache<String, AtomicInteger> usernameCounters;
+  private final InMemoryWindowCounter ipCounters;
+  private final InMemoryWindowCounter usernameCounters;
 
   /**
    * Constructs a limiter with the default per-IP / per-username allowances and a 1-minute window.
@@ -95,16 +93,8 @@ public final class InMemoryCeremonyRateLimiter implements CeremonyRateLimiter {
     }
     this.perIpLimit = perIpLimit;
     this.perUsernameLimit = perUsernameLimit;
-    this.ipCounters =
-        Caffeine.newBuilder()
-            .expireAfterWrite(window)
-            .maximumSize(DEFAULT_MAX_TRACKED_KEYS)
-            .build();
-    this.usernameCounters =
-        Caffeine.newBuilder()
-            .expireAfterWrite(window)
-            .maximumSize(DEFAULT_MAX_TRACKED_KEYS)
-            .build();
+    this.ipCounters = new InMemoryWindowCounter(window);
+    this.usernameCounters = new InMemoryWindowCounter(window);
     LOG.warn(
         "ceremony.rate-limiter InMemoryCeremonyRateLimiter instantiated (perIp={} perUsername={}"
             + " window={}) — FOR DEV / SINGLE-INSTANCE USE ONLY. Production deployments with more"
@@ -124,19 +114,13 @@ public final class InMemoryCeremonyRateLimiter implements CeremonyRateLimiter {
       // an LB that supplies a stable client IP.
       return true;
     }
-    return acquire(ipCounters, ip, perIpLimit);
+    return ipCounters.countAndIncrement(ip) <= perIpLimit;
   }
 
   @Override
   public boolean tryAcquireForUsername(String username) {
     Objects.requireNonNull(username, "username");
-    return acquire(usernameCounters, username, perUsernameLimit);
-  }
-
-  private static boolean acquire(Cache<String, AtomicInteger> cache, String key, int limit) {
-    AtomicInteger counter = cache.get(key, k -> new AtomicInteger());
-    int next = counter.incrementAndGet();
-    return next <= limit;
+    return usernameCounters.countAndIncrement(username) <= perUsernameLimit;
   }
 
   /**
@@ -146,8 +130,8 @@ public final class InMemoryCeremonyRateLimiter implements CeremonyRateLimiter {
    * @since 0.9.1
    */
   public void reset() {
-    ipCounters.invalidateAll();
-    usernameCounters.invalidateAll();
+    ipCounters.reset();
+    usernameCounters.reset();
   }
 
   /**
@@ -157,7 +141,7 @@ public final class InMemoryCeremonyRateLimiter implements CeremonyRateLimiter {
    * @since 0.9.1
    */
   public Set<String> ipKeys() {
-    return new HashSet<>(ipCounters.asMap().keySet());
+    return ipCounters.keys();
   }
 
   /**
@@ -167,6 +151,6 @@ public final class InMemoryCeremonyRateLimiter implements CeremonyRateLimiter {
    * @since 0.9.1
    */
   public Set<String> usernameKeys() {
-    return new HashSet<>(usernameCounters.asMap().keySet());
+    return usernameCounters.keys();
   }
 }

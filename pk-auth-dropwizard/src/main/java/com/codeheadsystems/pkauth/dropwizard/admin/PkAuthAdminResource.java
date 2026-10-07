@@ -26,6 +26,7 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 /**
  * HTTP exposure of {@link AdminService}. Mounted at {@code /auth/admin} by the bundle when {@code
@@ -67,11 +68,11 @@ public class PkAuthAdminResource {
   public Response renameCredential(
       @Auth PkAuthPasskeyPrincipal principal,
       @PathParam("credentialId") String credentialIdB64Url,
-      RenameCredential body) {
+      @Nullable RenameCredential body) {
     UserHandle user = principal.userHandle();
     CredentialId id = CredentialId.fromB64Url(credentialIdB64Url);
-    String label = body == null ? null : body.label();
-    return PkAuthAdminResultMapper.toResponse(adminService.renameCredential(user, user, id, label));
+    return PkAuthAdminResultMapper.toResponse(
+        adminService.renameCredential(user, user, id, body == null ? "" : body.label()));
   }
 
   @DELETE
@@ -103,38 +104,38 @@ public class PkAuthAdminResource {
   @POST
   @Path("/email/start-verification")
   public Response startEmailVerification(
-      @Auth PkAuthPasskeyPrincipal principal, StartEmailVerification body) {
+      @Auth PkAuthPasskeyPrincipal principal, @Nullable StartEmailVerification body) {
     UserHandle user = principal.userHandle();
-    String email = body == null ? null : body.email();
     return PkAuthAdminResultMapper.toResponse(
-        adminService.startEmailVerification(user, user, email));
+        adminService.startEmailVerification(user, user, body == null ? "" : body.email()));
   }
 
   /** Brief §6.9 mounts the complete-verification endpoint as unauthenticated. */
   @POST
   @Path("/email/complete-verification")
-  public Response finishEmailVerification(FinishEmailVerification body) {
-    String token = body == null ? null : body.token();
+  public Response finishEmailVerification(@Nullable FinishEmailVerification body) {
     return PkAuthAdminResultMapper.toResponse(
         AdminResponseMapper.toResponse(
-            adminService.finishEmailVerification(token), EmailVerificationResult::new));
+            adminService.finishEmailVerification(body == null ? "" : body.token()),
+            EmailVerificationResult::new));
   }
 
   @POST
   @Path("/phone/start-verification")
   public Response startPhoneVerification(
-      @Auth PkAuthPasskeyPrincipal principal, StartPhoneVerification body) {
+      @Auth PkAuthPasskeyPrincipal principal, @Nullable StartPhoneVerification body) {
     UserHandle user = principal.userHandle();
-    String phone = body == null ? null : body.phone();
     return PkAuthAdminResultMapper.toResponse(
-        adminService.startPhoneVerification(user, user, phone));
+        adminService.startPhoneVerification(user, user, body == null ? "" : body.phone()));
   }
 
   @POST
   @Path("/phone/complete-verification")
   public Response finishPhoneVerification(
-      @Auth PkAuthPasskeyPrincipal principal, FinishPhoneVerification body) {
+      @Auth PkAuthPasskeyPrincipal principal, @Nullable FinishPhoneVerification body) {
     UserHandle user = principal.userHandle();
+    // A missing body passes null, not "" as for the other endpoints: DefaultAdminService rejects a
+    // null phone/code as ValidationFailed but would hand "" through to OtpService.
     String phone = body == null ? null : body.phone();
     String code = body == null ? null : body.code();
     return PkAuthAdminResultMapper.toResponse(

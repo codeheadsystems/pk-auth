@@ -6,12 +6,6 @@ plugins {
 
 description = "pk-auth JWT issuance + validation built on Nimbus JOSE+JWT."
 
-tasks.named<JavaCompile>("compileJava") {
-    options.compilerArgs.addAll(
-        listOf("-Xlint:-requires-automatic", "-Xlint:-requires-transitive-automatic"),
-    )
-}
-
 dependencies {
     api(project(":pk-auth-core"))
     api(libs.nimbus.jose.jwt)

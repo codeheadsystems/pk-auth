@@ -10,7 +10,8 @@ import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Ceremony-level policy knobs. Brief §7 documents the security-relevant defaults.
+ * Ceremony-level policy knobs. {@link #defaults()} holds the conservative defaults; their security
+ * rationale is in {@code docs/threat-model.md}.
  *
  * <p><strong>Crypto-agility.</strong> {@link #offeredAlgorithms()} and {@link
  * #acceptedAlgorithms()} are the single source of truth for which COSE signature algorithms a

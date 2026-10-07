@@ -13,7 +13,7 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * Framework-neutral entry point for WebAuthn ceremonies. Implemented by the core's {@code
- * DefaultPasskeyAuthenticationService} (Phase 2) and consumed by every framework adapter.
+ * DefaultPasskeyAuthenticationService} and consumed by every framework adapter.
  *
  * <p>No exceptions cross this boundary for ceremony-flow failures — every failure mode is a variant
  * of the relevant {@code *Result} sealed interface. Methods may still throw on programmer errors

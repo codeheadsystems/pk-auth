@@ -19,9 +19,8 @@ import jakarta.ws.rs.core.Response;
 import org.junit.jupiter.api.Test;
 
 /**
- * Direct unit coverage of {@link PkAuthAdminResource#renameCredential}, whose {@code body == null ?
- * null : body.label()} branch is awkward to reach over HTTP (PATCH isn't supported by the default
- * JAX-RS client connector).
+ * Direct unit coverage of {@link PkAuthAdminResource}'s missing-body branches, which are awkward to
+ * reach over HTTP (e.g. PATCH isn't supported by the default JAX-RS client connector).
  */
 class PkAuthAdminResourceTest {
 
@@ -42,11 +41,43 @@ class PkAuthAdminResourceTest {
   }
 
   @Test
-  void renameWithNullBodyPassesNullLabel() {
-    // The null-body branch forwards a null label, which the service rejects as ValidationFailed.
-    when(adminService.renameCredential(eq(USER), eq(USER), any(CredentialId.class), eq(null)))
+  void renameWithNullBodyPassesEmptyLabel() {
+    // Matches Spring / Micronaut: a missing body forwards "", which the service rejects as
+    // ValidationFailed exactly as it would a null label.
+    when(adminService.renameCredential(eq(USER), eq(USER), any(CredentialId.class), eq("")))
         .thenReturn(new AdminResult.ValidationFailed<>("label must be non-blank"));
     try (Response r = resource.renameCredential(principal, CRED_B64, null)) {
+      assertThat(r.getStatus()).isEqualTo(400);
+    }
+  }
+
+  @Test
+  void emailAndStartPhoneWithNullBodyPassEmptyString() {
+    AdminResult.ValidationFailed<Void> invalid = new AdminResult.ValidationFailed<>("invalid");
+    when(adminService.startEmailVerification(USER, USER, "")).thenReturn(invalid);
+    when(adminService.finishEmailVerification(""))
+        .thenReturn(new AdminResult.ValidationFailed<>("token must be non-blank"));
+    when(adminService.startPhoneVerification(USER, USER, ""))
+        .thenReturn(new AdminResult.ValidationFailed<>("phone must be E.164 format"));
+
+    try (Response r = resource.startEmailVerification(principal, null)) {
+      assertThat(r.getStatus()).isEqualTo(400);
+    }
+    try (Response r = resource.finishEmailVerification(null)) {
+      assertThat(r.getStatus()).isEqualTo(400);
+    }
+    try (Response r = resource.startPhoneVerification(principal, null)) {
+      assertThat(r.getStatus()).isEqualTo(400);
+    }
+  }
+
+  @Test
+  void finishPhoneWithNullBodyPassesNulls() {
+    // DefaultAdminService rejects a null phone/code up front but would pass "" on to OtpService,
+    // so this endpoint keeps forwarding null for a missing body.
+    when(adminService.finishPhoneVerification(USER, USER, null, null))
+        .thenReturn(new AdminResult.ValidationFailed<>("phone and code are required"));
+    try (Response r = resource.finishPhoneVerification(principal, null)) {
       assertThat(r.getStatus()).isEqualTo(400);
     }
   }

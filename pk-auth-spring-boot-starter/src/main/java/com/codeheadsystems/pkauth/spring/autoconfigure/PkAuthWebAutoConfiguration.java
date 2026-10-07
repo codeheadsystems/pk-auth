@@ -16,13 +16,11 @@ import com.codeheadsystems.pkauth.spring.web.PkAuthRefreshController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
-import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Import;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
@@ -48,12 +46,14 @@ import tools.jackson.databind.module.SimpleModule;
  *   <li>disables form login and HTTP basic.
  * </ul>
  *
- * <p>The {@link AutoConfigureAfter} pin ensures Spring's own webauthn autoconfig (if present) is
- * processed first; we then refuse to start with a clear log line per brief §6.10.
+ * <p>Ordering after {@link PkAuthAutoConfiguration} ensures the core beans this class consumes (the
+ * ceremony service, JWT issuer/validator, credential repository) are defined before the
+ * {@code @ConditionalOnMissingBean} checks here are evaluated. Separately, if Spring Security's own
+ * webauthn module is on the classpath a warning is logged when this class loads (brief §6.10);
+ * startup is not blocked.
  */
 @AutoConfiguration(after = PkAuthAutoConfiguration.class)
 @ConditionalOnClass(name = "org.springframework.web.servlet.DispatcherServlet")
-@Import(PkAuthCeremonyController.class)
 public class PkAuthWebAutoConfiguration {
 
   private static final Logger LOG = LoggerFactory.getLogger(PkAuthWebAutoConfiguration.class);
@@ -158,9 +158,10 @@ public class PkAuthWebAutoConfiguration {
   }
 
   /**
-   * The ceremony controller is mounted explicitly via {@code @Import}, but Spring component-scan
-   * doesn't run on starter packages. We register the bean here so host apps don't need a
-   * {@code @ComponentScan(basePackages = "com.codeheadsystems.pkauth.spring.web")}.
+   * Ceremony controller. Spring component-scan doesn't run on starter packages, so the bean is
+   * registered here (Spring MVC maps any {@code @RestController} bean, however it was defined) and
+   * host apps don't need a {@code @ComponentScan}. A host-supplied {@link PkAuthCeremonyController}
+   * bean replaces this default.
    */
   @Bean
   @ConditionalOnMissingBean

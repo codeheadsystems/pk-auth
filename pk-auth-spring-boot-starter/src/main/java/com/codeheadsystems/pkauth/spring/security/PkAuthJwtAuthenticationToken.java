@@ -57,20 +57,21 @@ public final class PkAuthJwtAuthenticationToken extends AbstractAuthenticationTo
 
   /**
    * Raw token string (useful for downstream services that want to forward it). Returns {@code null}
-   * once {@link #eraseCredentials()} has been invoked by Spring Security's {@code ProviderManager}
-   * — applications that need the raw bearer for outbound calls must capture it before the security
-   * context post-processing pass.
+   * once {@link #eraseCredentials()} has been called. The shipped {@link
+   * PkAuthJwtAuthenticationFilter} bypasses the {@code AuthenticationManager} and never calls it,
+   * so under the default wiring the token stays available for the whole request.
    */
   public @Nullable String getToken() {
     return token;
   }
 
   /**
-   * Drops the raw bearer string so it no longer lives on the {@code SecurityContext} for the
-   * lifetime of the request. Spring Security calls this after authentication when {@code
-   * eraseCredentials} is enabled (default) on the {@code AuthenticationManager}; for the pk-auth
-   * filter chain we additionally invoke it explicitly so the in-memory copy of the JWT shrinks to
-   * just the parsed {@link JwtClaims} view.
+   * Drops the raw bearer string so only the parsed {@link JwtClaims} view remains on the {@code
+   * SecurityContext}. Spring Security's {@code ProviderManager} calls this after authentication
+   * when {@code eraseCredentials} is enabled (the default), which applies only if a host routes
+   * this token through an {@code AuthenticationManager}. The shipped {@link
+   * PkAuthJwtAuthenticationFilter} sets the token on the context directly and does not call this
+   * method.
    *
    * @since 0.9.1
    */

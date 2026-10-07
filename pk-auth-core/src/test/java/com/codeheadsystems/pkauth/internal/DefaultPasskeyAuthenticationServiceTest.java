@@ -2,12 +2,14 @@
 package com.codeheadsystems.pkauth.internal;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.codeheadsystems.pkauth.api.AssertionResult;
@@ -48,10 +50,14 @@ import com.webauthn4j.converter.util.ObjectConverter;
 import com.webauthn4j.data.AuthenticationData;
 import com.webauthn4j.data.AuthenticationParameters;
 import com.webauthn4j.data.RegistrationParameters;
+import com.webauthn4j.verifier.exception.BadAaguidException;
 import com.webauthn4j.verifier.exception.BadChallengeException;
 import com.webauthn4j.verifier.exception.BadOriginException;
+import com.webauthn4j.verifier.exception.BadRpIdException;
 import com.webauthn4j.verifier.exception.BadSignatureException;
 import com.webauthn4j.verifier.exception.MaliciousCounterValueException;
+import com.webauthn4j.verifier.exception.MissingChallengeException;
+import com.webauthn4j.verifier.exception.UserNotPresentException;
 import com.webauthn4j.verifier.exception.UserNotVerifiedException;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
@@ -62,8 +68,13 @@ import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import tools.jackson.core.JacksonException;
 import tools.jackson.databind.json.JsonMapper;
 
 class DefaultPasskeyAuthenticationServiceTest {
@@ -139,7 +150,8 @@ class DefaultPasskeyAuthenticationServiceTest {
         rp,
         ceremonyConfig,
         new ChallengeGenerator(random),
-        metrics);
+        metrics,
+        AllowAllCeremonyRateLimiter.INSTANCE);
   }
 
   // -- Start --------------------------------------------------------------------------------
@@ -252,14 +264,16 @@ class DefaultPasskeyAuthenticationServiceTest {
   @Test
   void finishRegistrationRejectsMalformedClientDataJson() {
     RegistrationResult result = service.finishRegistration(finishReg(new byte[] {1, 2, 3}));
-    assertThat(result).isInstanceOf(RegistrationResult.InvalidPayload.class);
+    assertThat(result).isEqualTo(new RegistrationResult.InvalidPayload("malformed clientDataJSON"));
   }
 
   @Test
   void finishRegistrationRejectsWrongClientDataType() {
     byte[] cd = clientData("webauthn.get", Base64Url.encode(CHALLENGE), "https://example.com");
     RegistrationResult result = service.finishRegistration(finishReg(cd));
-    assertThat(result).isInstanceOf(RegistrationResult.InvalidPayload.class);
+    assertThat(result)
+        .isEqualTo(
+            new RegistrationResult.InvalidPayload("clientData.type must be webauthn.create"));
   }
 
   @Test
@@ -288,7 +302,9 @@ class DefaultPasskeyAuthenticationServiceTest {
                     NOW.plusSeconds(60))));
     byte[] cd = clientData("webauthn.create", Base64Url.encode(CHALLENGE), "https://example.com");
     RegistrationResult result = service.finishRegistration(finishReg(cd));
-    assertThat(result).isInstanceOf(RegistrationResult.InvalidChallenge.class);
+    assertThat(result)
+        .isEqualTo(
+            new RegistrationResult.InvalidChallenge("challenge bytes do not match stored value"));
   }
 
   @Test
@@ -296,7 +312,10 @@ class DefaultPasskeyAuthenticationServiceTest {
     byte[] cd = clientData("webauthn.create", Base64Url.encode(CHALLENGE), "https://example.com");
     when(challengeStore.takeOnce(CHALLENGE_ID)).thenReturn(Optional.empty());
     RegistrationResult result = service.finishRegistration(finishReg(cd));
-    assertThat(result).isInstanceOf(RegistrationResult.InvalidChallenge.class);
+    assertThat(result)
+        .isEqualTo(
+            new RegistrationResult.InvalidChallenge(
+                "unknown, expired, or already-consumed challenge"));
   }
 
   @Test
@@ -304,7 +323,9 @@ class DefaultPasskeyAuthenticationServiceTest {
     primeStoredChallenge(ChallengeRecord.Purpose.AUTHENTICATION);
     byte[] cd = clientData("webauthn.create", Base64Url.encode(CHALLENGE), "https://example.com");
     RegistrationResult result = service.finishRegistration(finishReg(cd));
-    assertThat(result).isInstanceOf(RegistrationResult.InvalidChallenge.class);
+    assertThat(result)
+        .isEqualTo(
+            new RegistrationResult.InvalidChallenge("challenge bound to a different ceremony"));
   }
 
   @Test
@@ -319,7 +340,7 @@ class DefaultPasskeyAuthenticationServiceTest {
                     NOW.minusSeconds(1))));
     byte[] cd = clientData("webauthn.create", Base64Url.encode(CHALLENGE), "https://example.com");
     RegistrationResult result = service.finishRegistration(finishReg(cd));
-    assertThat(result).isInstanceOf(RegistrationResult.InvalidChallenge.class);
+    assertThat(result).isEqualTo(new RegistrationResult.InvalidChallenge("challenge expired"));
   }
 
   @Test
@@ -392,7 +413,139 @@ class DefaultPasskeyAuthenticationServiceTest {
     primeStoredChallenge(ChallengeRecord.Purpose.REGISTRATION);
     byte[] cd = clientData("webauthn.get", Base64Url.encode(CHALLENGE), "https://example.com");
     AssertionResult result = service.finishAuthentication(finishAuth(cd));
-    assertThat(result).isInstanceOf(AssertionResult.InvalidChallenge.class);
+    assertThat(result)
+        .isEqualTo(new AssertionResult.InvalidChallenge("challenge bound to a different ceremony"));
+  }
+
+  @Test
+  void finishAuthenticationPreflightFailuresMapToInvalidChallengeWithDetail() {
+    // AssertionResult has no InvalidPayload variant: malformed / wrong-type client data is reported
+    // as InvalidChallenge, with the same detail wording registration uses.
+    assertThat(service.finishAuthentication(finishAuth(new byte[] {1, 2, 3})))
+        .isEqualTo(new AssertionResult.InvalidChallenge("malformed clientDataJSON"));
+
+    byte[] wrongType =
+        clientData("webauthn.create", Base64Url.encode(CHALLENGE), "https://example.com");
+    assertThat(service.finishAuthentication(finishAuth(wrongType)))
+        .isEqualTo(new AssertionResult.InvalidChallenge("clientData.type must be webauthn.get"));
+
+    byte[] cd = clientData("webauthn.get", Base64Url.encode(CHALLENGE), "https://example.com");
+    when(challengeStore.takeOnce(CHALLENGE_ID)).thenReturn(Optional.empty());
+    assertThat(service.finishAuthentication(finishAuth(cd)))
+        .isEqualTo(
+            new AssertionResult.InvalidChallenge(
+                "unknown, expired, or already-consumed challenge"));
+
+    when(challengeStore.takeOnce(CHALLENGE_ID))
+        .thenReturn(
+            Optional.of(
+                new ChallengeRecord(
+                    CHALLENGE,
+                    ChallengeRecord.Purpose.AUTHENTICATION,
+                    USER_HANDLE,
+                    NOW.minusSeconds(1))));
+    assertThat(service.finishAuthentication(finishAuth(cd)))
+        .isEqualTo(new AssertionResult.InvalidChallenge("challenge expired"));
+  }
+
+  static Stream<Arguments> assertionVerificationFailures() {
+    return Stream.of(
+        Arguments.of(
+            new DataConversionException("undecodable"),
+            new AssertionResult.InvalidChallenge("undecodable")),
+        Arguments.of(
+            new UserNotVerifiedException("uv"), new AssertionResult.UserVerificationRequired()),
+        Arguments.of(new UserNotPresentException("up"), new AssertionResult.InvalidSignature()),
+        Arguments.of(new BadSignatureException("sig"), new AssertionResult.InvalidSignature()),
+        Arguments.of(
+            new BadOriginException("origin"),
+            new AssertionResult.OriginMismatch("[https://example.com]", "https://example.com")),
+        Arguments.of(
+            new BadChallengeException("challenge"),
+            new AssertionResult.InvalidChallenge("challenge")),
+        Arguments.of(
+            new MissingChallengeException("missing"),
+            new AssertionResult.InvalidChallenge("missing")),
+        Arguments.of(new BadRpIdException("rp"), new AssertionResult.InvalidSignature()),
+        Arguments.of(new BadAaguidException("other"), new AssertionResult.InvalidSignature()));
+  }
+
+  @ParameterizedTest
+  @MethodSource("assertionVerificationFailures")
+  void finishAuthenticationMapsVerificationFailures(RuntimeException thrown, AssertionResult want) {
+    primeStoredChallenge(ChallengeRecord.Purpose.AUTHENTICATION);
+    primeStoredCredentialForAssertion();
+    when(webAuthnManager.verify(
+            any(com.webauthn4j.data.AuthenticationRequest.class),
+            any(AuthenticationParameters.class)))
+        .thenThrow(thrown);
+    byte[] cd = clientData("webauthn.get", Base64Url.encode(CHALLENGE), "https://example.com");
+
+    assertThat(service.finishAuthentication(finishAuth(cd))).isEqualTo(want);
+    verify(credentialRepository, never()).updateSignCount(any(), anyLongValue(), any());
+  }
+
+  @Test
+  void finishAuthenticationCorruptStoredCoseKeyPropagatesAsServerFault() {
+    // The stored public key is server-side state, not client input: a decode failure must escape
+    // (surfacing as a 500) rather than be reported as a client InvalidChallenge.
+    primeStoredChallenge(ChallengeRecord.Purpose.AUTHENTICATION);
+    when(credentialRepository.findByCredentialId(CRED_ID_VALUE))
+        .thenReturn(
+            Optional.of(
+                new CredentialRecord(
+                    CRED_ID_VALUE,
+                    USER_HANDLE,
+                    new byte[] {(byte) 0xa1}, // truncated CBOR map
+                    0L,
+                    "Test",
+                    null,
+                    Set.of(),
+                    true,
+                    true,
+                    NOW.minusSeconds(60),
+                    null)));
+    byte[] cd = clientData("webauthn.get", Base64Url.encode(CHALLENGE), "https://example.com");
+
+    assertThatThrownBy(() -> service.finishAuthentication(finishAuth(cd)))
+        .isInstanceOf(JacksonException.class);
+    verify(webAuthnManager, never())
+        .verify(
+            any(com.webauthn4j.data.AuthenticationRequest.class),
+            any(AuthenticationParameters.class));
+    verifyNoInteractions(metrics);
+  }
+
+  @Test
+  void finishAuthenticationMapsMalformedAuthenticatorDataCborToInvalidChallenge() {
+    // Real (non-strict) WebAuthn4J manager: authenticatorData with the ED flag set followed by a
+    // truncated CBOR map makes WebAuthn4J surface a raw Jackson StreamReadException rather than a
+    // DataConversionException. It must still map to a sealed 400, not escape as a 500.
+    webAuthnManager = WebAuthnManager.createNonStrictWebAuthnManager(new ObjectConverter());
+    service = newService(CounterRegressionPolicy.REJECT);
+    primeStoredChallenge(ChallengeRecord.Purpose.AUTHENTICATION);
+    primeStoredCredentialForAssertion();
+    byte[] authenticatorData = new byte[38];
+    authenticatorData[32] = (byte) 0x81; // flags: UP + ED (extension data follows)
+    authenticatorData[37] = (byte) 0xa1; // CBOR map(1) with no entry following
+    byte[] cd = clientData("webauthn.get", Base64Url.encode(CHALLENGE), "https://example.com");
+    FinishAuthenticationRequest req =
+        new FinishAuthenticationRequest(
+            CHALLENGE_ID,
+            new AuthenticationResponseJson(
+                CRED_ID,
+                CRED_ID,
+                new AuthenticatorAssertionResponseJson(
+                    cd, authenticatorData, new byte[] {(byte) 0xb0}, null),
+                null,
+                null,
+                "public-key"));
+
+    AssertionResult result = service.finishAuthentication(req);
+
+    assertThat(result)
+        .isEqualTo(new AssertionResult.InvalidChallenge("malformed authenticator data"));
+    verify(metrics).incrementCounter("pkauth.authentication.outcome", "result", "InvalidChallenge");
   }
 
   @Test
@@ -567,6 +720,7 @@ class DefaultPasskeyAuthenticationServiceTest {
             AssertionResult.Success.class,
             s -> {
               assertThat(s.userHandle()).isEqualTo(USER_HANDLE);
+              assertThat(s.credentialId()).isEqualTo(CRED_ID_VALUE);
               assertThat(s.signCount()).isEqualTo(42L);
               assertThat(s.counterStatus()).isEqualTo(AssertionResult.CounterStatus.OK);
             });

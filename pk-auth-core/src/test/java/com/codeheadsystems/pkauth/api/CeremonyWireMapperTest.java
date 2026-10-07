@@ -9,6 +9,8 @@ import com.codeheadsystems.pkauth.credential.AuthenticatorData;
 import com.codeheadsystems.pkauth.credential.CredentialRecord;
 import com.codeheadsystems.pkauth.json.Base64Url;
 import java.time.Instant;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 
@@ -227,6 +229,41 @@ class CeremonyWireMapperTest {
         CeremonyWireMapper.forAssertionError(new AssertionResult.InvalidSignature());
     assertThatThrownBy(() -> r.body().put("hacked", "yes"))
         .isInstanceOf(UnsupportedOperationException.class);
+  }
+
+  @Test
+  void responseBodyPreservesInsertionOrder() {
+    CeremonyResponse r =
+        CeremonyWireMapper.forAssertionError(new AssertionResult.CounterRegression(10L, 5L));
+    assertThat(r.body().keySet()).containsExactly("outcome", "stored", "received");
+
+    AssertionResult.Success success =
+        new AssertionResult.Success(USER, CRED_ID_VALUE, 3L, AssertionResult.CounterStatus.OK);
+    CeremonyResponse s = CeremonyWireMapper.forAssertionSuccess(success, "tok", "Key");
+    assertThat(s.body().keySet())
+        .containsExactly("outcome", "userHandle", "credentialId", "label", "token", "signCount");
+  }
+
+  @Test
+  void responseHeadersPreserveInsertionOrderAndAreImmutable() {
+    Map<String, String> headers = new LinkedHashMap<>();
+    headers.put("Z-First", "1");
+    headers.put("A-Second", "2");
+    headers.put("M-Third", "3");
+    CeremonyResponse r = new CeremonyResponse(200, Map.of("outcome", "x"), headers);
+    headers.put("Late", "4");
+
+    assertThat(r.headers().keySet()).containsExactly("Z-First", "A-Second", "M-Third");
+    assertThatThrownBy(() -> r.headers().put("hacked", "yes"))
+        .isInstanceOf(UnsupportedOperationException.class);
+  }
+
+  @Test
+  void responseRejectsNullBodyValues() {
+    Map<String, Object> body = new LinkedHashMap<>();
+    body.put("outcome", null);
+    assertThatThrownBy(() -> new CeremonyResponse(200, body))
+        .isInstanceOf(NullPointerException.class);
   }
 
   /**

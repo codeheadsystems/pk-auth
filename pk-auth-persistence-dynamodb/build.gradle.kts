@@ -6,12 +6,6 @@ plugins {
 
 description = "pk-auth persistence: AWS SDK v2 DynamoDB Enhanced implementations of the core SPIs."
 
-tasks.named<JavaCompile>("compileJava") {
-    options.compilerArgs.addAll(
-        listOf("-Xlint:-requires-automatic", "-Xlint:-requires-transitive-automatic"),
-    )
-}
-
 dependencies {
     api(project(":pk-auth-core"))
     // AccessTokenStore lives in pk-auth-jwt; DynamoDbAccessTokenStore implements it.

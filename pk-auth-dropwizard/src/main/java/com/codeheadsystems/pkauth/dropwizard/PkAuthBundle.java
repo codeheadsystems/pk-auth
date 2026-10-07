@@ -4,13 +4,13 @@ package com.codeheadsystems.pkauth.dropwizard;
 import com.codeheadsystems.pkauth.admin.AdminService;
 import com.codeheadsystems.pkauth.dropwizard.admin.PkAuthAdminResource;
 import com.codeheadsystems.pkauth.dropwizard.auth.PkAuthDropwizardAuthFilter;
-import com.codeheadsystems.pkauth.dropwizard.auth.PkAuthDropwizardAuthenticator;
 import com.codeheadsystems.pkauth.dropwizard.auth.PkAuthPasskeyPrincipal;
 import com.codeheadsystems.pkauth.dropwizard.dagger.AltFlowsModule;
 import com.codeheadsystems.pkauth.dropwizard.dagger.AltFlowsModule.AltFlowOptions;
 import com.codeheadsystems.pkauth.dropwizard.dagger.DaggerPkAuthComponent;
 import com.codeheadsystems.pkauth.dropwizard.dagger.DaggerPkAuthFullComponent;
 import com.codeheadsystems.pkauth.dropwizard.dagger.PersistenceBindings;
+import com.codeheadsystems.pkauth.dropwizard.dagger.PkAuthCeremonyGraph;
 import com.codeheadsystems.pkauth.dropwizard.dagger.PkAuthComponent;
 import com.codeheadsystems.pkauth.dropwizard.dagger.PkAuthFullComponent;
 import com.codeheadsystems.pkauth.dropwizard.dagger.PkAuthModule;
@@ -18,7 +18,8 @@ import com.codeheadsystems.pkauth.dropwizard.json.PkAuthJacksonBridge;
 import com.codeheadsystems.pkauth.dropwizard.resource.PkAuthRefreshResource;
 import com.codeheadsystems.pkauth.jwt.PkAuthJwtIssuer;
 import com.codeheadsystems.pkauth.jwt.PkAuthJwtValidator;
-import com.codeheadsystems.pkauth.refresh.web.RefreshHandler;
+import com.codeheadsystems.pkauth.spi.BackupCodeRepository;
+import com.codeheadsystems.pkauth.spi.OtpRepository;
 import io.dropwizard.auth.AuthDynamicFeature;
 import io.dropwizard.auth.AuthValueFactoryProvider;
 import io.dropwizard.core.ConfiguredBundle;
@@ -58,13 +59,14 @@ import org.slf4j.LoggerFactory;
 public class PkAuthBundle<C extends HasPkAuthConfig> implements ConfiguredBundle<C> {
 
   private static final Logger LOG = LoggerFactory.getLogger(PkAuthBundle.class);
+  private static final String NOT_RUN = "PkAuthBundle.run has not been invoked yet";
 
   private final PersistenceBindings persistence;
   private final @Nullable AdminService preBuiltAdminService;
   private final @Nullable AltFlowOptions altFlowOptions;
 
-  private @Nullable PkAuthComponent component;
-  private @Nullable PkAuthFullComponent fullComponent;
+  /** Either a {@link PkAuthComponent} or a {@link PkAuthFullComponent}; null until {@link #run}. */
+  private @Nullable PkAuthCeremonyGraph graph;
 
   /**
    * Constructs a bundle without admin support. Only the four ceremony endpoints are mounted.
@@ -123,51 +125,37 @@ public class PkAuthBundle<C extends HasPkAuthConfig> implements ConfiguredBundle
   @Override
   public void run(C configuration, Environment environment) {
     PkAuthModule pkAuthModule = new PkAuthModule(configuration.pkAuth(), persistence);
-    PkAuthCeremonyWiring wiring;
+    PkAuthCeremonyGraph activeGraph;
     if (altFlowOptions != null) {
       // Auto-wire alt-flows + admin via Dagger. The SPIs that back them must be present.
-      if (persistence.backupCodeRepository() == null) {
+      BackupCodeRepository backupCodeRepository = persistence.backupCodeRepository();
+      if (backupCodeRepository == null) {
         throw new IllegalStateException(
             "PkAuthBundle alt-flow auto-wiring requires PersistenceBindings.backupCodeRepository"
                 + " to be non-null.");
       }
-      if (persistence.otpRepository() == null) {
+      OtpRepository otpRepository = persistence.otpRepository();
+      if (otpRepository == null) {
         throw new IllegalStateException(
             "PkAuthBundle alt-flow auto-wiring requires PersistenceBindings.otpRepository to be"
                 + " non-null.");
       }
-      this.fullComponent =
+      activeGraph =
           DaggerPkAuthFullComponent.builder()
               .pkAuthModule(pkAuthModule)
               .altFlowsModule(
-                  new AltFlowsModule(
-                      altFlowOptions,
-                      persistence.backupCodeRepository(),
-                      persistence.otpRepository()))
+                  new AltFlowsModule(altFlowOptions, backupCodeRepository, otpRepository))
               .build();
-      wiring =
-          new PkAuthCeremonyWiring(
-              fullComponent.ceremonyResource(),
-              fullComponent.passkeyAuthenticator(),
-              fullComponent.jwtIssuer(),
-              fullComponent.jwtValidator(),
-              fullComponent.refreshHandler().orElse(null));
     } else {
-      this.component = DaggerPkAuthComponent.builder().pkAuthModule(pkAuthModule).build();
-      wiring =
-          new PkAuthCeremonyWiring(
-              component.ceremonyResource(),
-              component.passkeyAuthenticator(),
-              component.jwtIssuer(),
-              component.jwtValidator(),
-              component.refreshHandler().orElse(null));
+      activeGraph = DaggerPkAuthComponent.builder().pkAuthModule(pkAuthModule).build();
     }
+    this.graph = activeGraph;
 
     // Ensure the runtime ObjectMapper has the bridge too (the environment may build its own copy
     // distinct from the bootstrap's).
     PkAuthJacksonBridge.register(environment.getObjectMapper());
 
-    environment.jersey().register(wiring.ceremonyResource());
+    environment.jersey().register(activeGraph.ceremonyResource());
     environment
         .jersey()
         .register(
@@ -175,12 +163,14 @@ public class PkAuthBundle<C extends HasPkAuthConfig> implements ConfiguredBundle
 
     environment
         .jersey()
-        .register(new AuthDynamicFeature(PkAuthDropwizardAuthFilter.build(wiring.authenticator())));
+        .register(
+            new AuthDynamicFeature(
+                PkAuthDropwizardAuthFilter.build(activeGraph.passkeyAuthenticator())));
     environment
         .jersey()
         .register(new AuthValueFactoryProvider.Binder<>(PkAuthPasskeyPrincipal.class));
 
-    if (fullComponent != null) {
+    if (activeGraph instanceof PkAuthFullComponent fullComponent) {
       environment.jersey().register(fullComponent.adminResource());
       LOG.info("pkauth.admin.endpoints.registered path=/auth/admin (auto-wired alt-flows + admin)");
     } else if (preBuiltAdminService != null) {
@@ -188,10 +178,13 @@ public class PkAuthBundle<C extends HasPkAuthConfig> implements ConfiguredBundle
       LOG.info("pkauth.admin.endpoints.registered path=/auth/admin (host-built AdminService)");
     }
 
-    if (wiring.refreshHandler() != null) {
-      environment.jersey().register(new PkAuthRefreshResource(wiring.refreshHandler()));
-      LOG.info("pkauth.refresh.endpoint.registered path=/auth/refresh");
-    }
+    activeGraph
+        .refreshHandler()
+        .ifPresent(
+            handler -> {
+              environment.jersey().register(new PkAuthRefreshResource(handler));
+              LOG.info("pkauth.refresh.endpoint.registered path=/auth/refresh");
+            });
 
     LOG.info(
         "pkauth.bundle.started rp={} issuer={}",
@@ -205,15 +198,15 @@ public class PkAuthBundle<C extends HasPkAuthConfig> implements ConfiguredBundle
    * call {@link #fullComponent()} instead.
    */
   public PkAuthComponent component() {
-    if (component == null) {
-      if (fullComponent != null) {
-        throw new IllegalStateException(
-            "PkAuthBundle is running with alt-flow auto-wiring; call fullComponent() instead of"
-                + " component().");
-      }
-      throw new IllegalStateException("PkAuthBundle.run has not been invoked yet");
+    if (graph instanceof PkAuthComponent component) {
+      return component;
     }
-    return component;
+    if (graph instanceof PkAuthFullComponent) {
+      throw new IllegalStateException(
+          "PkAuthBundle is running with alt-flow auto-wiring; call fullComponent() instead of"
+              + " component().");
+    }
+    throw new IllegalStateException(NOT_RUN);
   }
 
   /**
@@ -224,29 +217,28 @@ public class PkAuthBundle<C extends HasPkAuthConfig> implements ConfiguredBundle
    * @since 0.9.1
    */
   public PkAuthFullComponent fullComponent() {
-    if (fullComponent == null) {
-      throw new IllegalStateException(
-          "PkAuthBundle was not registered with alt-flow auto-wiring (AltFlowOptions). Use"
-              + " component() or register the bundle with the alt-flow constructor.");
+    if (graph instanceof PkAuthFullComponent fullComponent) {
+      return fullComponent;
     }
-    return fullComponent;
+    throw new IllegalStateException(
+        "PkAuthBundle was not registered with alt-flow auto-wiring (AltFlowOptions). Use"
+            + " component() or register the bundle with the alt-flow constructor.");
   }
 
   /** Convenience for tests / integrators that need the JWT issuer after the app has started. */
   public PkAuthJwtIssuer jwtIssuer() {
-    return component != null ? component.jwtIssuer() : fullComponent().jwtIssuer();
+    return ceremonyGraph().jwtIssuer();
   }
 
   /** Convenience for tests / integrators that need the JWT validator after the app has started. */
   public PkAuthJwtValidator jwtValidator() {
-    return component != null ? component.jwtValidator() : fullComponent().jwtValidator();
+    return ceremonyGraph().jwtValidator();
   }
 
-  /** Internal carrier so the two component variants share the same registration path. */
-  private record PkAuthCeremonyWiring(
-      com.codeheadsystems.pkauth.dropwizard.resource.PkAuthCeremonyResource ceremonyResource,
-      PkAuthDropwizardAuthenticator authenticator,
-      PkAuthJwtIssuer jwtIssuer,
-      PkAuthJwtValidator jwtValidator,
-      @Nullable RefreshHandler refreshHandler) {}
+  private PkAuthCeremonyGraph ceremonyGraph() {
+    if (graph == null) {
+      throw new IllegalStateException(NOT_RUN);
+    }
+    return graph;
+  }
 }

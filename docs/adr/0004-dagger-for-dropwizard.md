@@ -21,7 +21,7 @@ itself does not ship an opinionated DI container. The realistic options were:
 4. **Dagger 2.** Compile-time annotation-processed DI; the generated component is a plain Java
    class you can read.
 
-The brief (`pk-auth-build-brief.md` §3) calls out Dagger explicitly:
+The brief (`docs/history/pk-auth-build-brief.md` §3) calls out Dagger explicitly:
 
 > Spring Boot → Spring DI. Micronaut → Micronaut DI. **Dropwizard → Dagger 2 (compile-time,
 > annotation-processed).** Do not use Guice or HK2 except where Jersey itself requires HK2 wiring

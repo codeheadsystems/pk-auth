@@ -1,10 +1,8 @@
 // SPDX-License-Identifier: MIT
 package com.codeheadsystems.pkauth.internal;
 
-import com.codeheadsystems.pkauth.api.AttestationConveyance;
 import com.codeheadsystems.pkauth.api.AuthenticationResponseJson;
 import com.codeheadsystems.pkauth.api.RegistrationResponseJson;
-import com.codeheadsystems.pkauth.api.ResidentKeyRequirement;
 import com.codeheadsystems.pkauth.api.Transport;
 import com.codeheadsystems.pkauth.api.UserVerificationRequirement;
 import com.codeheadsystems.pkauth.config.CoseAlgorithm;
@@ -12,7 +10,6 @@ import com.codeheadsystems.pkauth.config.RelyingPartyConfig;
 import com.codeheadsystems.pkauth.credential.CredentialRecord;
 import com.webauthn4j.converter.util.ObjectConverter;
 import com.webauthn4j.credential.CredentialRecordImpl;
-import com.webauthn4j.data.AttestationConveyancePreference;
 import com.webauthn4j.data.AuthenticationRequest;
 import com.webauthn4j.data.AuthenticatorTransport;
 import com.webauthn4j.data.PublicKeyCredentialParameters;
@@ -139,36 +136,5 @@ public final class WebAuthn4JConverters {
   /** WebAuthn4J's UV-required boolean from our {@link UserVerificationRequirement}. */
   public static boolean userVerificationRequired(UserVerificationRequirement uv) {
     return uv == UserVerificationRequirement.REQUIRED;
-  }
-
-  /** Maps our enum to WebAuthn4J's {@link com.webauthn4j.data.UserVerificationRequirement}. */
-  public static com.webauthn4j.data.UserVerificationRequirement toW4jUserVerification(
-      UserVerificationRequirement uv) {
-    return switch (uv) {
-      case REQUIRED -> com.webauthn4j.data.UserVerificationRequirement.REQUIRED;
-      case PREFERRED -> com.webauthn4j.data.UserVerificationRequirement.PREFERRED;
-      case DISCOURAGED -> com.webauthn4j.data.UserVerificationRequirement.DISCOURAGED;
-    };
-  }
-
-  /** Maps our enum to WebAuthn4J's resident-key constant set. */
-  public static com.webauthn4j.data.ResidentKeyRequirement toW4jResidentKey(
-      ResidentKeyRequirement rk) {
-    return switch (rk) {
-      case REQUIRED -> com.webauthn4j.data.ResidentKeyRequirement.REQUIRED;
-      case PREFERRED -> com.webauthn4j.data.ResidentKeyRequirement.PREFERRED;
-      case DISCOURAGED -> com.webauthn4j.data.ResidentKeyRequirement.DISCOURAGED;
-    };
-  }
-
-  /** Maps our enum to WebAuthn4J's attestation conveyance enum. */
-  public static AttestationConveyancePreference toW4jAttestationConveyance(
-      AttestationConveyance ac) {
-    return switch (ac) {
-      case NONE -> AttestationConveyancePreference.NONE;
-      case INDIRECT -> AttestationConveyancePreference.INDIRECT;
-      case DIRECT -> AttestationConveyancePreference.DIRECT;
-      case ENTERPRISE -> AttestationConveyancePreference.ENTERPRISE;
-    };
   }
 }

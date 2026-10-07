@@ -17,9 +17,9 @@ import java.io.IOException;
 
 /**
  * Teaches Dropwizard's Jackson 2 {@code ObjectMapper} to read and write the pk-auth wire types.
- * Brief §6.11 notes that Dropwizard 4 still ships Jackson 2; pk-auth-core uses Jackson 3 (ADR
- * 0009). Rather than fork the entire JSON contract, we apply matched serializers on Dropwizard's
- * mapper so payloads round-trip identically.
+ * Dropwizard 5 still ships Jackson 2 (brief §6.11); pk-auth-core uses Jackson 3 (ADR 0009). Rather
+ * than fork the entire JSON contract, we apply matched serializers on Dropwizard's mapper so
+ * payloads round-trip identically.
  *
  * <p>Specifically:
  *

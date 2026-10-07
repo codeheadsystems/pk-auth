@@ -16,9 +16,8 @@ import org.slf4j.LoggerFactory;
  * PkAuthPasskeyPrincipal}. Brief §6.11 — "Dropwizard → a Jersey {@code Authenticator}".
  *
  * <p>Verification failures (bad signature, expired, wrong issuer/audience) return {@link
- * Optional#empty()}, which causes Dropwizard's {@code OAuthCredentialAuthFilter} to emit a 401.
- * Malformed payloads are intentionally treated the same: we never leak the underlying reason to the
- * client.
+ * Optional#empty()}, which causes {@link PkAuthDropwizardAuthFilter} to emit a 401. Malformed
+ * payloads are intentionally treated the same: we never leak the underlying reason to the client.
  */
 public final class PkAuthDropwizardAuthenticator
     implements Authenticator<PkAuthPasskeyCredentials, PkAuthPasskeyPrincipal> {

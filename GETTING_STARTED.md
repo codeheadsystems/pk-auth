@@ -95,7 +95,7 @@ The project ships as a set of related JARs. You pick the ones you need:
 | Module | What it does | When you need it |
 |---|---|---|
 | `pk-auth-testkit` | In-memory implementations of every SPI plus a `FakeAuthenticator` you can drive WebAuthn ceremonies with from a unit test. | Always on the test classpath. Also fine for a five-minute demo on the main classpath. |
-| `pk-auth-persistence-jdbi` | SPI implementations on JDBI 3 + Postgres + Flyway. Schema migrations run automatically. | When you want real storage and you already have Postgres. |
+| `pk-auth-persistence-jdbi` | SPI implementations on JDBI 3 + Postgres + Flyway. Your app runs the shipped migrations with its own Flyway setup (see `PkAuthJdbiSchema` and the [operator guide](./docs/operator-guide.md#3-persistence-migrations)); no adapter runs them for you. | When you want real storage and you already have Postgres. |
 | `pk-auth-persistence-dynamodb` | SPI implementations on AWS SDK v2 DynamoDB Enhanced. One physical table, schema per item type (see [ADR 0008](./docs/adr/0008-dynamodb-single-table-design.md)). | When you want real storage on AWS. |
 
 ### Optional "alt-flow" modules

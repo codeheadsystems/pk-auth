@@ -24,5 +24,6 @@ module com.codeheadsystems.pkauth.core {
   exports com.codeheadsystems.pkauth.json;
   exports com.codeheadsystems.pkauth.lifecycle;
   exports com.codeheadsystems.pkauth.metrics;
+  exports com.codeheadsystems.pkauth.ratelimit;
   exports com.codeheadsystems.pkauth.spi;
 }

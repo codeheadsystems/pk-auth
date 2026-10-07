@@ -57,18 +57,20 @@ class PkAuthAdminControllerTest {
 
   @Test
   void adminResultMapperCoversEveryVariant() {
-    Assertions.assertThat(PkAuthAdminController.map(new AdminResult.Success<>("ok")).code())
+    Assertions.assertThat(PkAuthAdminController.toMicronaut(new AdminResult.Success<>("ok")).code())
         .isEqualTo(HttpStatus.OK.getCode());
-    Assertions.assertThat(PkAuthAdminController.map(new AdminResult.NotFound<>()).code())
+    Assertions.assertThat(PkAuthAdminController.toMicronaut(new AdminResult.NotFound<>()).code())
         .isEqualTo(HttpStatus.NOT_FOUND.getCode());
-    Assertions.assertThat(PkAuthAdminController.map(new AdminResult.Forbidden<>()).code())
+    Assertions.assertThat(PkAuthAdminController.toMicronaut(new AdminResult.Forbidden<>()).code())
         .isEqualTo(HttpStatus.FORBIDDEN.getCode());
-    Assertions.assertThat(PkAuthAdminController.map(new AdminResult.ValidationFailed<>("x")).code())
+    Assertions.assertThat(
+            PkAuthAdminController.toMicronaut(new AdminResult.ValidationFailed<>("x")).code())
         .isEqualTo(HttpStatus.BAD_REQUEST.getCode());
-    Assertions.assertThat(PkAuthAdminController.map(new AdminResult.Conflict<>("y")).code())
+    Assertions.assertThat(PkAuthAdminController.toMicronaut(new AdminResult.Conflict<>("y")).code())
         .isEqualTo(HttpStatus.CONFLICT.getCode());
     Assertions.assertThat(
-            PkAuthAdminController.map(new AdminResult.RateLimited<>(Duration.ofMinutes(1))).code())
+            PkAuthAdminController.toMicronaut(new AdminResult.RateLimited<>(Duration.ofMinutes(1)))
+                .code())
         .isEqualTo(HttpStatus.TOO_MANY_REQUESTS.getCode());
   }
 }

@@ -6,12 +6,6 @@ plugins {
 
 description = "pk-auth backup codes: Argon2id-hashed one-time codes for passkey-less recovery."
 
-tasks.named<JavaCompile>("compileJava") {
-    options.compilerArgs.addAll(
-        listOf("-Xlint:-requires-automatic", "-Xlint:-requires-transitive-automatic"),
-    )
-}
-
 dependencies {
     api(project(":pk-auth-core"))
     api(libs.argon2.jvm)

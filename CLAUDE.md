@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-pk-auth is a **passkeys-first authentication library set for the JVM**, published to Maven Central under `com.codeheadsystems`. All modules share one version (`gradle.properties` → currently `2.1.0-SNAPSHOT`). It is *not* an identity provider: it owns passkeys/credentials, never users — the host maps users via the `UserLookup` SPI.
+pk-auth is a **passkeys-first authentication library set for the JVM**, published to Maven Central under `com.codeheadsystems`. All modules share one version (the `version` in `gradle.properties` is authoritative). It is *not* an identity provider: it owns passkeys/credentials, never users — the host maps users via the `UserLookup` SPI.
 
 The canonical architecture reference is [`DESIGN.md`](./DESIGN.md); per-decision rationale lives in [`docs/adr/`](./docs/adr/) (Nygard format, numbered). Read the relevant ADR before changing cross-module behavior.
 
@@ -30,7 +30,7 @@ JDK 21 is required (Gradle's toolchain fetches one if absent). Node ≥ 22.22.2 
 
 Dependency arrows always point **inward**. Adapters depend on core; core depends on no adapter, no framework, no servlet/HTTP API, no JDBC/DynamoDB.
 
-1. **`pk-auth-core`** — framework- and persistence-neutral. Knows WebAuthn (WebAuthn4J), the wire contract, and declares the SPIs. `PasskeyAuthenticationService` is the ceremony entry point. The exported packages are `api`, `ceremony`, `config`, `credential`, `error`, `json`, `lifecycle`, `metrics`, and `spi` (enforced via `module-info.java`); everything else is module-internal.
+1. **`pk-auth-core`** — framework- and persistence-neutral. Knows WebAuthn (WebAuthn4J), the wire contract, and declares the SPIs. `PasskeyAuthenticationService` is the ceremony entry point. The exported packages are `api`, `ceremony`, `config`, `credential`, `error`, `json`, `lifecycle`, `metrics`, `ratelimit`, and `spi` (enforced via `module-info.java`); everything else is module-internal.
 2. **SPIs (ports)** — narrow interfaces the host implements: `UserLookup`, `CredentialRepository`, `ChallengeStore` (required); `BackupCodeRepository`, `OtpRepository`, `EmailSender`, `SmsSender`, `RefreshTokenRepository`, `AccessTokenStore`, `TokenTtlPolicy`, `RevocationCheck`, `UserDeletionListener`, `AttestationTrustPolicy`, `OriginValidator`, `ClockProvider`, `ConsumedJtiStore`, `CeremonyRateLimiter`, `MessageFormatter` (optional / feature-gated). See `DESIGN.md` §6 for the required-vs-optional table.
 3. **Adapters** — `pk-auth-spring-boot-starter` (Spring Boot 4 / Security 7 autoconfigure), `pk-auth-dropwizard` (Dropwizard 5 `ConfiguredBundle` + Dagger 2), `pk-auth-micronaut` (Micronaut 4 `@Factory` + `@Filter`, deliberately **not** Micronaut Security). Each mounts the same `/auth/**` JSON contract and pattern-matches the core's sealed result sums into HTTP status codes.
 
@@ -39,7 +39,7 @@ Feature modules (`pk-auth-backup-codes`, `pk-auth-magic-link`, `pk-auth-otp`, `p
 ### Things that bite if you don't know them
 
 - **Sealed result sums, not exceptions.** Ceremony and admin operations return sealed interfaces — `AdminResult<T>` (`Success | NotFound | Forbidden | ValidationFailed | Conflict | RateLimited`, declared in `pk-auth-admin-api`), `RegistrationResult`, `AssertionResult` (core), `RotateResult` (`pk-auth-refresh-tokens`), `JwtVerificationResult` (`pk-auth-jwt`). Adapters map these to HTTP; never throw across that boundary. When you add a variant, every adapter's `*ResultMapper` must handle it.
-- **Wire bytes are base64url, no padding** (RFC 4648 §5). Jackson 3 adapters get this from `PkAuthObjectMappers.pkAuthModule()`; the Dropwizard adapter is still on Jackson 2 and uses the `PkAuthJacksonBridge`.
+- **Wire bytes are base64url, no padding** (RFC 4648 §5). Jackson 3 adapters (Spring) get this from `PkAuthObjectMappers.pkAuthModule()`; Dropwizard and Micronaut are still on Jackson 2 and use `PkAuthJacksonBridge` (Dropwizard) and the `PkAuthJacksonModule` bean (Micronaut).
 - **`finish` endpoints are not idempotent** — challenges are single-use via `ChallengeStore.takeOnce`. There is **no shared transaction across SPIs**: `takeOnce` is consumed before `CredentialRepository.save`; a failed save forces a ceremony restart. This is intentional — see [`docs/transactional-semantics.md`](./docs/transactional-semantics.md).
 - **All three adapters mount identical `/auth/**` paths** (`/auth/passkeys/**`, `/auth/refresh`, `/auth/admin/**`) — Dropwizard's Jersey resources use the same `@Path("/auth/passkeys")` etc. as Spring/Micronaut, so the TS SDK targets one path scheme everywhere (no per-client path override).
 - **DI annotations differ by adapter on purpose** (`CONTRIBUTING.md` §9): Spring and Micronaut auto-detect the single constructor — do **not** add `@Autowired`/`@Inject`. Dropwizard's Dagger 2 wiring **requires** `@Inject` on the injected constructor. Match the module you're in.
@@ -56,7 +56,7 @@ Feature modules (`pk-auth-backup-codes`, `pk-auth-magic-link`, `pk-auth-otp`, `p
 - **New dependencies go through `gradle/libs.versions.toml`** (the version catalog) and are justified in the commit/ADR. Build conventions live in `build-logic/` (`pkauth.java-conventions`, `library-conventions`, `test-conventions`, `publish-conventions`), applied per-module.
 - **No `TODO` in main** without a linked GitHub issue.
 - **Non-trivial cross-module decisions get an ADR** under `docs/adr/`, numbered sequentially.
-- JaCoCo gate: ≥ 80% line coverage on `pk-auth-core`, ≥ 70% on adapters (wired per-module via `JacocoCoverageVerification`).
+- JaCoCo gate: `pkauth.test-conventions` sets a LINE ≥ 70% / BRANCH ≥ 55% floor on every library module (including the adapters). Modules raise it in their own `build.gradle.kts`: LINE ≥ 80% on `pk-auth-core`, `pk-auth-admin-api`, `pk-auth-jwt`; BRANCH ≥ 85% on `pk-auth-jwt`, `pk-auth-backup-codes`; BRANCH ≥ 80% on `pk-auth-otp`, `pk-auth-refresh-tokens`.
 
 ## Browser SDK
 

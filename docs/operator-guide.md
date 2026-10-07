@@ -9,8 +9,8 @@ pk-auth ships as a JVM library — Spring Boot 4, Dropwizard 5, or Micronaut 4
 adapters all consume the same core. A typical production deployment needs:
 
 - **JDK 21** (records, sealed types, virtual threads). Earlier JDKs will not compile.
-- **Postgres 16+** (when using `pk-auth-persistence-jdbi`) — Flyway migrations run
-  at startup, no manual schema work.
+- **Postgres 16+** (when using `pk-auth-persistence-jdbi`). The host runs the
+  shipped Flyway migrations; no adapter runs them for you (see §3).
 - **DynamoDB** (when using `pk-auth-persistence-dynamodb`) — two tables: a
   single-table `PkAuthCore` carrying every pk-auth auth item plus a separate
   `PkAuthUsers` table for the host-app user records the `UserLookup` SPI reads.
@@ -72,7 +72,11 @@ post-quantum signature algorithm to select yet — see `docs/threat-model.md`
 ### JDBI / Postgres
 
 - Flyway resources live in `pk-auth-persistence-jdbi/src/main/resources/db/migration`.
-- Migrations run automatically when the SPI is wired (see ADR 0003).
+- No adapter runs these migrations. The host must run them: add
+  `classpath:db/migration` from this artifact to its own Flyway locations,
+  targeting `PkAuthJdbiSchema.CURRENT_SCHEMA_VERSION`.
+  `PkAuthJdbiSchema.migrateForDevelopment(DataSource)` exists for demos and
+  integration tests only.
 - The shipped baseline is split across `V1__credentials.sql`,
   `V2__challenges.sql`, `V3__backup_codes.sql`, `V4__otp_codes.sql`, and
   `V5__example_users.sql` — five tables (`credentials`, `challenges`,
@@ -84,7 +88,8 @@ post-quantum signature algorithm to select yet — see `docs/threat-model.md`
   `V8__create_access_tokens.sql` and `V9__create_refresh_tokens.sql` add the
   1.1.0 `access_tokens` and `refresh_tokens` tables; `V10__refresh_tokens_amr.sql`
   adds the `amr` (RFC 8176 authentication-method-reference) column to
-  `refresh_tokens`.
+  `refresh_tokens`. `V11` and `V12` follow; see the migration directory for the
+  current set.
 - Magic-link tokens are not persisted: the JWT is the credential, and the
   consumed-JTI store is in-memory by default (see `ConsumedJtiStore` SPI for a
   multi-replica override).
@@ -98,8 +103,8 @@ post-quantum signature algorithm to select yet — see `docs/threat-model.md`
   and `PkAuthUsers` holds the host-app user records the `UserLookup` SPI reads.
   Provision both before the app starts; the adapter does not create them.
 - The DynamoDB-native TTL attribute is `ttl` (epoch seconds) — enable TTL on the
-  `ttl` attribute of the `PkAuthCore` table. It is set on `Challenge` and
-  `OneTimePasscode` items so DynamoDB evicts them after expiry. (Magic-link tokens
+  `ttl` attribute of the `PkAuthCore` table. It is set on challenge
+  (`ChallengeItem`) and OTP (`OtpItem`) items so DynamoDB evicts them after expiry. (Magic-link tokens
   are never persisted, in any backend.)
 - 1.1.0 adds `access_tokens` and `refresh_tokens` items on the same `PkAuthCore`
   table (ADR 0015, 0013), both pruned by the native `ttl` attribute. Access-token
@@ -180,7 +185,7 @@ Recommended dashboards:
 | 4xx on `authentication.finish` with `counter_regression` | A counter wound back — either credential clone or counter-0 (synced) passkey crossing devices | Inspect the credential's `backupEligible` flag; if true, consider switching the policy to `warn` |
 | `Challenge expired` 4xx | Five-minute default TTL elapsed | Often a slow user; do not extend the TTL — re-issue start |
 | DynamoDB `ConditionalCheckFailedException` on `takeOnce` | Two clients tried to consume the same challenge | Expected; only one succeeds. If the rate is high, inspect for double-submit on the client |
-| Spring Security 7 chain mounts before the pk-auth filter | Filter order regression | Verify `PkAuthSecurityConfig.pkAuthSecurityFilterChain` has the higher precedence in the host's chain |
+| Spring Security 7 chain mounts before the pk-auth filter | Filter order regression | Verify the starter's `pkAuthSecurityFilterChain` bean (`PkAuthWebAutoConfiguration`, `@Order(HIGHEST_PRECEDENCE + 10)`) has the higher precedence in the host's chain |
 
 ## 7. Disabling the admin endpoints
 
