@@ -13,17 +13,17 @@ import java.util.Optional;
  * by:
  *
  * <ul>
- *   <li>{@code pk-auth-testkit} — in-memory, for unit tests / dev boots
- *   <li>{@code pk-auth-persistence-jdbi} — Postgres + Flyway V9
- *   <li>{@code pk-auth-persistence-dynamodb} — single-table on {@code PkAuthCore}
+ *   <li>{@code pk-auth-testkit}: in-memory, for unit tests / dev boots
+ *   <li>{@code pk-auth-persistence-jdbi}: Postgres + Flyway V9
+ *   <li>{@code pk-auth-persistence-dynamodb}: single-table on {@code PkAuthCore}
  * </ul>
  *
- * <p><strong>Load-bearing replay defense.</strong> {@link #rotateAtomically(String, Instant,
- * RefreshTokenRecord)} must mark the parent used AND insert the successor as a single atomic
- * operation. Implementations MUST NOT decompose this into a separate mark-then-insert sequence — a
- * concurrent rotator's family-scorch run between the two would miss the freshly-inserted successor.
- * The service relies on a {@code false} return to indicate "another caller already used or revoked
- * this token" and triggers a family-wide scorch in that branch.
+ * <p>Load-bearing replay defence: {@link #rotateAtomically(String, Instant, RefreshTokenRecord)}
+ * must mark the parent used and insert the successor as a single atomic operation. Implementations
+ * must not decompose this into a separate mark-then-insert sequence; a concurrent rotator's
+ * family-scorch run between the two would miss the freshly-inserted successor. The service relies
+ * on a {@code false} return to indicate "another caller already used or revoked this token" and
+ * triggers a family-wide scorch in that branch.
  *
  * <p>See ADR 0013 for the design rationale.
  *
@@ -33,7 +33,7 @@ public interface RefreshTokenRepository {
 
   /**
    * Persists a freshly-issued or freshly-rotated refresh token. Implementations should reject a
-   * duplicate {@code refreshId} — this is a server-side bug, not a normal operation.
+   * duplicate {@code refreshId}; this is a server-side bug, not a normal operation.
    */
   void create(RefreshTokenRecord record);
 
@@ -41,15 +41,14 @@ public interface RefreshTokenRepository {
   Optional<RefreshTokenRecord> findByRefreshId(String refreshId);
 
   /**
-   * Atomic mark-and-insert: marks {@code parentRefreshId} used iff still fresh AND inserts the
+   * Atomic mark-and-insert: marks {@code parentRefreshId} used iff still fresh and inserts the
    * supplied {@code successor} row, as a single atomic operation. Returns {@code true} iff the
    * parent was fresh and the successor was inserted; {@code false} iff the parent was already used,
    * revoked, expired, or absent (no successor row created).
    *
-   * <p><strong>Load-bearing replay defense.</strong> The atomicity is the entire point — a
-   * non-atomic sequence (mark, then insert) has a window where another concurrent rotator can call
-   * {@link #revokeFamily} between the two and miss the newly-inserted successor. Backend
-   * implementations MUST use:
+   * <p>Load-bearing replay defence: the atomicity is the entire point; a non-atomic sequence (mark,
+   * then insert) has a window where another concurrent rotator can call {@link #revokeFamily}
+   * between the two and miss the newly-inserted successor. Backend implementations must use:
    *
    * <ul>
    *   <li>JDBI: {@code jdbi.inTransaction(handle -> {...})} wrapping a conditional {@code UPDATE}
@@ -60,8 +59,8 @@ public interface RefreshTokenRepository {
    * </ul>
    *
    * <p>The predicate "fresh" means: {@code used_at IS NULL AND revoked_at IS NULL AND expires_at >
-   * :now}. On {@code false}, the service triggers a family-wide scorch — that revoke runs
-   * <em>outside</em> the failed rotation's scope so it commits regardless.
+   * :now}. On {@code false}, the service triggers a family-wide scorch; that revoke runs outside
+   * the failed rotation's scope so it commits regardless.
    *
    * @param parentRefreshId the {@code refreshId} of the token being rotated; its row must exist
    * @param now timestamp to write into {@code used_at} on success
@@ -72,7 +71,7 @@ public interface RefreshTokenRepository {
   boolean rotateAtomically(String parentRefreshId, Instant now, RefreshTokenRecord successor);
 
   /**
-   * Revokes every unrevoked row in {@code familyId} with the supplied reason. Idempotent —
+   * Revokes every unrevoked row in {@code familyId} with the supplied reason. Idempotent;
    * already-revoked rows are left untouched (their original {@code revoked_reason} is preserved for
    * forensic visibility). Returns the number of rows newly marked revoked.
    */
@@ -89,14 +88,14 @@ public interface RefreshTokenRepository {
   List<RefreshTokenRecord> findByUserHandle(UserHandle userHandle);
 
   /**
-   * Lists every refresh-token row in {@code familyId}. Intended for tests and forensic inspection —
-   * production code paths normally don't need this.
+   * Lists every refresh-token row in {@code familyId}. Intended for tests and forensic inspection;
+   * production code paths normally do not need this.
    */
   List<RefreshTokenRecord> findByFamilyId(String familyId);
 
   /**
    * Operator cleanup hook: deletes rows whose retention window has elapsed. Implementations should
-   * remove rows where {@code expires_at < cutoff} AND (the row is consumed or revoked before {@code
+   * remove rows where {@code expires_at < cutoff} and (the row is consumed or revoked before {@code
    * cutoff}). Returns the number of rows deleted. Documented in {@code docs/operator-guide.md}.
    */
   int deleteExpiredBefore(Instant cutoff);

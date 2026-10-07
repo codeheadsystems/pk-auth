@@ -112,8 +112,8 @@ public final class PkAuthModule {
   }
 
   /**
-   * Default in-memory {@link CeremonyRateLimiter}. Hosts MUST override this binding with a shared
-   * (Redis / DB-backed) implementation in multi-replica deployments — see {@link
+   * Default in-memory {@link CeremonyRateLimiter}. Hosts must override this binding with a shared
+   * (Redis / DB-backed) implementation in multi-replica deployments; see {@link
    * InMemoryCeremonyRateLimiter} javadoc.
    *
    * @since 0.9.1
@@ -219,7 +219,7 @@ public final class PkAuthModule {
   /**
    * Provides an {@code Optional<RefreshHandler>} threaded through Dagger so the component can
    * surface a nullable value without forcing every downstream graph to know about refresh tokens.
-   * Empty when {@code PersistenceBindings.refreshTokenRepository()} is null — the bundle then skips
+   * Empty when {@code PersistenceBindings.refreshTokenRepository()} is null; the bundle then skips
    * registering the refresh resource.
    */
   @Provides
@@ -230,8 +230,8 @@ public final class PkAuthModule {
   }
 
   /**
-   * Optional refresh-token deletion listener. When refresh tokens aren't wired, contributes an
-   * empty set to the {@link UserDeletionService}'s listener multibinding — the deletion fan-out
+   * Optional refresh-token deletion listener. When refresh tokens are not wired, contributes an
+   * empty set to the {@link UserDeletionService}'s listener multibinding; the deletion fan-out
    * silently skips the refresh branch.
    */
   @Provides

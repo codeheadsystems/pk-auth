@@ -28,12 +28,12 @@ import org.slf4j.LoggerFactory;
  * against the user's stored hashes and consumes the matching record on success.
  *
  * <p>Verification is rate-limited via a {@link BackupCodeRateLimiter} (default: 5 attempts per user
- * per 60 seconds) to bound the CPU cost of the Argon2id work. Supply a custom {@link
- * BackupCodeRateLimiter} via the {@link Dependencies} record (or {@link Config}) to integrate with
- * a shared (Redis/DB-backed) store in multi-instance deployments.
+ * per 60 seconds) to bound the CPU cost of the Argon2id work. A custom {@link
+ * BackupCodeRateLimiter} supplied via the {@link Dependencies} record (or {@link Config})
+ * integrates with a shared (Redis/DB-backed) store in multi-instance deployments.
  *
- * <p>Construct via {@link #create(Dependencies, Config)} (or {@link #create(Dependencies)} for the
- * all-default case).
+ * <p>Instances are built via {@link #create(Dependencies, Config)} (or {@link
+ * #create(Dependencies)} for the all-default case).
  */
 public final class BackupCodeService {
 
@@ -42,11 +42,10 @@ public final class BackupCodeService {
 
   /**
    * Length of each plaintext code in characters. At length 10 over the 32-symbol {@link #ALPHABET}
-   * each code carries ~50 bits of entropy (10 × log2(32)). This is <em>not</em> a quantum concern:
-   * the real attack cost is dominated by the Argon2id verify hash plus the per-user verify rate
-   * limiter ({@link #DEFAULT_RATE_LIMIT} attempts per {@link #DEFAULT_RATE_WINDOW}), not by brute
-   * search of the code space. {@code CODE_LENGTH} is the lever if a deployment wants more margin;
-   * the default is deliberately left unchanged.
+   * each code carries ~50 bits of entropy (10 × log2(32)). This is not a quantum concern: the real
+   * attack cost is dominated by the Argon2id verify hash plus the per-user verify rate limiter
+   * ({@link #DEFAULT_RATE_LIMIT} attempts per {@link #DEFAULT_RATE_WINDOW}), not by brute search of
+   * the code space. {@code CODE_LENGTH} is the lever if a deployment wants more margin.
    */
   public static final int CODE_LENGTH = 10;
 
@@ -99,7 +98,7 @@ public final class BackupCodeService {
    *
    * <p>The default implementation ({@link InMemoryBackupCodeRateLimiter}) uses an in-process
    * counter that resets after {@link #DEFAULT_RATE_WINDOW}. Production multi-instance deployments
-   * SHOULD override with a shared (Redis/DB-backed) implementation so rate limits are not
+   * should override with a shared (Redis/DB-backed) implementation so rate limits are not
    * multiplied by the cluster size.
    */
   public interface BackupCodeRateLimiter {
@@ -120,9 +119,9 @@ public final class BackupCodeService {
    * Result of a {@link #verify} call.
    *
    * <ul>
-   *   <li>{@link Success} — the candidate matched an unconsumed code; the code is now consumed.
-   *   <li>{@link NoMatch} — the candidate did not match any unconsumed code.
-   *   <li>{@link RateLimited} — the user has exceeded the per-window verify limit; no Argon2id work
+   *   <li>{@link Success}: the candidate matched an unconsumed code; the code is now consumed.
+   *   <li>{@link NoMatch}: the candidate did not match any unconsumed code.
+   *   <li>{@link RateLimited}: the user has exceeded the per-window verify limit; no Argon2id work
    *       was performed. Retry after {@link RateLimited#retryAfterSeconds()} seconds.
    * </ul>
    */
@@ -198,11 +197,11 @@ public final class BackupCodeService {
    * If the per-user rate limit is exceeded, {@link VerifyResult.RateLimited} is returned
    * immediately with no Argon2id work. Otherwise {@link VerifyResult.NoMatch} is returned.
    *
-   * <p><strong>Constant-time guarantee:</strong> the method always iterates every stored code row
-   * (both consumed and unconsumed). For consumed rows a dummy Argon2id verification is performed
-   * against a fixed throwaway hash so that each loop iteration takes approximately the same
-   * wall-clock time. This eliminates timing side-channels that would otherwise reveal the number of
-   * unconsumed codes or the position of the matching slot.
+   * <p>Constant-time guarantee: the method always iterates every stored code row (both consumed and
+   * unconsumed). For consumed rows a dummy Argon2id verification is performed against a fixed
+   * throwaway hash so that each loop iteration takes approximately the same wall-clock time. This
+   * eliminates timing side-channels that would otherwise reveal the number of unconsumed codes or
+   * the position of the matching slot.
    */
   public VerifyResult verify(UserHandle user, String candidate) {
     Objects.requireNonNull(user, "user");
@@ -319,7 +318,7 @@ public final class BackupCodeService {
    * Canonical holder of the required collaborators for {@link BackupCodeService}.
    *
    * <p>The {@code rateLimiter} defaults to {@link InMemoryBackupCodeRateLimiter} when constructed
-   * via {@link #of(BackupCodeRepository, ClockProvider)}; multi-instance deployments SHOULD supply
+   * via {@link #of(BackupCodeRepository, ClockProvider)}; multi-instance deployments should supply
    * a shared (Redis/DB-backed) implementation directly to the canonical constructor.
    *
    * @since 0.9.1
@@ -328,7 +327,7 @@ public final class BackupCodeService {
       BackupCodeRepository repository,
       ClockProvider clockProvider,
       BackupCodeRateLimiter rateLimiter) {
-    /** Compact constructor — enforces non-null on all required collaborators. */
+    /** Compact constructor that enforces non-null on all required collaborators. */
     public Dependencies {
       Objects.requireNonNull(repository, "repository");
       Objects.requireNonNull(clockProvider, "clockProvider");
@@ -363,7 +362,7 @@ public final class BackupCodeService {
       int parallelism,
       int codeCount,
       int rateLimit) {
-    /** Compact constructor — enforces non-null on object-typed fields and positive ranges. */
+    /** Compact constructor that enforces non-null on object-typed fields and positive ranges. */
     public Config {
       Objects.requireNonNull(random, "random");
       Objects.requireNonNull(argon2, "argon2");
@@ -405,8 +404,8 @@ public final class BackupCodeService {
   /**
    * Simple in-process rate limiter backed by {@link InMemoryWindowCounter}.
    *
-   * <p><strong>FOR DEV / SINGLE-INSTANCE USE ONLY.</strong> Production multi-instance deployments
-   * MUST replace this with a shared (Redis/DB-backed) {@link BackupCodeRateLimiter} implementation;
+   * <p>Intended for development and single-instance use only. Production multi-instance deployments
+   * must replace this with a shared (Redis/DB-backed) {@link BackupCodeRateLimiter} implementation;
    * otherwise the per-replica limit multiplies by the cluster size.
    *
    * @since 0.9.1

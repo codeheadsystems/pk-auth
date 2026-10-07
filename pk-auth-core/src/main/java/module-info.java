@@ -2,8 +2,7 @@
 
 /**
  * pk-auth core module: framework-neutral SPIs, DTOs, sealed result types, configuration, and the
- * {@code PasskeyAuthenticationService} contract. The {@code internal} package is intentionally not
- * exported.
+ * {@code PasskeyAuthenticationService} contract. The {@code internal} package is not exported.
  */
 module com.codeheadsystems.pkauth.core {
   requires transitive org.jspecify;

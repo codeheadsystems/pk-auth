@@ -13,9 +13,9 @@ import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
- * Covers {@link JdbiUserLookup}'s registration / lookup surface — {@code getOrCreateHandle} (create
+ * Covers {@link JdbiUserLookup}'s registration / lookup surface: {@code getOrCreateHandle} (create
  * + idempotent re-fetch), {@code findHandleByUsername}, {@code register}, and {@code
- * findViewByHandle} / {@code readView} — which the ceremony scenarios only touch via {@code
+ * findViewByHandle} / {@code readView}. The ceremony scenarios only touch this surface via {@code
  * getOrCreateHandle}.
  */
 @Testcontainers

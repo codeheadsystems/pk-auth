@@ -16,7 +16,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Maps the SPI exception contract (see {@link
  * com.codeheadsystems.pkauth.spi.PkAuthPersistenceException}) to a stable {@code 503 Service
- * Unavailable} JSON response — same wire shape as the Spring and Dropwizard adapters.
+ * Unavailable} JSON response, with the same wire shape as the Spring and Dropwizard adapters.
  */
 @Produces
 @Singleton

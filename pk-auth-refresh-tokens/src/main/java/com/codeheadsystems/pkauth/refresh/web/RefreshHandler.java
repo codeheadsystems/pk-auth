@@ -10,8 +10,8 @@ import java.util.Objects;
 /**
  * Framework-neutral helper that turns a presented refresh token into either a {@link
  * RefreshResponse} (success) or a {@link RefreshErrorResponse} (any of the typed failures). Each
- * adapter's HTTP layer wraps this — Spring's controller, Dropwizard's resource, Micronaut's
- * controller — so the rotation logic and error mapping live in one place.
+ * adapter's HTTP layer wraps this (Spring's controller, Dropwizard's resource, Micronaut's
+ * controller) so the rotation logic and error mapping live in one place.
  *
  * @since 1.1.0
  */

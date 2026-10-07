@@ -10,7 +10,7 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSecon
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSecondarySortKey;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortKey;
 
-/** Row in the separate {@code PkAuthUsers} table — host-app data per brief §6.7. */
+/** Row in the separate {@code PkAuthUsers} table: host-app data per brief §6.7. */
 @DynamoDbBean
 public final class UserItem {
 
@@ -119,10 +119,10 @@ public final class UserItem {
   /**
    * Builds the username-uniqueness marker row: {@code pk = USERNAME#<lowercased>}, {@code sk =
    * META}. A conditional put of this item ({@code attribute_not_exists(pk)}) is what actually
-   * enforces one handle per username — a GSI cannot, because GSIs do not enforce uniqueness.
-   * Deliberately leaves {@code gsi1pk} unset so the sparse username GSI does not index it (only the
-   * real {@link DynamoKeys#USER} row is indexed and returned by lookups); it carries {@code
-   * userHandle} so a racing loser can recover the winner's handle with a strongly-consistent read.
+   * enforces one handle per username; a GSI cannot, because GSIs do not enforce uniqueness. Leaves
+   * {@code gsi1pk} unset so the sparse username GSI does not index it (only the real {@link
+   * DynamoKeys#USER} row is indexed and returned by lookups); it carries {@code userHandle} so a
+   * racing loser can recover the winner's handle with a strongly-consistent read.
    */
   static UserItem usernameMarker(UserHandle handle, String username) {
     UserItem item = new UserItem();

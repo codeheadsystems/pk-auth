@@ -7,7 +7,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
 
-/** Unit coverage for the Caffeine-backed sliding-window counter. */
+/** Unit coverage for the Caffeine-backed fixed-window counter. */
 class InMemoryWindowCounterTest {
 
   private final InMemoryWindowCounter counter = new InMemoryWindowCounter(Duration.ofMinutes(1));

@@ -27,8 +27,8 @@ import tools.jackson.databind.module.SimpleModule;
  *   <li>{@code byte[]} fields encode as base64url with no padding (RFC 4648 §5).
  *   <li>{@link UserHandle} and {@link CredentialId} encode as a base64url string of their bytes;
  *       {@link ChallengeId} encodes as its string value.
- *   <li>{@code java.time} types serialize as ISO-8601 strings, never as numeric timestamps.
- *   <li>Unknown properties on the wire fail deserialization (strict input).
+ *   <li>{@code java.time} types serialise as ISO-8601 strings, never as numeric timestamps.
+ *   <li>Unknown properties on the wire fail deserialisation (strict input).
  *   <li>Null properties are omitted on output.
  * </ul>
  *
@@ -58,12 +58,12 @@ public final class PkAuthObjectMappers {
 
   /**
    * Returns a fresh {@link SimpleModule} registering the byte[] / {@link UserHandle} / {@link
-   * CredentialId} / {@link ChallengeId} (de)serializers used by pk-auth's wire contract. Adapter
+   * CredentialId} / {@link ChallengeId} (de)serialisers used by pk-auth's wire contract. Adapter
    * modules that drive a host-framework {@link ObjectMapper} (Spring Boot 4 / Micronaut on Jackson
    * 3, etc.) register this module so their mapper produces the same wire shape the core's mapper
    * does.
    *
-   * @since 0.9.1 {@link CredentialId} (de)serializer registered alongside {@link UserHandle} so
+   * @since 0.9.1 {@link CredentialId} (de)serialiser registered alongside {@link UserHandle} so
    *     adapters no longer need per-call-site {@code Base64Url.encode(...)} / {@code
    *     CredentialId.of(...)} stitching.
    */

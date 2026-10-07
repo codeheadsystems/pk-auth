@@ -16,7 +16,7 @@ import java.util.Optional;
  * <p>Family model: every chain of rotations shares a {@code familyId} (the {@code refreshId} of the
  * family root). Replaying a used token in any family member scorches the entire family.
  *
- * @param refreshId opaque identifier (16 random bytes, base64url-encoded — 22 chars)
+ * @param refreshId opaque identifier (16 random bytes, base64url-encoded, 22 chars)
  * @param tokenHash SHA-256 of the raw 32-byte secret
  * @param userHandle owning user
  * @param audience the audience this refresh is scoped to (drives per-audience TTL via {@link
@@ -28,8 +28,8 @@ import java.util.Optional;
  *     for the family root
  * @param issuedAt when this token was issued
  * @param expiresAt when this token expires (absolute)
- * @param usedAt set when the atomic rotate primitive transitions this row from fresh to used — the
- *     load-bearing field for replay defense
+ * @param usedAt set when the atomic rotate primitive transitions this row from fresh to used; the
+ *     load-bearing field for replay defence
  * @param revokedAt set when this token (or its family) is revoked
  * @param revokedReason categorical reason matching {@link #revokedAt}; present iff {@code
  *     revokedAt} is set

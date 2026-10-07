@@ -14,8 +14,8 @@ public enum RevokeReason {
   LOGOUT,
 
   /**
-   * A used or revoked token in this family was presented again — the load-bearing replay defense
-   * outcome. The entire family is revoked and the bearer must re-authenticate.
+   * A used or revoked token in this family was presented again; this is the load-bearing replay
+   * defence outcome. The entire family is revoked and the bearer must re-authenticate.
    */
   ROTATION_REPLAY,
 

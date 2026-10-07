@@ -18,7 +18,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 /**
  * Direct CRUD against {@link JdbiCredentialRepository}, covering the mutation paths ({@code
  * updateSignCount}, {@code updateLabel}, {@code delete}, {@code deleteByUserHandle}) and the
- * transport (de)serialization the shared ceremony scenarios don't exercise — including the
+ * transport (de)serialisation the shared ceremony scenarios do not exercise, including the
  * clone-detection counter guard and the ownership-scoped no-ops.
  */
 @Testcontainers

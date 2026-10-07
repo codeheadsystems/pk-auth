@@ -2,17 +2,36 @@
 
 ## Working agreements
 
-The architecture reference is [`DESIGN.md`](./DESIGN.md), with per-decision rationale in [`docs/adr/`](./docs/adr/). (The original bootstrap brief is archived at [`docs/history/pk-auth-build-brief.md`](./docs/history/pk-auth-build-brief.md) for context only.)
+The architecture reference is [`DESIGN.md`](./DESIGN.md), with per-decision rationale in
+[`docs/adr/`](./docs/adr/). The original bootstrap brief is archived at
+[`docs/history/pk-auth-build-brief.md`](./docs/history/pk-auth-build-brief.md) for context only.
 
-1. **Keep `main` releasable.** Work lands as small pull requests against `main`. Run `./gradlew check` before pushing (CI runs the same gate), and record user-visible changes under `[Unreleased]` in `CHANGELOG.md`.
-2. **Conventional commits.** Examples: `feat(core): ...`, `test(jdbi): ...`, `docs(adr): ...`, `build: ...`, `ci: ...`. Keep commits small and atomic.
-3. **ADRs.** Non-trivial cross-module decisions get an ADR under `docs/adr/`, Nygard format. Number sequentially.
-4. **Dependencies.** New libraries go through `gradle/libs.versions.toml` and are justified in the commit message or an ADR.
-5. **No `TODO` in main** unless paired with a GitHub issue link.
-6. **SPDX header** on every Java source file: `// SPDX-License-Identifier: MIT`. Spotless enforces this.
-7. **`@since` tags on public API.** Every new or modified public element (class, record, interface, method, field, or sealed-variant) gets an `@since X.Y.Z` Javadoc tag carrying the version it first ships in. The current target is the in-flight version in `gradle.properties` (the `version` property, minus the `-SNAPSHOT` suffix) for newly introduced surfaces; existing surfaces keep the version they shipped with. When renaming a method or changing its signature in a MAJOR bump, update the `@since` on the new shape. The policy applies across `pk-auth-core`, `pk-auth-admin-api`, `pk-auth-jwt`, `pk-auth-otp`, `pk-auth-magic-link`, `pk-auth-backup-codes`, `pk-auth-refresh-tokens`, and the three adapter modules.
-8. **Don't optimize prematurely.** Correct → tested → fast.
-9. **Constructor-injection annotations.** Spring and Micronaut detect a single non-default constructor automatically; do not add `@Autowired` / `@Inject` in those adapters. Dropwizard's adapter is wired through Dagger 2, which requires `@Inject` on the injected constructor — keep the annotation. The asymmetry is by DI framework, not by style preference; new files in each adapter follow the conventions already present in that module.
+1. `main` stays releasable. Work lands as small pull requests against `main`. `./gradlew check`
+   runs before pushing (CI runs the same gate), and user-visible changes are recorded under
+   `[Unreleased]` in `CHANGELOG.md`.
+2. Commits follow the conventional-commits format. Examples: `feat(core): ...`, `test(jdbi): ...`,
+   `docs(adr): ...`, `build: ...`, `ci: ...`. Commits are small and atomic.
+3. Non-trivial cross-module decisions get an ADR under `docs/adr/`, in Nygard format, numbered
+   sequentially.
+4. New libraries go through `gradle/libs.versions.toml` and are justified in the commit message or
+   an ADR.
+5. No `TODO` appears in main unless paired with a GitHub issue link.
+6. Every Java source file carries the SPDX header `// SPDX-License-Identifier: MIT`. Spotless
+   enforces it.
+7. Public API carries `@since` tags. Every new or modified public element (class, record,
+   interface, method, field, or sealed variant) gets an `@since X.Y.Z` Javadoc tag carrying the
+   version it first ships in. For newly introduced surfaces, the current target is the in-flight
+   version in `gradle.properties` (the `version` property, minus the `-SNAPSHOT` suffix). Existing
+   surfaces keep the version they shipped with. A rename or signature change in a MAJOR bump
+   updates the `@since` on the new shape. The policy applies across `pk-auth-core`,
+   `pk-auth-admin-api`, `pk-auth-jwt`, `pk-auth-otp`, `pk-auth-magic-link`, `pk-auth-backup-codes`,
+   `pk-auth-refresh-tokens`, and the three adapter modules.
+8. Optimisation follows correctness and tests: correct, then tested, then fast.
+9. Constructor-injection annotations differ by adapter. Spring and Micronaut detect a single
+   non-default constructor automatically, so `@Autowired` and `@Inject` are not added in those
+   adapters. The Dropwizard adapter is wired through Dagger 2, which requires `@Inject` on the
+   injected constructor, so the annotation stays. The asymmetry follows the DI framework. New files
+   in each adapter follow the conventions already present in that module.
 
 ## Build
 
@@ -20,8 +39,9 @@ The architecture reference is [`DESIGN.md`](./DESIGN.md), with per-decision rati
 ./gradlew check
 ```
 
-JDK 21 required (Gradle toolchain will fetch one if needed).
+JDK 21 is required. Gradle's toolchain fetches one if needed.
 
 ## Running locally
 
-See [`GETTING_STARTED.md`](./GETTING_STARTED.md) for the "5-minute integration" snippet and per-module specifics.
+[`GETTING_STARTED.md`](./GETTING_STARTED.md) holds the minimal adoption walkthrough and per-module
+specifics.

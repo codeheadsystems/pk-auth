@@ -26,7 +26,7 @@ class AdminResponseShapesTest {
   /**
    * Locks the JSON wire shape that promoted the per-adapter ad-hoc encoding: {@code
    * {"userHandle":"<base64url>"}}. The pk-auth Jackson module is responsible for emitting {@link
-   * UserHandle} as a base64url string — adapter call-sites no longer call {@code
+   * UserHandle} as a base64url string; adapter call-sites no longer call {@code
    * Base64Url.encode(...)} explicitly.
    */
   @Test

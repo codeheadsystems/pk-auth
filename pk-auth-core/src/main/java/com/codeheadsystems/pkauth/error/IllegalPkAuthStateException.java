@@ -4,7 +4,8 @@ package com.codeheadsystems.pkauth.error;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Thrown when pk-auth state is used in a way that should be impossible — i.e. programmer error.
+ * Thrown when pk-auth state is used in a way that should be impossible, which indicates a
+ * programmer error.
  *
  * @since 0.9.0
  */

@@ -45,16 +45,16 @@ import org.slf4j.LoggerFactory;
  *       / magic-link / backup-code blocks of {@link
  *       com.codeheadsystems.pkauth.dropwizard.config.PkAuthConfig}. When the alt-flow constructor
  *       is used the bundle additionally mounts {@link PkAuthAdminResource} at {@code /auth/admin}
- *       without further wiring from the host — matching the Spring and Micronaut adapters.
+ *       without further wiring from the host, matching the Spring and Micronaut adapters.
  * </ol>
  *
- * <p><b>Jackson coexistence.</b> Dropwizard 5 still wires Jackson 2 internally; pk-auth-core uses
- * Jackson 3 (ADR 0009). The bundle teaches Dropwizard's Jackson 2 {@code ObjectMapper} how to read
- * and write base64url byte arrays and pk-auth's value types — see {@link PkAuthJacksonBridge}. Wire
- * compatibility is verified end-to-end by the integration tests.
+ * <p>Dropwizard 5 still wires Jackson 2 internally; pk-auth-core uses Jackson 3 (ADR 0009). The
+ * bundle teaches Dropwizard's Jackson 2 {@code ObjectMapper} how to read and write base64url byte
+ * arrays and pk-auth's value types; see {@link PkAuthJacksonBridge}. Wire compatibility is verified
+ * end-to-end by the integration tests.
  *
  * @param <C> the host application's Configuration type.
- * @since 0.9.1 — alt-flow auto-wiring constructor added; legacy two-arg constructor preserved.
+ * @since 0.9.1 (alt-flow auto-wiring constructor added; legacy two-arg constructor preserved).
  */
 public class PkAuthBundle<C extends HasPkAuthConfig> implements ConfiguredBundle<C> {
 
@@ -80,7 +80,7 @@ public class PkAuthBundle<C extends HasPkAuthConfig> implements ConfiguredBundle
   /**
    * Legacy constructor: the host has already hand-built an {@link AdminService} and hands it to the
    * bundle. The bundle mounts the admin resource but does not auto-wire backup-code / magic-link /
-   * OTP services itself. Prefer the {@link AltFlowOptions} constructor for new applications.
+   * OTP services itself. The {@link AltFlowOptions} constructor is preferred for new applications.
    *
    * @param persistence the SPI implementations used by the ceremony service.
    * @param adminService the admin service, or null to skip admin endpoint registration.
@@ -105,7 +105,7 @@ public class PkAuthBundle<C extends HasPkAuthConfig> implements ConfiguredBundle
    * construction throws otherwise.
    *
    * @param persistence the SPI implementations used by the ceremony service and alt-flows.
-   * @param altFlowOptions host-supplied senders, authorizer, and dev-mode toggles.
+   * @param altFlowOptions host-supplied senders, authoriser, and dev-mode toggles.
    * @since 0.9.1
    */
   public PkAuthBundle(PersistenceBindings persistence, AltFlowOptions altFlowOptions) {

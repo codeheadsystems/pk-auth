@@ -18,13 +18,15 @@ import org.junit.jupiter.api.Test;
 /**
  * Mechanical {@code @since} gate (CONTRIBUTING.md §7): every public top-level type in an exported
  * package must carry a class-level {@code @since} Javadoc tag. This stops the convention from
- * silently rotting on the most load-bearing types — when it fails, add {@code @since <version>} to
- * the type's class Javadoc (the in-flight version from {@code gradle.properties}, minus {@code
+ * silently rotting on the most load-bearing types; a failing type needs {@code @since <version>} in
+ * its class Javadoc (the in-flight version from {@code gradle.properties}, minus {@code
  * -SNAPSHOT}).
  */
 class PublicApiSinceTagTest {
 
-  /** Packages exported by {@code module-info.java}. Keep in sync with the module declaration. */
+  /**
+   * Packages exported by {@code module-info.java}. Must stay in sync with the module declaration.
+   */
   private static final Set<String> EXPORTED_PACKAGES =
       Set.of(
           "api",

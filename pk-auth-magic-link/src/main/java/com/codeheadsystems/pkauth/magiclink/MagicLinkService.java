@@ -35,22 +35,22 @@ import org.slf4j.LoggerFactory;
  * Sends and consumes magic-link tokens. Two flows per brief §6.4:
  *
  * <ul>
- *   <li>Email verification — the {@code pkauth.purpose} claim is {@code email-verify}.
- *   <li>Passwordless login — the {@code pkauth.purpose} claim is {@code login}.
+ *   <li>Email verification: the {@code pkauth.purpose} claim is {@code email-verify}.
+ *   <li>Passwordless login: the {@code pkauth.purpose} claim is {@code login}.
  * </ul>
  *
  * <p>Single-use is enforced by recording consumed JTI values in a {@link ConsumedJtiStore} whose
  * entries expire after {@code consumedJtiTtl} (default: {@link #DEFAULT_CONSUMED_JTI_TTL}). The
  * SPI's default in-process implementation ({@link InMemoryConsumedJtiStore}) is dev/single-instance
- * only — multi-replica deployments MUST inject a shared (Redis/DB-backed) store, otherwise a token
+ * only; multi-replica deployments must inject a shared (Redis/DB-backed) store, otherwise a token
  * redeemed on one replica can be redeemed again on another within its TTL window. The service logs
- * a startup WARN when the in-memory default is wired. Rate limiting (brief §6.4 — N emails per
+ * a startup WARN when the in-memory default is wired. Rate limiting (brief §6.4: N emails per
  * user/purpose per hour) is tracked through {@link MagicLinkRateLimiter}, which follows the same
  * pattern (dev-only in-process default; production replaces with a shared implementation).
  *
- * <p>Construct via {@link #create(Dependencies, Config)} (or {@link #create(Dependencies, String)}
- * for the all-default case). Required collaborators live in {@link Dependencies}; tunables (rate
- * limit, consumed-JTI TTL, base URL) live in {@link Config}.
+ * <p>Instances are built via {@link #create(Dependencies, Config)} (or {@link #create(Dependencies,
+ * String)} for the all-default case). Required collaborators live in {@link Dependencies}; tunables
+ * (rate limit, consumed-JTI TTL, base URL) live in {@link Config}.
  */
 public final class MagicLinkService {
 
@@ -70,9 +70,9 @@ public final class MagicLinkService {
   public static final Duration DEFAULT_TTL = Duration.ofMinutes(15);
 
   /**
-   * Default TTL for the consumed-JTI cache. Set comfortably larger than {@link #DEFAULT_TTL} so a
-   * JWT that's already expired can't be replayed even if the validator's clock-skew tolerance
-   * accepts it briefly after expiry.
+   * Default TTL for the consumed-JTI cache. The value is comfortably larger than {@link
+   * #DEFAULT_TTL} so a JWT that has already expired cannot be replayed even if the validator's
+   * clock-skew tolerance accepts it briefly after expiry.
    */
   public static final Duration DEFAULT_CONSUMED_JTI_TTL = Duration.ofMinutes(30);
 
@@ -85,10 +85,10 @@ public final class MagicLinkService {
   /**
    * Dedicated audience for magic-link JWTs. Magic-link tokens are minted with this audience (not
    * the application's resource-server audience) so that the host's ordinary {@link
-   * PkAuthJwtValidator} — which only accepts the application audience — rejects them. This is what
+   * PkAuthJwtValidator} (which only accepts the application audience) rejects them. This is what
    * prevents a magic-link token (which sits in an email inbox / proxy log) from being replayed as
-   * an API bearer/access token. Wire the service via {@link Dependencies#ofDedicatedAudience} so
-   * the magic-link issuer and validator are both scoped to this audience.
+   * an API bearer/access token. Wiring the service via {@link Dependencies#ofDedicatedAudience}
+   * scopes the magic-link issuer and validator both to this audience.
    *
    * @since 2.2.0
    */
@@ -99,7 +99,7 @@ public final class MagicLinkService {
     /**
      * Email was dispatched.
      *
-     * <p>Carries only the token's {@code jti} — an opaque, non-secret correlation id safe to log or
+     * <p>Carries only the token's {@code jti}: an opaque, non-secret correlation id safe to log or
      * echo to a caller. The magic-link token itself is a bearer credential that authenticates as
      * the user without inbox access, so it is never surfaced here; it reaches only {@link
      * EmailSender}. Before 2.3.0 this component was named {@code tokenJti} but actually carried the
@@ -107,8 +107,8 @@ public final class MagicLinkService {
      * login credential.
      *
      * <p>Empty string when {@link MagicLinkService#startLogin} short-circuits (unknown user, or no
-     * bound address) — those paths return the same {@code Sent} shape to prevent account
-     * enumeration and have no token to identify.
+     * bound address); those paths return the same {@code Sent} shape to prevent account enumeration
+     * and have no token to identify.
      *
      * @param jti the issued token's JWT ID, or {@code ""} when no token was issued
      * @since 2.3.0
@@ -144,15 +144,15 @@ public final class MagicLinkService {
     /**
      * Token is otherwise valid but was minted for a different {@code pkauth.purpose} than the
      * endpoint requires (e.g. a {@code login} token presented to the email-verification flow). The
-     * single-use JTI is deliberately <em>not</em> consumed in this case, so the token stays usable
-     * at its intended endpoint.
+     * single-use JTI is not consumed in this case, so the token stays usable at its intended
+     * endpoint.
      *
      * @since 2.2.0
      */
     record WrongPurpose(String expectedPurpose, String actualPurpose) implements ConsumeResult {}
   }
 
-  /** Pluggable rate limiter — defaults to an in-process Caffeine counter. */
+  /** Pluggable rate limiter; defaults to an in-process Caffeine counter. */
   public interface MagicLinkRateLimiter {
     /** Returns the current count and whether a new send is allowed. */
     int countAndIncrement(UserHandle user, String purpose, Instant now);
@@ -209,7 +209,7 @@ public final class MagicLinkService {
 
   /**
    * Convenience overload that builds a {@link Config} carrying the supplied {@code baseUrl} and the
-   * documented defaults for every other tunable. The {@code baseUrl} has no library default — it is
+   * documented defaults for every other tunable. The {@code baseUrl} has no library default; it is
    * a host-specific URL prefix.
    *
    * @since 0.9.1
@@ -222,7 +222,7 @@ public final class MagicLinkService {
   /**
    * Sends a verification email containing a magic link tied to {@code email}. If the host has
    * implemented {@link UserLookup#emailFor(UserHandle)}, the supplied {@code email} must equal the
-   * bound value (constant-time compare) — otherwise a caller could mint a "verified" claim for an
+   * bound value (constant-time compare); otherwise a caller could mint a "verified" claim for an
    * arbitrary address. If the host has not implemented {@code emailFor}, the binding check is
    * skipped (with a warning log) and the send proceeds.
    *
@@ -267,29 +267,27 @@ public final class MagicLinkService {
   /**
    * Sends a login email to the user with the supplied username.
    *
-   * <p><strong>Privacy invariant (result-shape only):</strong> this method ALWAYS returns {@link
-   * SendResult.Sent}, regardless of whether the supplied username exists in the system. When no
-   * user is found the method returns early (skipping JWT issuance and email dispatch) but returns
-   * the same {@code Sent} shape as a successful send, so the response body never reveals whether an
-   * account exists. Callers MUST NOT rely on a {@link SendResult.UserNotFound} outcome from this
-   * method — that variant is produced only by signup flows where confirming account non-existence
-   * is intentional.
+   * <p>Privacy invariant (result-shape only): this method always returns {@link SendResult.Sent},
+   * regardless of whether the supplied username exists in the system. When no user is found the
+   * method returns early (skipping JWT issuance and email dispatch) but returns the same {@code
+   * Sent} shape as a successful send, so the response body never reveals whether an account exists.
+   * Callers must not rely on a {@link SendResult.UserNotFound} outcome from this method; that
+   * variant is produced only by signup flows where confirming account non-existence is intentional.
    *
-   * <p><strong>This method is NOT constant-time.</strong> The not-found path returns before JWT
-   * issuance and the (typically blocking) email dispatch, so a known username incurs measurably
-   * more latency than an unknown one; an attacker who can time responses can still enumerate
-   * accounts. Equalising this is impractical at the library layer because SMTP/transport latency
-   * dominates and varies — hosts that need timing-side-channel resistance should front this with a
-   * uniform-latency wrapper or rate-limit and monitor for enumeration probing.
+   * <p>This method is not constant-time. The not-found path returns before JWT issuance and the
+   * (typically blocking) email dispatch, so a known username incurs measurably more latency than an
+   * unknown one; an attacker who can time responses can still enumerate accounts. Equalising this
+   * is impractical at the library layer because SMTP/transport latency dominates and varies; hosts
+   * that need timing-side-channel resistance should front this with a uniform-latency wrapper or
+   * rate-limit and monitor for enumeration probing.
    *
-   * <p><strong>The login link is delivered ONLY to the address bound to the resolved user</strong>
-   * via {@link UserLookup#emailFor(UserHandle)} — never to the caller-supplied {@code email}.
-   * Sending to a caller-supplied address would let an attacker request a login token for any
-   * account by username and have it delivered to an address they control (account takeover). When
-   * the host has not implemented {@code emailFor} (no trusted destination exists), the send is
-   * skipped and the same enumeration-resistant {@link SendResult.Sent} shape is returned. The
-   * {@code email} parameter is retained for source/back-compatibility but is not used as the
-   * delivery address.
+   * <p>The login link is delivered only to the address bound to the resolved user via {@link
+   * UserLookup#emailFor(UserHandle)}, never to the caller-supplied {@code email}. Sending to a
+   * caller-supplied address would let an attacker request a login token for any account by username
+   * and have it delivered to an address they control (account takeover). When the host has not
+   * implemented {@code emailFor} (no trusted destination exists), the send is skipped and the same
+   * enumeration-resistant {@link SendResult.Sent} shape is returned. The {@code email} parameter is
+   * retained for source/back-compatibility but is not used as the delivery address.
    *
    * @since 0.9.1
    */
@@ -343,8 +341,8 @@ public final class MagicLinkService {
    * pkauth.purpose} claim equals {@code requiredPurpose}. This closes a cross-purpose token
    * confusion: without it, a token minted for one flow (e.g. {@link #PURPOSE_LOGIN}) satisfies
    * another flow's consume check (e.g. {@link #PURPOSE_EMAIL_VERIFY}), letting one ceremony's token
-   * stand in for another. The purpose is checked <em>before</em> the single-use JTI is consumed, so
-   * a cross-purpose attempt does not burn the token at its legitimate endpoint.
+   * stand in for another. The purpose is checked before the single-use JTI is consumed, so a
+   * cross-purpose attempt does not burn the token at its legitimate endpoint.
    *
    * @param token the magic-link JWT
    * @param requiredPurpose the purpose the caller demands, or {@code null} to accept any purpose
@@ -427,11 +425,11 @@ public final class MagicLinkService {
   /**
    * Canonical holder of the required collaborators for {@link MagicLinkService}.
    *
-   * <p>The {@code consumedJtiStore} enforces single-use; multi-replica deployments MUST supply a
+   * <p>The {@code consumedJtiStore} enforces single-use; multi-replica deployments must supply a
    * shared (Redis/DB-backed) implementation. The {@code messageFormatter} renders the {@link
    * MagicLinkContext} (user, recipient, URL, purpose) into a {@link MagicLinkMessage} that is
    * passed verbatim to {@link EmailSender#send(String, String, String)}; supply a host-specific
-   * formatter to brand or localize the email copy without forking this service.
+   * formatter to brand or localise the email copy without forking this service.
    *
    * @since 0.9.1
    */
@@ -443,7 +441,7 @@ public final class MagicLinkService {
       ClockProvider clockProvider,
       ConsumedJtiStore consumedJtiStore,
       MessageFormatter<MagicLinkContext, MagicLinkMessage> messageFormatter) {
-    /** Compact constructor — enforces non-null on every collaborator. */
+    /** Compact constructor that enforces non-null on every collaborator. */
     public Dependencies {
       Objects.requireNonNull(issuer, "issuer");
       Objects.requireNonNull(validator, "validator");
@@ -478,18 +476,18 @@ public final class MagicLinkService {
     }
 
     /**
-     * Builds {@link Dependencies} with a <strong>dedicated</strong> magic-link JWT issuer and
-     * validator, both scoped to {@link MagicLinkService#DEFAULT_AUDIENCE} and derived from the
-     * host's {@code keyset} and {@code issuerName} (pass the resource-server issuer so the {@code
-     * iss} claim is consistent). This is the recommended wiring: because magic-link tokens carry
-     * the magic-link audience rather than the application audience, the host's resource-server
-     * {@link PkAuthJwtValidator} rejects them, so a magic-link token cannot be replayed as an API
-     * bearer/access token (token-confusion defense). The dedicated issuer also uses a no-op
-     * access-token store, so magic-link jtis never pollute the host's {@code AccessTokenStore}.
+     * Builds {@link Dependencies} with a dedicated magic-link JWT issuer and validator, both scoped
+     * to {@link MagicLinkService#DEFAULT_AUDIENCE} and derived from the host's {@code keyset} and
+     * {@code issuerName} (pass the resource-server issuer so the {@code iss} claim is consistent).
+     * This is the recommended wiring: because magic-link tokens carry the magic-link audience
+     * rather than the application audience, the host's resource-server {@link PkAuthJwtValidator}
+     * rejects them, so a magic-link token cannot be replayed as an API bearer/access token
+     * (token-confusion defence). The dedicated issuer also uses a no-op access-token store, so
+     * magic-link jtis never pollute the host's {@code AccessTokenStore}.
      *
-     * <p>Prefer this over {@link #of} for production wiring. Token lifetime is controlled by {@link
-     * MagicLinkService} (the {@link Config#tokenTtl()}), not the issuer's access-token TTL, so the
-     * audience config's TTL policy is irrelevant here.
+     * <p>This is preferred over {@link #of} for production wiring. Token lifetime is controlled by
+     * {@link MagicLinkService} (the {@link Config#tokenTtl()}), not the issuer's access-token TTL,
+     * so the audience config's TTL policy is irrelevant here.
      *
      * @param keyset the host's signing keyset (shared with the resource-server issuer)
      * @param issuerName the {@code iss} claim value (the resource-server issuer name)
@@ -527,22 +525,22 @@ public final class MagicLinkService {
   /**
    * Tunable configuration for {@link MagicLinkService}.
    *
-   * <p>{@code baseUrl} is required (no library default) — it is the host-specific URL prefix
+   * <p>{@code baseUrl} is required (no library default); it is the host-specific URL prefix
    * inserted into outbound emails. Every other field has a documented default exposed via {@link
    * #defaults(String)}.
    *
-   * <p>The default {@link MagicLinkRateLimiter} is {@link InMemoryRateLimiter} — DEV /
-   * SINGLE-INSTANCE ONLY. Multi-replica deployments MUST replace it with a shared (Redis/DB-backed)
-   * implementation.
+   * <p>The default {@link MagicLinkRateLimiter} is {@link InMemoryRateLimiter}, which is intended
+   * for development and single-instance use only. Multi-replica deployments must replace it with a
+   * shared (Redis/DB-backed) implementation.
    *
-   * <p><strong>{@code consumedJtiTtl} must be at least as long as {@code tokenTtl}.</strong>
-   * Single-use is enforced by retaining each consumed JTI for {@code consumedJtiTtl}; if that
-   * retention is shorter than the token's own validity, a still-unexpired token becomes redeemable
-   * again once its JTI entry is evicted, defeating single-use. This service now OWNS the token TTL
-   * ({@code tokenTtl}, default {@link #DEFAULT_TTL} = 15m) and issues magic links with it
-   * explicitly (rather than inheriting the JWT issuer's 1h access TTL), so the invariant is
-   * enforced at construction: the compact constructor rejects {@code consumedJtiTtl < tokenTtl}.
-   * The defaults are safe (30m retention vs 15m token TTL).
+   * <p>{@code consumedJtiTtl} must be at least as long as {@code tokenTtl}. Single-use is enforced
+   * by retaining each consumed JTI for {@code consumedJtiTtl}; if that retention is shorter than
+   * the token's own validity, a still-unexpired token becomes redeemable again once its JTI entry
+   * is evicted, defeating single-use. This service owns the token TTL ({@code tokenTtl}, default
+   * {@link #DEFAULT_TTL} = 15m) and issues magic links with it explicitly (rather than inheriting
+   * the JWT issuer's 1h access TTL), so the invariant is enforced at construction: the compact
+   * constructor rejects {@code consumedJtiTtl < tokenTtl}. The defaults are safe (30m retention vs
+   * 15m token TTL).
    *
    * @since 0.9.1
    */
@@ -553,9 +551,9 @@ public final class MagicLinkService {
       Duration tokenTtl,
       Duration consumedJtiTtl) {
     /**
-     * Compact constructor — enforces non-null on every field, rejects a {@code baseUrl} that isn't
-     * an http(s) URL or that carries whitespace / CRLF (which would enable header-splitting if the
-     * value flowed into a response header), and enforces {@code consumedJtiTtl >= tokenTtl} so
+     * Compact constructor that enforces non-null on every field, rejects a {@code baseUrl} that is
+     * not an http(s) URL or that carries whitespace / CRLF (which would enable header-splitting if
+     * the value flowed into a response header), and enforces {@code consumedJtiTtl >= tokenTtl} so
      * single-use cannot be defeated by JTI eviction while a token is still valid. Hosts running in
      * dev mode may pass {@code http://}; production deployments are expected to pass {@code
      * https://}.
@@ -628,11 +626,11 @@ public final class MagicLinkService {
   /**
    * Simple in-memory rate limiter backed by {@link InMemoryWindowCounter}.
    *
-   * <p><strong>FOR DEV / SINGLE-INSTANCE USE ONLY.</strong> Production deployments MUST replace
-   * this with a shared (Redis/DB-backed) {@link MagicLinkRateLimiter} implementation, otherwise
+   * <p>Intended for development and single-instance use only. Production deployments must replace
+   * this with a shared (Redis/DB-backed) {@link MagicLinkRateLimiter} implementation; otherwise
    * per-replica rate limits multiply by the cluster size. For example, with a limit of 5 emails per
    * hour and a 3-node cluster, an attacker can send up to 15 emails per hour because each replica
-   * tracks its own independent counter. Wire a production-grade implementation via the {@link
+   * tracks its own independent counter. A production-grade implementation is wired via the {@link
    * Config} record passed to {@link #create(Dependencies, Config)}.
    *
    * @since 0.9.1
@@ -661,7 +659,7 @@ public final class MagicLinkService {
       counter.reset();
     }
 
-    /** Exposed for diagnostics — tracks active counter keys. */
+    /** Exposed for diagnostics: tracks active counter keys. */
     public Set<String> keys() {
       return counter.keys();
     }

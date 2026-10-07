@@ -3,9 +3,9 @@ package com.codeheadsystems.pkauth.persistence.dynamodb;
 
 /**
  * Single-table key prefixes for the pk-auth DynamoDB schema. Every partition/sort key in the table
- * is a {@code <PREFIX><id>} string; centralizing the prefixes here is what stops a writer and a
- * reader from silently disagreeing on a prefix — a mismatch would not throw, it would just fail to
- * find the row. Each constant includes its trailing {@code '#'} separator.
+ * is a {@code <PREFIX><id>} string; centralising the prefixes here prevents a writer and a reader
+ * from silently disagreeing on a prefix; a mismatch does not throw, and the row is simply not
+ * found. Each constant includes its trailing {@code '#'} separator.
  *
  * <p>Package-private: these are an internal detail of the DynamoDB adapter, not part of any public
  * contract.

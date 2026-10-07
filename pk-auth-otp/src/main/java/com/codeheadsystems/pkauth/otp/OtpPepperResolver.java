@@ -11,17 +11,17 @@ import org.slf4j.LoggerFactory;
 /**
  * Shared OTP-pepper resolution policy used by every adapter (Spring, Micronaut, Dropwizard).
  *
- * <p>The OTP service hashes inbound 6-digit codes with an HMAC keyed by a server-side
- * <em>pepper</em> — a Base64-encoded ≥ 16-byte secret. Without a stable pepper, OTPs minted before
- * a restart cannot be verified afterwards (and cannot be verified at all on a replica with a
- * different pepper). This resolver centralises the policy:
+ * <p>The OTP service hashes inbound 6-digit codes with an HMAC keyed by a server-side pepper, a
+ * Base64-encoded ≥ 16-byte secret. Without a stable pepper, OTPs minted before a restart cannot be
+ * verified afterwards (and cannot be verified at all on a replica with a different pepper). This
+ * resolver centralises the policy:
  *
  * <ul>
  *   <li>Configured pepper present → decode Base64 and require ≥ 16 decoded bytes (32+ recommended).
- *   <li>Unset AND {@code devMode=true} → generate a per-startup random pepper and log a loud
+ *   <li>Unset and {@code devMode=true} → generate a per-startup random pepper and log a loud
  *       warning. Per-startup peppers invalidate outstanding OTPs across restarts and across cluster
- *       instances — dev only.
- *   <li>Unset AND {@code devMode} false/unset → fail fast at startup.
+ *       instances; dev only.
+ *   <li>Unset and {@code devMode} false/unset → fail fast at startup.
  * </ul>
  *
  * <p>Adapters call {@link #resolve(Supplier, BooleanSupplier)} once during factory wiring and pass
@@ -39,12 +39,12 @@ public final class OtpPepperResolver {
   }
 
   /**
-   * Resolve the OTP pepper bytes per the policy described in the class javadoc.
+   * Resolves the OTP pepper bytes per the policy described in the class javadoc.
    *
    * @param configuredPepper supplier for the configured Base64 pepper value (may return {@code
    *     null} or blank when unset)
-   * @param devMode supplier for the {@code pkauth.dev-mode} flag — only consulted when the pepper
-   *     is unset, so adapters can defer reading the flag
+   * @param devMode supplier for the {@code pkauth.dev-mode} flag; only consulted when the pepper is
+   *     unset, so adapters can defer reading the flag
    * @return at least 16 bytes of pepper material
    * @throws IllegalStateException when the configured pepper is invalid, or when no pepper is set
    *     and {@code devMode} is false

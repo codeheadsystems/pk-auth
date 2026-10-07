@@ -15,14 +15,14 @@ import org.reactivestreams.Publisher;
 /**
  * Validates the JWT on {@code Authorization: Bearer …} headers (when present) and stashes the
  * authenticated {@link UserHandle} on the request as the attribute {@value #ATTR_USER_HANDLE}.
- * Missing / malformed tokens are NOT rejected here — admin controller methods enforce
- * "authenticated user required" themselves. This keeps the filter pluggable and avoids Micronaut
- * Security's generic-heavy SecurityRule surface.
+ * Missing / malformed tokens are not rejected here; admin controller methods enforce "authenticated
+ * user required" themselves. This keeps the filter pluggable and avoids Micronaut Security's
+ * generic-heavy SecurityRule surface.
  *
- * <p><b>Threading.</b> Token validation itself is non-blocking (HS256 or RS256 verification only),
- * so the filter does NOT dispatch to a blocking executor and is safe to run on the Netty event
- * loop. The pk-auth SPI is blocking, but the SPI is invoked downstream from the {@code @Controller}
- * — see {@link PkAuthCeremonyController} / {@link PkAuthAdminController}, which both carry
+ * <p>Threading: token validation itself is non-blocking (HS256 or RS256 verification only), so the
+ * filter does not dispatch to a blocking executor and is safe to run on the Netty event loop. The
+ * pk-auth SPI is blocking, but the SPI is invoked downstream from the {@code @Controller}; see
+ * {@link PkAuthCeremonyController} / {@link PkAuthAdminController}, which both carry
  * {@code @ExecuteOn(TaskExecutors.BLOCKING)}.
  */
 @Filter("/auth/admin/**")

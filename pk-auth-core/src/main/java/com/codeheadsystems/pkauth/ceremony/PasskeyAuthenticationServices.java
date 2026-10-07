@@ -30,7 +30,7 @@ public final class PasskeyAuthenticationServices {
 
   private PasskeyAuthenticationServices() {}
 
-  /** Builder so adapter modules can wire only the SPIs they actually customize. */
+  /** Builder so adapter modules can wire only the SPIs they actually customise. */
   public static Builder builder() {
     return new Builder();
   }
@@ -103,7 +103,7 @@ public final class PasskeyAuthenticationServices {
       return this;
     }
 
-    /** Override the {@link SecureRandom} used for challenge generation (test seam). */
+    /** Overrides the {@link SecureRandom} used for challenge generation (test seam). */
     public Builder secureRandom(SecureRandom secureRandom) {
       this.secureRandom = secureRandom;
       return this;
@@ -115,9 +115,9 @@ public final class PasskeyAuthenticationServices {
     }
 
     /**
-     * Override the {@link CeremonyRateLimiter} consulted on every ceremony entrypoint. When unset,
+     * Overrides the {@link CeremonyRateLimiter} consulted on every ceremony entrypoint. When unset,
      * the builder wires an {@link InMemoryCeremonyRateLimiter} with the default per-IP /
-     * per-username allowances. Multi-replica deployments MUST supply a shared (Redis / DB-backed)
+     * per-username allowances. Multi-replica deployments must supply a shared (Redis / DB-backed)
      * implementation here; the in-memory default tracks counters per-process and per-replica
      * counters multiply by the cluster size.
      *

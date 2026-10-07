@@ -42,7 +42,7 @@ public final class WebAuthn4JConverters {
 
   /**
    * Builds the WebAuthn4J {@code pubKeyCredParams} verify list from the ceremony config's accepted
-   * algorithms. This is the only place the verify path learns which algorithms are allowed — there
+   * algorithms. This is the only place the verify path learns which algorithms are allowed; there
    * is no hardcoded default list. WebAuthn4J rejects a registration whose COSE key algorithm is
    * absent from this list, so narrowing {@code accepted} in {@link
    * com.codeheadsystems.pkauth.config.CeremonyConfig} narrows what verifies.
@@ -56,7 +56,9 @@ public final class WebAuthn4JConverters {
     return List.copyOf(params);
   }
 
-  /** Maps our framework-neutral {@link CoseAlgorithm} to WebAuthn4J's COSE algorithm constant. */
+  /**
+   * Maps pk-auth's framework-neutral {@link CoseAlgorithm} to WebAuthn4J's COSE algorithm constant.
+   */
   static COSEAlgorithmIdentifier toW4j(CoseAlgorithm alg) {
     return switch (alg) {
       case ES256 -> COSEAlgorithmIdentifier.ES256;
@@ -67,7 +69,7 @@ public final class WebAuthn4JConverters {
     };
   }
 
-  /** Builds a WebAuthn4J {@link ServerProperty} from our RP config and a challenge. */
+  /** Builds a WebAuthn4J {@link ServerProperty} from the RP config and a challenge. */
   public static ServerProperty serverProperty(RelyingPartyConfig rp, byte[] challenge) {
     Set<Origin> origins = new LinkedHashSet<>();
     for (String o : rp.origins()) {
@@ -99,7 +101,7 @@ public final class WebAuthn4JConverters {
   }
 
   /**
-   * Reconstructs a WebAuthn4J {@link CredentialRecordImpl} from our stored {@link
+   * Reconstructs a WebAuthn4J {@link CredentialRecordImpl} from the stored {@link
    * CredentialRecord}. Used as the {@code authenticator} argument to {@code
    * AuthenticationParameters}.
    */
@@ -128,12 +130,12 @@ public final class WebAuthn4JConverters {
         transports);
   }
 
-  /** Serializes a WebAuthn4J {@link COSEKey} to CBOR bytes for our credential storage. */
+  /** Serialises a WebAuthn4J {@link COSEKey} to CBOR bytes for pk-auth's credential storage. */
   public static byte[] serializeCoseKey(COSEKey coseKey, ObjectConverter objectConverter) {
     return objectConverter.getCborMapper().writeValueAsBytes(coseKey);
   }
 
-  /** WebAuthn4J's UV-required boolean from our {@link UserVerificationRequirement}. */
+  /** WebAuthn4J's UV-required boolean from pk-auth's {@link UserVerificationRequirement}. */
   public static boolean userVerificationRequired(UserVerificationRequirement uv) {
     return uv == UserVerificationRequirement.REQUIRED;
   }

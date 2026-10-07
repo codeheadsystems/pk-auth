@@ -24,7 +24,7 @@ import org.jspecify.annotations.Nullable;
 /**
  * {@link RefreshTokenRepository} backed by the {@code refresh_tokens} table (Flyway V9; the {@code
  * amr} column added in V10). The load-bearing {@link #rotateAtomically} uses a JDBI transaction
- * that wraps a conditional {@code UPDATE} on the parent + an {@code INSERT} for the successor — see
+ * that wraps a conditional {@code UPDATE} on the parent + an {@code INSERT} for the successor; see
  * ADR 0013.
  *
  * @since 1.1.0

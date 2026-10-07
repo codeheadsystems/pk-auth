@@ -27,13 +27,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Mounts the four WebAuthn ceremony endpoints under {@code /auth/passkeys/**} — same path scheme as
- * the Spring and Dropwizard adapters. Every endpoint delegates to {@link CeremonyOrchestrator},
+ * Mounts the four WebAuthn ceremony endpoints under {@code /auth/passkeys/**}, the same path scheme
+ * as the Spring and Dropwizard adapters. Every endpoint delegates to {@link CeremonyOrchestrator},
  * which owns the JWT-mint / label-lookup / wire-mapping pipeline shared across adapters.
  *
- * <p><b>Threading.</b> pk-auth's SPI is blocking (JDBC, DynamoDB SDK, etc.); this adapter
- * dispatches every endpoint to {@link TaskExecutors#BLOCKING} so Micronaut's Netty event loop is
- * never parked on a synchronous repository call.
+ * <p>Threading: pk-auth's SPI is blocking (JDBC, DynamoDB SDK, etc.); this adapter dispatches every
+ * endpoint to {@link TaskExecutors#BLOCKING} so Micronaut's Netty event loop is never parked on a
+ * synchronous repository call.
  */
 @Controller("/auth/passkeys")
 @Produces(MediaType.APPLICATION_JSON)

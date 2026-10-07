@@ -13,11 +13,11 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * SPI bag the host application hands to the bundle so the same Dagger graph supports JDBI,
- * DynamoDB, and in-memory persistence without re-generating components per backend. Brief §6.11 —
+ * DynamoDB, and in-memory persistence without re-generating components per backend. Brief §6.11:
  * "@Module PersistenceModule (overridable)".
  *
  * <p>Only the credential, user-lookup, and challenge-store SPIs are required (they back the four
- * ceremony endpoints). Backup-code, magic-link, and OTP SPIs are optional — supply them when
+ * ceremony endpoints). Backup-code, magic-link, and OTP SPIs are optional; supply them when
  * registering the admin resource.
  */
 public final class PersistenceBindings {
@@ -69,9 +69,9 @@ public final class PersistenceBindings {
   }
 
   /**
-   * Returns the configured {@link AccessTokenStore}. Defaults to {@link AccessTokenStore#noop()} —
-   * stateless JWT behaviour. Hosts that want server-side access-token revocation supply a real
-   * store (e.g. {@code JdbiAccessTokenStore}) via {@link
+   * Returns the configured {@link AccessTokenStore}. Defaults to {@link AccessTokenStore#noop()},
+   * which gives stateless JWT behaviour. Hosts that want server-side access-token revocation supply
+   * a real store (e.g. {@code JdbiAccessTokenStore}) via {@link
    * Builder#accessTokenStore(AccessTokenStore)}.
    *
    * @since 1.1.0
@@ -81,7 +81,7 @@ public final class PersistenceBindings {
   }
 
   /**
-   * Returns the configured {@link RefreshTokenRepository}, or {@code null} when the host hasn't
+   * Returns the configured {@link RefreshTokenRepository}, or {@code null} when the host has not
    * wired refresh tokens. The bundle mounts {@code /auth/refresh} only when this is non-null, with
    * or without alt-flow auto-wiring.
    *

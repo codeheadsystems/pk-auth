@@ -30,7 +30,7 @@ public enum AuthMethod {
   }
 
   /**
-   * Parse a wire value back into an enum constant.
+   * Parses a wire value back into an enum constant.
    *
    * @throws IllegalArgumentException if {@code value} is not a known wire value
    */

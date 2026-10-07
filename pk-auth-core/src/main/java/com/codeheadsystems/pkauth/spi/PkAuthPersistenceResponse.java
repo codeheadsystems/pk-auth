@@ -9,8 +9,8 @@ import java.util.Map;
  * PkAuthPersistenceException} escapes an SPI call: HTTP {@value #STATUS} with a {@code
  * {"error":"persistence_failure","operation":"..."}} body.
  *
- * <p>Centralizing the status and body here keeps the three adapters' exception handlers from
- * drifting and guarantees a host-side DB outage surfaces as the same sanitized {@code 503} from
+ * <p>Centralising the status and body here keeps the three adapters' exception handlers from
+ * drifting and guarantees a host-side DB outage surfaces as the same sanitised {@code 503} from
  * every adapter, instead of one accidentally leaking a framework-default 500 with a stack trace.
  * Each adapter keeps only its framework-specific glue (response type, logging).
  *

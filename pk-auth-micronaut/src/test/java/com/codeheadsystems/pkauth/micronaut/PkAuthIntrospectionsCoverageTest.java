@@ -21,8 +21,8 @@ import org.junit.jupiter.api.Test;
 /**
  * Asserts that {@link PkAuthIntrospections} lists every record (and sealed-interface variant) that
  * ships in the pk-auth wire packages ({@code com.codeheadsystems.pkauth.api} and {@code
- * com.codeheadsystems.pkauth.admin}). A new wire type that Micronaut never sees will deserialize as
- * a {@code 400 Bad Request} at runtime — this build-time guard catches the omission instead.
+ * com.codeheadsystems.pkauth.admin}). A new wire type that Micronaut never sees will deserialise as
+ * a {@code 400 Bad Request} at runtime; this build-time guard catches the omission instead.
  *
  * @since 0.9.1
  */
@@ -32,8 +32,8 @@ class PkAuthIntrospectionsCoverageTest {
       List.of("com.codeheadsystems.pkauth.api", "com.codeheadsystems.pkauth.admin");
 
   /**
-   * Records that are intentionally NOT in the introspection sweep — server-side configuration or
-   * helper-internal records that never cross the Micronaut serialization boundary.
+   * Records that are intentionally not in the introspection sweep: server-side configuration or
+   * helper-internal records that never cross the Micronaut serialisation boundary.
    */
   private static final Set<String> EXEMPT =
       Set.of(

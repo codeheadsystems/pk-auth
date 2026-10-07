@@ -11,9 +11,9 @@ import org.jspecify.annotations.Nullable;
  *
  * @param ttlPolicy per-audience refresh TTL dispatch
  * @param secretBytes how many random bytes to generate for each refresh-token secret. Default 32
- *     (256 bits) — high enough that the hash-at-rest is brute-force resistant without salt.
+ *     (256 bits); high enough that the hash-at-rest is brute-force resistant without salt.
  * @param refreshIdBytes how many random bytes for the {@code refreshId} half of the wire format.
- *     Default 16 (128 bits) — more than enough to identify a row without collision.
+ *     Default 16 (128 bits); more than enough to identify a row without collision.
  * @param cleanupRetention how long after a row is used or revoked to keep it around for forensic
  *     visibility. Operator-driven cleanup ({@link
  *     com.codeheadsystems.pkauth.refresh.spi.RefreshTokenRepository#deleteExpiredBefore}) uses this
@@ -67,7 +67,7 @@ public record RefreshTokenConfig(
    * null} {@code cleanupRetention} falls back to {@link #DEFAULT_CLEANUP_RETENTION}.
    *
    * <p>This is the host-config-to-domain-config translation each framework adapter performs;
-   * centralizing it keeps the entropy and retention defaults identical across adapters.
+   * centralising it keeps the entropy and retention defaults identical across adapters.
    *
    * @param defaultTtl the refresh-token TTL, or {@code null} for {@link #DEFAULT_REFRESH_TTL}.
    * @param ttlsByAudience per-audience TTL overrides, or {@code null}/empty for a uniform TTL.

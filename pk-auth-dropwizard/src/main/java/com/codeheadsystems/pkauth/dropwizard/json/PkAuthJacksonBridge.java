@@ -17,9 +17,9 @@ import java.io.IOException;
 
 /**
  * Teaches Dropwizard's Jackson 2 {@code ObjectMapper} to read and write the pk-auth wire types.
- * Dropwizard 5 still ships Jackson 2 (brief §6.11); pk-auth-core uses Jackson 3 (ADR 0009). Rather
- * than fork the entire JSON contract, we apply matched serializers on Dropwizard's mapper so
- * payloads round-trip identically.
+ * Dropwizard 5 still ships Jackson 2 (brief §6.11); pk-auth-core uses Jackson 3 (ADR 0009). The
+ * bridge applies matched serialisers to Dropwizard's mapper rather than forking the entire JSON
+ * contract, so payloads round-trip identically.
  *
  * <p>Specifically:
  *
@@ -30,8 +30,8 @@ import java.io.IOException;
  *   <li>{@link ChallengeId} -> its raw {@code value} string.
  * </ul>
  *
- * <p>The bridge intentionally does NOT touch Dropwizard's other Jackson modules (jdk8, java-time)
- * because the bundled Dropwizard mapper already wires those.
+ * <p>The bridge does not touch Dropwizard's other Jackson modules (jdk8, java-time) because the
+ * bundled Dropwizard mapper already wires those.
  */
 public final class PkAuthJacksonBridge {
 

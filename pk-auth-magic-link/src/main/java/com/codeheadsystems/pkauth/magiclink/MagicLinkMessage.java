@@ -6,7 +6,7 @@ package com.codeheadsystems.pkauth.magiclink;
  * handed to {@link EmailSender#send(String, String, String)}.
  *
  * @param subject the subject line. Must be non-null.
- * @param body the body text. Must be non-null; may be plaintext or HTML — the choice is the
+ * @param body the body text. Must be non-null; may be plaintext or HTML; the choice is the
  *     formatter's, and the {@link EmailSender} implementation is expected to honour it.
  * @since 0.9.1
  */

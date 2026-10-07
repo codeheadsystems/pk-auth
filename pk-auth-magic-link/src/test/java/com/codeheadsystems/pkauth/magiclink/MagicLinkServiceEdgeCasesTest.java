@@ -35,7 +35,7 @@ class MagicLinkServiceEdgeCasesTest {
   private static final String AUDIENCE = "https://app.example.com";
   private static final String BASE_URL = "https://app.example.com/auth/magic";
 
-  /** UserLookup that maps users to a bound email so we can test the binding check. */
+  /** UserLookup that maps users to a bound email so the test can exercise the binding check. */
   private static final class BoundEmailUserLookup implements UserLookup {
     private final InMemoryUserLookup delegate = new InMemoryUserLookup();
     private final Map<UserHandle, String> emails = new java.util.HashMap<>();
@@ -94,7 +94,7 @@ class MagicLinkServiceEdgeCasesTest {
 
   /**
    * Captures the emailed magic-link URL so a test can recover the token. Since 2.3.0 {@link
-   * MagicLinkService.SendResult.Sent} carries only the jti, so — as for a real recipient — the
+   * MagicLinkService.SendResult.Sent} carries only the jti, so, as for a real recipient, the
    * emailed link is the only route to the token.
    */
   private static final class CapturingEmailSender implements EmailSender {

@@ -23,7 +23,7 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
  * attribute prunes expired rows in the background; {@link #deleteExpiredBefore(Instant)} provides
  * synchronous cleanup for tests and operator workflows.
  *
- * <p>The two writes are non-atomic — primary first, then user-index. A failure between them leaves
+ * <p>The two writes are non-atomic: primary first, then user-index. A failure between them leaves
  * the primary item live (validator-correct) and the user-index missing (a future deleteAllForUser
  * would not see this jti). Since user deletion is an operator-rare flow and the {@link
  * com.codeheadsystems.pkauth.lifecycle.UserDeletionListener} contract is idempotent, the operator

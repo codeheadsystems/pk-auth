@@ -33,7 +33,7 @@ public enum Transport {
 
   /**
    * Parses a WebAuthn transport wire string into a {@code Transport}. Returns {@link
-   * Optional#empty()} when the string is null or not a recognized value (e.g. when an authenticator
+   * Optional#empty()} when the string is null or not a recognised value (e.g. when an authenticator
    * advertises a future transport this enum does not yet enumerate).
    */
   public static Optional<Transport> fromWire(@Nullable String s) {

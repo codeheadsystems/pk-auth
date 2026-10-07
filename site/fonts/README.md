@@ -1,8 +1,8 @@
 # Self-hosted fonts
 
 All three families are licensed under the SIL Open Font License 1.1
-(<https://openfontlicense.org>) and are vendored here as subset/variable WOFF2
-so the site makes no third-party (e.g. Google Fonts) network requests.
+(<https://openfontlicense.org>) and are vendored here as subset or variable WOFF2, so the site
+makes no third-party network requests (for example, to Google Fonts).
 
 | File | Family | Source |
 |---|---|---|
@@ -10,6 +10,5 @@ so the site makes no third-party (e.g. Google Fonts) network requests.
 | `inter-normal.woff2` | Inter (Rasmus Andersson) | <https://github.com/rsms/inter> |
 | `jetbrains-mono-normal.woff2` | JetBrains Mono | <https://github.com/JetBrains/JetBrainsMono> |
 
-WOFF2 builds retrieved via the Fontsource distribution
-(<https://fontsource.org>). Each upstream ships its own `OFL.txt`; retain
-attribution if you redistribute.
+The WOFF2 builds come from the Fontsource distribution (<https://fontsource.org>). Each upstream
+ships its own `OFL.txt`, and redistribution retains that attribution.

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 /**
- * pk-auth refresh-tokens module: rotating opaque tokens with family-based replay defense.
+ * pk-auth refresh-tokens module: rotating opaque tokens with family-based replay defence.
  *
  * @since 1.1.0
  */

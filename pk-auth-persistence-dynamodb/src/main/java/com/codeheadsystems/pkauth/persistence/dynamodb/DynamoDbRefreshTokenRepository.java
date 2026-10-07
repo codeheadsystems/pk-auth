@@ -36,13 +36,13 @@ import software.amazon.awssdk.services.dynamodb.model.TransactionCanceledExcepti
 /**
  * {@link RefreshTokenRepository} backed by the {@code PkAuthCore} single table. The load-bearing
  * {@link #rotateAtomically} primitive uses {@code TransactWriteItems} to commit "mark parent used"
- * and "insert successor" as a single atomic operation — without that, a concurrent replay-revoker
+ * and "insert successor" as a single atomic operation; without that, a concurrent replay-revoker
  * could miss the freshly-inserted successor.
  *
- * <p>Each issued JTI lives at up to three item addresses (primary + user-index + family-index) —
- * the user-index and family-index items aren't load-bearing for correctness (the primary item is
- * the authority on used/revoked state) but they make {@code revokeAllForUser} and {@code
- * revokeFamily} O(family-size) rather than full-table scans.
+ * <p>Each issued JTI lives at up to three item addresses (primary + user-index + family-index); the
+ * user-index and family-index items are not load-bearing for correctness (the primary item is the
+ * authority on used/revoked state) but they make {@code revokeAllForUser} and {@code revokeFamily}
+ * O(family-size) rather than full-table scans.
  *
  * <p>Native DynamoDB TTL on the {@code ttl} attribute prunes rows in the background; {@link
  * #deleteExpiredBefore(Instant)} provides synchronous cleanup for tests and operator workflows.
@@ -76,9 +76,9 @@ public final class DynamoDbRefreshTokenRepository implements RefreshTokenReposit
 
   /**
    * @param cleanupRetention how long past {@code expiresAt} the native {@code ttl} attribute keeps
-   *     a row before DynamoDB prunes it — must match the {@link
+   *     a row before DynamoDB prunes it; must match the {@link
    *     RefreshTokenConfig#cleanupRetention()} the host runs the service with, so the background
-   *     sweep honors the same forensic window the JDBI backend does.
+   *     sweep honours the same forensic window the JDBI backend does.
    */
   public DynamoDbRefreshTokenRepository(
       DynamoDbEnhancedClient enhanced, PkAuthDynamoTables tables, Duration cleanupRetention) {
@@ -257,11 +257,11 @@ public final class DynamoDbRefreshTokenRepository implements RefreshTokenReposit
 
   /**
    * True only when the {@code rotateAtomically} transaction was cancelled because the parent's
-   * freshness condition failed — the legitimate replay/race signal. The parent's conditional {@code
-   * UpdateItem} is the first action added to the transaction, so its reason is at index 0; a {@code
-   * ConditionalCheckFailed} code there means the parent was already used, revoked, or expired. Any
-   * other cancellation reason (throughput, transaction conflict, validation) is transient and
-   * returns false here so the caller rethrows rather than scorching the family.
+   * freshness condition failed; this is the legitimate replay/race signal. The parent's conditional
+   * {@code UpdateItem} is the first action added to the transaction, so its reason is at index 0; a
+   * {@code ConditionalCheckFailed} code there means the parent was already used, revoked, or
+   * expired. Any other cancellation reason (throughput, transaction conflict, validation) is
+   * transient and returns false here so the caller rethrows rather than scorching the family.
    */
   private static boolean isParentFreshnessFailure(TransactionCanceledException cancelled) {
     List<CancellationReason> reasons = cancelled.cancellationReasons();
@@ -273,8 +273,8 @@ public final class DynamoDbRefreshTokenRepository implements RefreshTokenReposit
 
   /**
    * True only when the {@code create} transaction was cancelled because the primary item's {@code
-   * attribute_not_exists(pk)} guard failed — i.e. the refreshId already exists. The primary {@code
-   * Put} is the first action added to the transaction, so its reason is at index 0; a {@code
+   * attribute_not_exists(pk)} guard failed, that is, the refreshId already exists. The primary
+   * {@code Put} is the first action added to the transaction, so its reason is at index 0; a {@code
    * ConditionalCheckFailed} code there is the duplicate signal. Any other cancellation reason
    * (throughput, transaction conflict, validation) is transient and is rethrown by the caller for
    * {@code DynamoDbSupport.wrap} to map.
@@ -334,7 +334,7 @@ public final class DynamoDbRefreshTokenRepository implements RefreshTokenReposit
 
   /**
    * Marks one family/user-index member's primary item revoked via a conditional, scalar-only {@code
-   * UpdateItem} that writes ONLY {@code revokedAtIso}/{@code revokedReason} — never a
+   * UpdateItem} that writes only {@code revokedAtIso}/{@code revokedReason}, never a
    * read-modify-write of the whole item. A full-item {@code putItem} (the prior approach) would
    * carry a stale snapshot and could silently revert a {@code usedAtIso} mark set concurrently by
    * {@code rotateAtomically}, corrupting the rotation/audit trail. {@code attribute_exists(pk)}

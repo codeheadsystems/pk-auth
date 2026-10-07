@@ -5,7 +5,7 @@ import com.codeheadsystems.pkauth.api.UserHandle;
 
 /**
  * Decides whether the JWT-authenticated {@code actor} is allowed to act on {@code target}'s
- * account. Default implementation is subject-scoped — a user only acts on themselves. Adapter
+ * account. The default implementation is subject-scoped: a user only acts on themselves. Adapter
  * modules can plug in support-staff-impersonation flows by overriding this SPI.
  *
  * @since 0.9.0

@@ -12,8 +12,8 @@ import org.slf4j.LoggerFactory;
 /**
  * Maps the SPI exception contract (see {@link
  * com.codeheadsystems.pkauth.spi.PkAuthPersistenceException}) to a stable {@code 503 Service
- * Unavailable} JSON response — same wire shape as the Spring and Micronaut adapters. Registered by
- * {@link com.codeheadsystems.pkauth.dropwizard.PkAuthBundle}.
+ * Unavailable} JSON response, with the same wire shape as the Spring and Micronaut adapters.
+ * Registered by {@link com.codeheadsystems.pkauth.dropwizard.PkAuthBundle}.
  */
 @Provider
 public class PkAuthPersistenceExceptionMapper

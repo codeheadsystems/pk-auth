@@ -34,9 +34,10 @@ public record RelyingPartyConfig(String id, String name, Set<String> origins) {
 
   /**
    * Builds a {@link RelyingPartyConfig} from raw host configuration, applying the validation and
-   * the canonical "required — no defaults" error message every adapter shares. RP id, name, and
-   * origins are mandatory (there is deliberately no default); a missing or blank value raises an
-   * {@link IllegalStateException} naming the {@code pkauth.relying-party.*} configuration keys.
+   * the canonical error message every adapter shares (the properties are required, with no
+   * defaults). RP id, name, and origins are mandatory (there is no default); a missing or blank
+   * value raises an {@link IllegalStateException} naming the {@code pkauth.relying-party.*}
+   * configuration keys.
    *
    * @param id the RP ID (eTLD+1), or null/blank if unset.
    * @param name human-readable RP name, or null/blank if unset.

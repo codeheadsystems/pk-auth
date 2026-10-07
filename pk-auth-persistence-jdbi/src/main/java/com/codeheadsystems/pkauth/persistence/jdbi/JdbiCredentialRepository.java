@@ -27,7 +27,7 @@ import org.jdbi.v3.core.statement.Update;
 import org.jspecify.annotations.Nullable;
 
 /**
- * {@link CredentialRepository} backed by the Phase 5 {@code credentials} table.
+ * {@link CredentialRepository} backed by the {@code credentials} table.
  *
  * <p>{@link #delete(UserHandle, CredentialId)} is a hard delete (since V7): the row is removed
  * outright. Audit history is the responsibility of the service layer's structured log pipeline
@@ -171,7 +171,7 @@ public final class JdbiCredentialRepository implements CredentialRepository {
   }
 
   /**
-   * Hard-deletes the credential row. Audit history is the service layer's responsibility — {@code
+   * Hard-deletes the credential row. Audit history is the service layer's responsibility: {@code
    * DefaultAdminService.deleteCredential} emits a {@code pkauth.credential.deleted} structured log
    * event around this call.
    */

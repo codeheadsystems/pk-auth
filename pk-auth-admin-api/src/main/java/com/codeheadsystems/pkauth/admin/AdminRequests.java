@@ -35,7 +35,7 @@ public final class AdminRequests {
   public record StartEmailVerification(@Nullable String email) {}
 
   /**
-   * Body for {@code POST /auth/admin/email/complete-verification}. Unauthenticated per brief §6.9 —
+   * Body for {@code POST /auth/admin/email/complete-verification}. Unauthenticated per brief §6.9;
    * the token identifies the user.
    *
    * @param token verification token previously dispatched to the user's inbox

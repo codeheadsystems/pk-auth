@@ -46,8 +46,8 @@ import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Verifies that the COSE algorithm lists flow from {@link CeremonyConfig} into both the
- * create-options ceremony (offered) and the WebAuthn4J verify path (accepted) — the single source
- * of truth introduced for crypto-agility / post-quantum readiness (ADR 0019).
+ * create-options ceremony (offered) and the WebAuthn4J verify path (accepted): the single source of
+ * truth for crypto-agility / post-quantum readiness (ADR 0019).
  */
 class DefaultPasskeyAuthenticationServiceAlgorithmTest {
 

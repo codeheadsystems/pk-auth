@@ -12,12 +12,12 @@ import org.jspecify.annotations.Nullable;
  * <p>The contract pk-auth promises to its adapters: any unexpected backend failure inside an SPI
  * call surfaces here. Adapters install a single framework-specific exception handler that maps
  * {@code PkAuthPersistenceException} to a stable {@code 503} response (operational issue, retry
- * possible) with a sanitized body — instead of every adapter accidentally returning a 500 HTML page
- * with a stack trace.
+ * possible) with a sanitised body, instead of each adapter returning a 500 HTML page with a stack
+ * trace.
  *
- * <p><b>Implementer contract.</b> Every shipped implementation in this repo (JDBI, DynamoDB,
- * testkit in-memory) MUST wrap the backend's native unexpected exception in this type so adapters
- * can rely on a single catch arm:
+ * <p>Implementer contract: every shipped implementation in this repository (JDBI, DynamoDB, testkit
+ * in-memory) must wrap the backend's native unexpected exception in this type so adapters can rely
+ * on a single catch arm:
  *
  * <ul>
  *   <li>JDBI repos wrap {@code org.jdbi.v3.core.JdbiException} (and any other unchecked exception
@@ -25,18 +25,18 @@ import org.jspecify.annotations.Nullable;
  *   <li>DynamoDB repos wrap {@code software.amazon.awssdk.core.exception.SdkException} (network
  *       failures, throttling, schema drift). {@code ConditionalCheckFailedException} that is part
  *       of a documented false-return / boolean-result path (e.g. {@code consume} or {@code
- *       save}-duplicate-detection) is NOT wrapped — it's an expected control-flow signal, not a
+ *       save}-duplicate-detection) is not wrapped; it is an expected control-flow signal, not a
  *       backend outage.
- *   <li>Testkit in-memory repos have no real backend, but per this contract MUST still wrap any
+ *   <li>Testkit in-memory repos have no real backend, but per this contract must still wrap any
  *       unexpected {@link RuntimeException} that escapes (programming error, NPE from a malformed
  *       record) so the adapter exception mappers fire uniformly in unit / integration tests.
  * </ul>
  *
- * <p><b>Operation identifier.</b> The {@link #operation()} string MUST be {@code
- * "<repository>.<method>"} (e.g. {@code "credentials.save"}, {@code "otp.incrementAttempts"}) so
- * operators can pinpoint the failing call from a single log line.
+ * <p>Operation identifier: the {@link #operation()} string must be {@code "<repository>.<method>"}
+ * (e.g. {@code "credentials.save"}, {@code "otp.incrementAttempts"}) so operators can pinpoint the
+ * failing call from a single log line.
  *
- * <p>Adapters MUST NOT catch this and silently swallow it — the host needs to know that persistence
+ * <p>Adapters must not catch this and silently swallow it; the host needs to know that persistence
  * is degraded.
  *
  * <p>The dedicated subtype {@link DuplicateCredentialException} signals the specific duplicate-row

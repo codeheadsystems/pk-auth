@@ -15,8 +15,8 @@ public interface UserLookup {
 
   /**
    * Reserved username key used by pk-auth internals to represent a usernameless ceremony (e.g. a
-   * discoverable-credential assertion where no username was supplied). Hosts MUST NOT use this
-   * value as a real username; treat it as an opaque sentinel.
+   * discoverable-credential assertion where no username was supplied). Hosts must not use this
+   * value as a real username; it is an opaque sentinel.
    *
    * @since 0.9.1
    */
@@ -46,13 +46,13 @@ public interface UserLookup {
   UserHandle getOrCreateHandle(String username);
 
   /**
-   * Returns the email address bound to {@code handle} if the host has one — used by {@code
+   * Returns the email address bound to {@code handle} if the host has one; used by {@code
    * MagicLinkService} flows to guarantee that the email the caller supplies for an
    * email-verification magic-link actually belongs to the target user (instead of trusting a
    * caller-supplied address that an attacker could substitute).
    *
    * <p>Default returns {@link Optional#empty()}; in that case {@code MagicLinkService} logs a
-   * warning and proceeds with the caller-supplied email — the host is responsible for binding
+   * warning and proceeds with the caller-supplied email; the host is responsible for binding
    * elsewhere. Hosts that store an email on the user record should override this to return it so
    * magic-link verification can reject mismatched addresses.
    *

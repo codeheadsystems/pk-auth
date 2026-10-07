@@ -23,14 +23,14 @@ import org.springframework.context.annotation.Bean;
  *
  * <ul>
  *   <li>{@code pk-auth-persistence-jdbi} is on the classpath, and
- *   <li>a {@link Jdbi} bean is provided by the host application (we do not own the datasource — the
- *       brief leaves connection pool and migration ownership to the host).
+ *   <li>a {@link Jdbi} bean is provided by the host application (the starter does not own the
+ *       datasource; the brief leaves connection pool and migration ownership to the host).
  * </ul>
  *
- * <p>This autoconfig is loaded <em>before</em> {@link PkAuthAutoConfiguration} so the JDBI beans
- * register first; the testkit in-memory defaults then back off via {@link
- * ConditionalOnMissingBean}. If both JDBI and DynamoDB modules are on the classpath the host app
- * picks the winner by which underlying client bean it supplies — see the README for the convention.
+ * <p>This autoconfig is loaded before {@link PkAuthAutoConfiguration} so the JDBI beans register
+ * first; the testkit in-memory defaults then back off via {@link ConditionalOnMissingBean}. If both
+ * JDBI and DynamoDB modules are on the classpath the host app picks the winner by which underlying
+ * client bean it supplies; see the README for the convention.
  */
 @AutoConfiguration(before = PkAuthAutoConfiguration.class)
 @ConditionalOnClass({Jdbi.class, JdbiCredentialRepository.class})

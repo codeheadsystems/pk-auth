@@ -3,14 +3,13 @@
 ![pk-auth CI](https://github.com/codeheadsystems/pk-auth/actions/workflows/ci.yml/badge.svg)
 [![passkeys-browser mutation score](https://img.shields.io/endpoint?style=flat&label=mutation%20(passkeys-browser)&url=https%3A%2F%2Fbadge-api.stryker-mutator.io%2Fgithub.com%2Fcodeheadsystems%2Fpk-auth%2Fmain%3Fmodule%3Dpasskeys-browser)](https://dashboard.stryker-mutator.io/reports/github.com/codeheadsystems/pk-auth/main?module=passkeys-browser)
 
-A production-grade, **passkeys-first** authentication template for the JVM.
-pk-auth ships as a reusable library set that can be dropped into a Spring
-Boot, Dropwizard, or Micronaut application; the core is framework-neutral
-and the host's user/credential storage is a plug-in SPI.
+pk-auth is a production-grade, passkeys-first authentication template for the JVM. It ships as a
+reusable library set that drops into a Spring Boot, Dropwizard, or Micronaut application. The core
+is framework-neutral, and the host's user and credential storage is a plug-in SPI.
 
 ## Maven Central
 
-All modules share the same version and `com.codeheadsystems` group id.
+All modules share one version and the `com.codeheadsystems` group id.
 
 | Artifact ID | Version | Description |
 |---|---|---|
@@ -20,7 +19,7 @@ All modules share the same version and `com.codeheadsystems` group id.
 | `pk-auth-backup-codes` | [![Maven Central: pk-auth-backup-codes](https://img.shields.io/maven-central/v/com.codeheadsystems/pk-auth-backup-codes?label=pk-auth-backup-codes)](https://central.sonatype.com/artifact/com.codeheadsystems/pk-auth-backup-codes) | Argon2id-hashed one-time backup codes. |
 | `pk-auth-magic-link` | [![Maven Central: pk-auth-magic-link](https://img.shields.io/maven-central/v/com.codeheadsystems/pk-auth-magic-link?label=pk-auth-magic-link)](https://central.sonatype.com/artifact/com.codeheadsystems/pk-auth-magic-link) | Single-use email magic-link tokens. |
 | `pk-auth-otp` | [![Maven Central: pk-auth-otp](https://img.shields.io/maven-central/v/com.codeheadsystems/pk-auth-otp?label=pk-auth-otp)](https://central.sonatype.com/artifact/com.codeheadsystems/pk-auth-otp) | 6-digit SMS OTP codes for phone verification. |
-| `pk-auth-refresh-tokens` | [![Maven Central: pk-auth-refresh-tokens](https://img.shields.io/maven-central/v/com.codeheadsystems/pk-auth-refresh-tokens?label=pk-auth-refresh-tokens)](https://central.sonatype.com/artifact/com.codeheadsystems/pk-auth-refresh-tokens) | Rotating refresh tokens with family-based replay defense. *(1.1.0)* |
+| `pk-auth-refresh-tokens` | [![Maven Central: pk-auth-refresh-tokens](https://img.shields.io/maven-central/v/com.codeheadsystems/pk-auth-refresh-tokens?label=pk-auth-refresh-tokens)](https://central.sonatype.com/artifact/com.codeheadsystems/pk-auth-refresh-tokens) | Rotating refresh tokens with family-based replay defence. (1.1.0) |
 | `pk-auth-persistence-jdbi` | [![Maven Central: pk-auth-persistence-jdbi](https://img.shields.io/maven-central/v/com.codeheadsystems/pk-auth-persistence-jdbi?label=pk-auth-persistence-jdbi)](https://central.sonatype.com/artifact/com.codeheadsystems/pk-auth-persistence-jdbi) | JDBI 3 + Flyway + Postgres SPI implementations. |
 | `pk-auth-persistence-dynamodb` | [![Maven Central: pk-auth-persistence-dynamodb](https://img.shields.io/maven-central/v/com.codeheadsystems/pk-auth-persistence-dynamodb?label=pk-auth-persistence-dynamodb)](https://central.sonatype.com/artifact/com.codeheadsystems/pk-auth-persistence-dynamodb) | AWS SDK v2 DynamoDB Enhanced SPI implementations (single-table core + separate users table). |
 | `pk-auth-testkit` | [![Maven Central: pk-auth-testkit](https://img.shields.io/maven-central/v/com.codeheadsystems/pk-auth-testkit?label=pk-auth-testkit)](https://central.sonatype.com/artifact/com.codeheadsystems/pk-auth-testkit) | `FakeAuthenticator`, in-memory SPIs, and fixtures for tests. |
@@ -28,33 +27,28 @@ All modules share the same version and `com.codeheadsystems` group id.
 | `pk-auth-dropwizard` | [![Maven Central: pk-auth-dropwizard](https://img.shields.io/maven-central/v/com.codeheadsystems/pk-auth-dropwizard?label=pk-auth-dropwizard)](https://central.sonatype.com/artifact/com.codeheadsystems/pk-auth-dropwizard) | Dropwizard 5 `ConfiguredBundle` + Dagger 2 wiring. |
 | `pk-auth-micronaut` | [![Maven Central: pk-auth-micronaut](https://img.shields.io/maven-central/v/com.codeheadsystems/pk-auth-micronaut?label=pk-auth-micronaut)](https://central.sonatype.com/artifact/com.codeheadsystems/pk-auth-micronaut) | Micronaut 4 `@Factory` + controllers + JWT filter. |
 
-What you get out of the box:
+## Features
 
-- WebAuthn registration and assertion ceremonies — including multi-passkey
-  enrolment and conditional UI — backed by WebAuthn4J.
-- A stateless JWT mint at the end of authentication (HS256, configurable
-  TTL) — or, with the 1.1.0 `AccessTokenStore` SPI, a stateful access
-  token that's revocable before its `exp`.
-- Per-audience JWT TTL dispatch via `TokenTtlPolicy` so web / cli /
-  mobile clients can carry different access-token lifetimes from a single
-  issuer.
-- **Rotating refresh tokens with family-based replay defense** *(1.1.0)*
-  — `POST /auth/refresh` is one ceremony / one row per rotation, with
-  motif-style atomic mark-and-insert and family scorch on detected
-  replay. The browser SDK's `PkAuthClient.refresh()` returns a typed
-  result sum, never throws on 401. See
-  [ADR 0013](./docs/adr/0013-refresh-tokens-family-rotation.md).
-- Account admin: list / rename / delete passkeys, regenerate
-  view-once backup codes, account summary.
-- Alternative-flow modules: backup codes, magic-link email verification,
-  phone OTP verification — each behind a clean, host-implementable SPI.
-- A framework-neutral admin service that every adapter mounts at the same
-  paths so the same TypeScript SDK drives all three.
-- Persistence options: in-memory (testkit), JDBI + Postgres with Flyway
-  migrations, or DynamoDB single-table.
-- A zero-dependency browser SDK (`@pk-auth/passkeys-browser`) covering
-  both ceremony and admin operations, published on npm
-  (`npm install @pk-auth/passkeys-browser`). Its version tracks the
+- WebAuthn registration and assertion ceremonies, including multi-passkey enrolment and conditional
+  UI, backed by WebAuthn4J.
+- A stateless JWT mint at the end of authentication (HS256, configurable TTL). With the 1.1.0
+  `AccessTokenStore` SPI, the mint is a stateful access token that is revocable before its `exp`.
+- Per-audience JWT TTL dispatch via `TokenTtlPolicy`, so web, cli, and mobile clients can carry
+  different access-token lifetimes from a single issuer.
+- Rotating refresh tokens with family-based replay defence (1.1.0). `POST /auth/refresh` is one
+  ceremony and one row per rotation, with motif-style atomic mark-and-insert and family scorch on
+  detected replay. The browser SDK's `PkAuthClient.refresh()` returns a typed result sum and never
+  throws on `401`. See [ADR 0013](./docs/adr/0013-refresh-tokens-family-rotation.md).
+- Account admin: list, rename, and delete passkeys; regenerate view-once backup codes; account
+  summary.
+- Alternative-flow modules: backup codes, magic-link email verification, and phone OTP
+  verification, each behind a host-implementable SPI.
+- A framework-neutral admin service that every adapter mounts at the same paths, so the same
+  TypeScript SDK drives all three.
+- Persistence options: in-memory (testkit), JDBI + Postgres with Flyway migrations, or DynamoDB
+  single-table.
+- A zero-dependency browser SDK (`@pk-auth/passkeys-browser`) covering both ceremony and admin
+  operations, published on npm (`npm install @pk-auth/passkeys-browser`). Its version tracks the
   pk-auth server release it speaks to.
 
 ```mermaid
@@ -65,48 +59,46 @@ flowchart LR
   Core --> Alt["backup-codes / magic-link / otp"]
 ```
 
-For the full architecture, see [`DESIGN.md`](./DESIGN.md). For decision
-records, see [`docs/adr/`](./docs/adr/). For production operations
-guidance, see [`docs/operator-guide.md`](./docs/operator-guide.md) and
-[`docs/threat-model.md`](./docs/threat-model.md). For SPI versioning and
-stability guarantees, see [`docs/stability.md`](./docs/stability.md).
-For transactional behavior across SPIs, see
-[`docs/transactional-semantics.md`](./docs/transactional-semantics.md).
+Related documents:
 
-## Try it
+- Architecture: [`DESIGN.md`](./DESIGN.md).
+- Decision records: [`docs/adr/`](./docs/adr/).
+- Production operations: [`docs/operator-guide.md`](./docs/operator-guide.md) and
+  [`docs/threat-model.md`](./docs/threat-model.md).
+- SPI versioning and stability guarantees: [`docs/stability.md`](./docs/stability.md).
+- Transactional behaviour across SPIs:
+  [`docs/transactional-semantics.md`](./docs/transactional-semantics.md).
 
-The fastest path to a working demo:
+## Demo
+
+The Spring Boot demo is the fastest path to a working server:
 
 ```sh
 ./gradlew :examples:spring-boot-demo:run
 ```
 
-Then open **http://localhost:8080** in a passkey-capable browser
-(Chrome, Edge, Safari, Firefox 130+). The single-page UI exercises every
-flow:
+The demo serves at `http://localhost:8080`, to be opened in a passkey-capable browser (Chrome, Edge,
+Safari, Firefox 130+). The single-page UI exercises every flow:
 
-1. **Register** an account — your platform authenticator (Touch ID,
-   Windows Hello, security key) handles the ceremony.
-2. **Sign in** to get a JWT; the page decodes its claims at the bottom.
-3. **List / rename / delete passkeys** — the demo enforces the
-   last-credential guard.
-4. **Regenerate backup codes** (view-once), check remaining count.
-5. **Verify email via magic link** and **phone via OTP**.
+1. Registration of an account; the platform authenticator (Touch ID, Windows Hello, security key)
+   handles the ceremony.
+2. Sign-in, which returns a JWT; the page decodes its claims at the bottom.
+3. Listing, renaming, and deleting passkeys; the demo enforces the last-credential guard.
+4. Regeneration of backup codes (view-once) and a remaining-count check.
+5. Email verification via magic link and phone verification via OTP.
 
-Magic-link tokens and OTP codes are written to the **server console**
-(the testkit ships `LoggingEmailSender` / `LoggingSmsSender`); copy them
-from the gradle log back into the form to complete the verification
-flows.
+Magic-link tokens and OTP codes are written to the server console (the testkit ships
+`LoggingEmailSender` and `LoggingSmsSender`). Copying them from the Gradle log back into the form
+completes the verification flows.
 
-Two other demos exist for the other adapters — same UI, different
-framework underneath:
+Two other demos exist for the other adapters, with the same UI over a different framework:
 
 ```sh
 ./gradlew :examples:dropwizard-demo:run    # Jersey + Dropwizard 5
 ./gradlew :examples:micronaut-demo:run     # Netty + Micronaut 4
 ```
 
-(Run one at a time — all three bind to port 8080.)
+Only one demo can run at a time, because all three bind to port 8080.
 
 ## Layout
 
@@ -138,46 +130,43 @@ docs/                          # ADRs, operator guide, threat model
 
 Requirements:
 
-- **JDK 21** — Gradle's toolchain will fetch one if not present.
-- **Node ≥ 22.22.2** + **npm** — for the browser SDK build, invoked
-  automatically by Gradle (`./gradlew :buildPasskeysBrowserSdk`).
+- JDK 21. Gradle's toolchain fetches one if none is present.
+- Node 22.22.2 or later, and npm, for the browser SDK build, which Gradle invokes automatically
+  (`./gradlew :buildPasskeysBrowserSdk`).
 
-Optional, only needed for the JDBI / DynamoDB persistence integration
-tests and Playwright end-to-end suites:
+Optional, needed only for the JDBI and DynamoDB persistence integration tests and the Playwright
+end-to-end suites:
 
-- **Docker** — Testcontainers spins Postgres and DynamoDB Local.
-- **Chrome** — Playwright drives a CDP virtual WebAuthn authenticator.
+- Docker. Testcontainers starts Postgres and DynamoDB Local.
+- Chrome. Playwright drives a CDP virtual WebAuthn authenticator.
 
 ## Status
 
-1.0.0 cut the stable baseline; the current development line is
-the `2.x` `-SNAPSHOT` named by `version` in `gradle.properties` (the
-authoritative source). The 1.1 line added per-audience JWT TTLs, the
-`AccessTokenStore` (stateful access tokens), the
-`UserDeletionService` fan-out, and the `pk-auth-refresh-tokens`
-module (rotating refresh tokens with family-based replay defense);
-1.2–1.3 followed with per-framework admin toggles and supply-chain
+The 1.0.0 release cut the stable baseline. The current development line is the `2.x` `-SNAPSHOT`
+named by `version` in `gradle.properties`, which is the authoritative source. The 1.1 line added
+per-audience JWT TTLs, the `AccessTokenStore` (stateful access tokens), the `UserDeletionService`
+fan-out, and the `pk-auth-refresh-tokens` module (rotating refresh tokens with family-based replay
+defence). Releases 1.2 and 1.3 followed with per-framework admin toggles and supply-chain
 hardening.
+
 See [`CHANGELOG.md`](./CHANGELOG.md) for the full delta and
-[`docs/stability.md`](./docs/stability.md) for the versioning policy
-and the list of SPI surfaces. The full build and end-to-end suites
-are green; the test classpath includes the testkit's
-`FakeAuthenticator`, so registration + assertion ceremonies exercise
-the real WebAuthn4J verifier without a browser.
+[`docs/stability.md`](./docs/stability.md) for the versioning policy and the list of SPI surfaces.
+The full build and end-to-end suites pass. The test classpath includes the testkit's
+`FakeAuthenticator`, so registration and assertion ceremonies exercise the real WebAuthn4J verifier
+without a browser.
 
-**Known property — transactional boundaries:** pk-auth does not require
-host SPIs to share a transactional context. At ceremony finish,
-`ChallengeStore.takeOnce` is consumed before `CredentialRepository.save`.
-If the save fails, the user must restart the ceremony from the beginning
-(a new challenge is issued). This is intentional — challenges are
-short-lived (5-minute default TTL), so a forced restart is acceptable and
-avoids distributed-transaction complexity across heterogeneous SPI
-implementations. See [`docs/transactional-semantics.md`](./docs/transactional-semantics.md)
-for full details.
+### Transactional boundaries
 
-## License
+pk-auth does not require host SPIs to share a transactional context. At ceremony finish,
+`ChallengeStore.takeOnce` is consumed before `CredentialRepository.save`. If the save fails, the
+user restarts the ceremony from the beginning, and a new challenge is issued. Challenges are
+short-lived (5-minute default TTL), so a forced restart is acceptable, and it avoids
+distributed-transaction complexity across heterogeneous SPI implementations. See
+[`docs/transactional-semantics.md`](./docs/transactional-semantics.md) for full details.
 
-MIT — see [`LICENSE`](./LICENSE).
+## Licence
+
+MIT. See [`LICENSE`](./LICENSE).
 
 <!-- Claude, do not edit anything below this line -->
 

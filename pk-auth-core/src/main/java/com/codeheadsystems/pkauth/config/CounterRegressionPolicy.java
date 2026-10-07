@@ -10,9 +10,9 @@ package com.codeheadsystems.pkauth.config;
  * @since 0.9.0
  */
 public enum CounterRegressionPolicy {
-  /** Reject the assertion (cloning risk). Default for hardware-token-heavy deployments. */
+  /** Rejects the assertion (cloning risk). Default for hardware-token-heavy deployments. */
   REJECT,
 
-  /** Log a warning but accept the assertion. Appropriate for synced-passkey-heavy deployments. */
+  /** Logs a warning but accepts the assertion. Appropriate for synced-passkey-heavy deployments. */
   WARN
 }

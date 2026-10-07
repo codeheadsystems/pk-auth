@@ -152,7 +152,7 @@ class OtpServiceTest {
 
   /**
    * {@link OtpRepository} decorator that ignores the {@code now} expiry filter (delegates with
-   * {@link Instant#MIN}), modelling a host repository that does not filter expired rows in-store —
+   * {@link Instant#MIN}), modelling a host repository that does not filter expired rows in-store,
    * so the service-level expiry re-check is the thing under test.
    */
   private static final class NonFilteringOtpRepository implements OtpRepository {

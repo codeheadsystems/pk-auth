@@ -2,8 +2,8 @@
 package com.codeheadsystems.pkauth.admin;
 
 /**
- * Tunable safety rules. Defaults match brief §6.9 — the last-credential guard is on; deleting a
- * credential that would leave the user with zero credentials AND zero remaining backup codes is
+ * Tunable safety rules. Defaults match brief §6.9: the last-credential guard is on, and deleting a
+ * credential that would leave the user with zero credentials and zero remaining backup codes is
  * rejected with a {@link AdminResult.Conflict}.
  *
  * @param allowDeleteWithoutBackupCodes when true, callers can delete the last credential even when

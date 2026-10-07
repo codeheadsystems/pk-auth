@@ -6,7 +6,7 @@ package com.codeheadsystems.pkauth.magiclink;
  * logging dev sender and a JavaMail skeleton; production deployments wire a real provider.
  *
  * <p>The method is named {@code send} (rather than {@code sendMagicLink}) so the same SPI can be
- * reused by future email-bearing flows without renaming — see item #25 of the consolidated review.
+ * reused by future email-bearing flows without renaming; see item #25 of the consolidated review.
  * Subject and body are produced upstream by a {@link
  * com.codeheadsystems.pkauth.spi.MessageFormatter}, so this SPI's only job is delivery.
  *

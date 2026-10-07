@@ -74,8 +74,9 @@ import tools.jackson.core.JacksonException;
 /**
  * Default {@link PasskeyAuthenticationService} backed by WebAuthn4J's {@link WebAuthnManager}.
  *
- * <p>Construct via {@link com.codeheadsystems.pkauth.ceremony.PasskeyAuthenticationServices} (the
- * public factory in the {@code ceremony} package).
+ * <p>Instances are constructed via {@link
+ * com.codeheadsystems.pkauth.ceremony.PasskeyAuthenticationServices} (the public factory in the
+ * {@code ceremony} package).
  *
  * <p>The two finish-ceremony methods follow a four-step shape:
  *
@@ -94,8 +95,8 @@ public final class DefaultPasskeyAuthenticationService implements PasskeyAuthent
 
   /**
    * Client-side {@code timeout} hint sent in the WebAuthn options. Independent of {@link
-   * CeremonyConfig#challengeTtl()}, the server-side challenge lifetime; keep that TTL at least this
-   * long so a challenge never expires while the browser prompt is still open.
+   * CeremonyConfig#challengeTtl()}, the server-side challenge lifetime. The challenge TTL should be
+   * at least this long so a challenge never expires while the browser prompt is still open.
    */
   private static final long DEFAULT_TIMEOUT_MS = 60_000L;
 
@@ -159,10 +160,10 @@ public final class DefaultPasskeyAuthenticationService implements PasskeyAuthent
   /**
    * Starts a passkey registration ceremony.
    *
-   * <p><strong>Privacy invariant:</strong> {@code excludeCredentials} on the returned options is
-   * always a (possibly empty) list — never {@code null}. Emitting {@code null} for brand-new
-   * usernames while emitting a populated list for existing users on this {@code permitAll} endpoint
-   * would create an account-enumeration oracle. Mirrors the same privacy guard in {@code
+   * <p>Privacy invariant: {@code excludeCredentials} on the returned options is always a (possibly
+   * empty) list, never {@code null}. Emitting {@code null} for brand-new usernames while emitting a
+   * populated list for existing users on this {@code permitAll} endpoint would create an
+   * account-enumeration oracle. Mirrors the same privacy guard in {@code
    * MagicLinkService.startLogin}.
    *
    * @since 0.9.1
@@ -287,13 +288,13 @@ public final class DefaultPasskeyAuthenticationService implements PasskeyAuthent
   }
 
   /**
-   * Effective user-verification requirement for a finish step: {@code true} (UV required) if EITHER
-   * the global {@link CeremonyConfig#userVerification()} OR the per-request requirement resolved at
-   * start (persisted on {@link ChallengeRecord#userVerification()}) is {@code REQUIRED} — i.e. the
-   * stricter of the two. This enforces a per-request step-up {@code REQUIRED} server-side even when
-   * the global default is relaxed to {@code PREFERRED}/{@code DISCOURAGED}, and never weakens the
-   * global config. A {@code null} recorded requirement (legacy record) contributes nothing, so the
-   * global config still applies.
+   * Effective user-verification requirement for a finish step: {@code true} (UV required) if either
+   * the global {@link CeremonyConfig#userVerification()} or the per-request requirement resolved at
+   * start (persisted on {@link ChallengeRecord#userVerification()}) is {@code REQUIRED}, that is,
+   * the stricter of the two. This enforces a per-request step-up {@code REQUIRED} server-side even
+   * when the global default is relaxed to {@code PREFERRED}/{@code DISCOURAGED}, and never weakens
+   * the global config. A {@code null} recorded requirement (legacy record) contributes nothing, so
+   * the global config still applies.
    */
   private boolean effectiveUserVerificationRequired(ChallengeRecord challengeRecord) {
     boolean configRequired =
@@ -419,10 +420,10 @@ public final class DefaultPasskeyAuthenticationService implements PasskeyAuthent
   /**
    * Starts a passkey authentication ceremony.
    *
-   * <p><strong>Privacy invariant:</strong> {@code allowCredentials} on the returned options is
-   * always a (possibly empty) list — never {@code null}. Emitting {@code null} for unknown
-   * usernames while emitting a populated list for known users on this {@code permitAll} endpoint
-   * would create an account-enumeration oracle. Mirrors the same privacy guard in {@code
+   * <p>Privacy invariant: {@code allowCredentials} on the returned options is always a (possibly
+   * empty) list, never {@code null}. Emitting {@code null} for unknown usernames while emitting a
+   * populated list for known users on this {@code permitAll} endpoint would create an
+   * account-enumeration oracle. Mirrors the same privacy guard in {@code
    * MagicLinkService.startLogin}.
    *
    * @since 0.9.1
@@ -844,7 +845,7 @@ public final class DefaultPasskeyAuthenticationService implements PasskeyAuthent
    * Consults the configured {@link CeremonyRateLimiter} for both the per-IP and per-username
    * buckets on a {@code start*} call. Returns the name of the bucket that denied the call ({@code
    * "ip"} or {@code "username"}), or {@code null} when both buckets allow it. The caller surfaces a
-   * non-null result as the {@code RateLimited} variant of the relevant start-result sum — and MUST
+   * non-null result as the {@code RateLimited} variant of the relevant start-result sum, and must
    * do so before creating any challenge, so a throttled caller never touches the ChallengeStore.
    */
   private @Nullable String rateLimitedBucket(

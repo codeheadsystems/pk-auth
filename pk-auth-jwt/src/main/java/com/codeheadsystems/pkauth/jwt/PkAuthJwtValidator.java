@@ -31,11 +31,11 @@ import org.jspecify.annotations.Nullable;
  * Validates pk-auth JWTs produced by {@link PkAuthJwtIssuer}. Separate from issuance so adapter
  * modules can take this class without pulling in signing keys.
  *
- * <p><strong>No revocation by default.</strong> Once issued, a token is considered valid until its
- * {@code exp} claim expires. If your application needs to invalidate tokens early (e.g., on
- * logout-all or user disable), supply a custom {@link RevocationCheck} via the four-argument
- * constructor. The default behaviour is {@link RevocationCheck#allow()}, which never revokes. A
- * revoked token produces a {@link JwtVerificationResult.Revoked} result rather than {@link
+ * <p>No revocation is applied by default. Once issued, a token is considered valid until its {@code
+ * exp} claim expires. An application that needs to invalidate tokens early (e.g., on logout-all or
+ * user disable) supplies a custom {@link RevocationCheck} via the four-argument constructor. The
+ * default behaviour is {@link RevocationCheck#allow()}, which never revokes. A revoked token
+ * produces a {@link JwtVerificationResult.Revoked} result rather than {@link
  * JwtVerificationResult.Success}.
  */
 public final class PkAuthJwtValidator {
@@ -58,8 +58,8 @@ public final class PkAuthJwtValidator {
 
   /**
    * Constructs a validator with a custom {@link RevocationCheck} and the default no-op {@link
-   * AccessTokenStore}. Use this constructor when you need lightweight deny-list invalidation
-   * without persisting every issued JTI.
+   * AccessTokenStore}. This constructor suits lightweight deny-list invalidation without persisting
+   * every issued JTI.
    */
   public PkAuthJwtValidator(
       JwtConfig config,
@@ -73,8 +73,8 @@ public final class PkAuthJwtValidator {
    * Constructs a validator with both a custom {@link RevocationCheck} and a custom {@link
    * AccessTokenStore}. The store is consulted on every {@link #validate(String)} call after
    * signature and standard-claim checks; an absent jti yields {@link
-   * JwtVerificationResult.Revoked}. Wire the same store on the matching {@link PkAuthJwtIssuer} so
-   * issued JTIs are recorded.
+   * JwtVerificationResult.Revoked}. The matching {@link PkAuthJwtIssuer} must be wired with the
+   * same store so issued JTIs are recorded.
    *
    * @since 1.1.0
    */
@@ -231,17 +231,17 @@ public final class PkAuthJwtValidator {
    *
    * <p>When the token header carries a {@code kid} and at least one key in the keyset also has a
    * {@code kid} assigned, only the key(s) whose {@code kid} matches the header value are tried.
-   * This prevents a forged token claiming {@code kid=X} from being accepted by a different key Y —
-   * the actual security property being enforced.
+   * This prevents a forged token claiming {@code kid=X} from being accepted by a different key Y,
+   * which is the security property enforced.
    *
    * <p>If the keyset contains at least one key with an assigned {@code kid} but the token header
    * carries no {@code kid}, the token is rejected. Without this rule a leaked retired key (still
    * present in the keyset for rotation) could sign a kid-less token and be silently accepted,
    * defeating kid-based rotation.
    *
-   * <p>If the keyset contains <em>no</em> keys with an assigned {@code kid} (fully legacy keyset,
-   * e.g. HS256 built without explicit key IDs), the {@code kid} filter is skipped entirely and all
-   * keys are tried so that legacy single-key deployments continue to work without modification.
+   * <p>If the keyset contains no keys with an assigned {@code kid} (fully legacy keyset, e.g. HS256
+   * built without explicit key IDs), the {@code kid} filter is skipped entirely and all keys are
+   * tried so that legacy single-key deployments continue to work without modification.
    */
   private boolean verifyAgainstCandidateKeys(SignedJWT jwt, @Nullable String kid) {
     // Fetch the full set of verification keys (no filter yet).

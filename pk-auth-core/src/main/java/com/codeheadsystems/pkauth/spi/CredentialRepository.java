@@ -17,8 +17,8 @@ import java.util.Optional;
 public interface CredentialRepository {
 
   /**
-   * Inserts a new credential record. Implementations MUST reject a duplicate {@code credentialId}
-   * by throwing {@link DuplicateCredentialException} rather than overwriting the existing row — a
+   * Inserts a new credential record. Implementations must reject a duplicate {@code credentialId}
+   * by throwing {@link DuplicateCredentialException} rather than overwriting the existing row; a
    * duplicate at registration-finish is a replay/clobber attempt, not an update.
    *
    * @param record the credential to persist.
@@ -48,7 +48,7 @@ public interface CredentialRepository {
   /**
    * Updates the stored signature counter and last-used timestamp after a successful assertion. This
    * is a last-writer-wins overwrite of the two fields (no compare-and-set); the WebAuthn4J counter
-   * verification that authorizes the new value runs in the service before this call. A missing row
+   * verification that authorises the new value runs in the service before this call. A missing row
    * is a silent no-op.
    *
    * @param credentialId the credential that just authenticated.
@@ -61,22 +61,22 @@ public interface CredentialRepository {
   /**
    * Renames the credential identified by {@code credentialId}, but only if it is owned by {@code
    * userHandle}. Implementations must include {@code user_handle} in the predicate so that a forged
-   * or guessed credential id cannot be used to rename another user's credential — pure
-   * defense-in-depth on top of the service-layer ownership check. A row mismatch is a silent no-op
-   * (no exception); the caller has already established existence via {@code findByCredentialId}.
+   * or guessed credential id cannot be used to rename another user's credential; this is defence in
+   * depth on top of the service-layer ownership check. A row mismatch is a silent no-op (no
+   * exception); the caller has already established existence via {@code findByCredentialId}.
    */
   void updateLabel(UserHandle userHandle, CredentialId credentialId, String label);
 
   /**
    * Hard-deletes the credential row, but only if it is owned by {@code userHandle}. Implementations
-   * must include {@code user_handle} in the predicate (defense in depth — see {@link
-   * #updateLabel}). Soft-delete (e.g. a {@code revoked_at} marker) is not permitted on this SPI.
+   * must include {@code user_handle} in the predicate (defence in depth; see {@link #updateLabel}).
+   * Soft-delete (e.g. a {@code revoked_at} marker) is not permitted on this SPI.
    *
    * <p>Audit history for credential deletions is the responsibility of the host's structured log
    * pipeline. pk-auth's {@code DefaultAdminService.deleteCredential} emits a {@code
    * pkauth.credential.deleted} INFO log event (containing the base64url credential id and user
-   * handle) around every call to this method; consume that signal rather than persisting deletion
-   * tombstones inside the credentials table.
+   * handle) around every call to this method; hosts consume that signal rather than persisting
+   * deletion tombstones inside the credentials table.
    */
   void delete(UserHandle userHandle, CredentialId credentialId);
 
@@ -86,7 +86,7 @@ public interface CredentialRepository {
    * may also call it directly for bulk-revocation flows.
    *
    * <p>Returns the number of rows removed (best-effort; used for structured logging). Must be
-   * idempotent — a call against a user with no remaining credentials returns {@code 0}.
+   * idempotent: a call against a user with no remaining credentials returns {@code 0}.
    *
    * @since 1.1.0
    */

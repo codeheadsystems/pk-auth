@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>pk-auth — Passkey-first authentication for the JVM</title>
-  <meta name="description" content="Drop-in passkey / WebAuthn authentication library for Spring Boot 4, Dropwizard 5, and Micronaut 4. Framework-neutral core, your user table stays yours, signed JWT out, MIT licensed.">
+  <title>pk-auth: Passkey-first authentication for the JVM</title>
+  <meta name="description" content="A passkey and WebAuthn authentication library for Spring Boot 4, Dropwizard 5, and Micronaut 4. It has a framework-neutral core, leaves the user table with the host application, issues a signed JWT, and is MIT licensed.">
   <meta name="color-scheme" content="light dark">
   <meta name="theme-color" content="#7A1F1F" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#221A12" media="(prefers-color-scheme: dark)">
@@ -12,14 +12,14 @@
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
 
   <!-- Open Graph / social -->
-  <meta property="og:title" content="pk-auth — Passkey-first authentication for the JVM">
-  <meta property="og:description" content="A drop-in WebAuthn credential layer — not a hosted IdP — for Spring Boot 4, Dropwizard 5, and Micronaut 4. Your user table stays yours.">
+  <meta property="og:title" content="pk-auth: Passkey-first authentication for the JVM">
+  <meta property="og:description" content="A WebAuthn credential layer, not a hosted IdP, for Spring Boot 4, Dropwizard 5, and Micronaut 4. The host application keeps its user table.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://codeheadsystems.github.io/pk-auth/">
   <meta property="og:image" content="https://codeheadsystems.github.io/pk-auth/og-image.png">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="pk-auth — Passkey-first authentication for the JVM">
-  <meta name="twitter:description" content="A drop-in WebAuthn credential layer for Spring Boot 4, Dropwizard 5, and Micronaut 4. Framework-neutral core, your user table stays yours.">
+  <meta name="twitter:title" content="pk-auth: Passkey-first authentication for the JVM">
+  <meta name="twitter:description" content="A WebAuthn credential layer for Spring Boot 4, Dropwizard 5, and Micronaut 4. It has a framework-neutral core, and the host application keeps its user table.">
   <meta name="twitter:image" content="https://codeheadsystems.github.io/pk-auth/og-image.png">
 
   <!-- Preload above-the-fold faces -->
@@ -31,7 +31,7 @@
     "@context": "https://schema.org",
     "@type": "SoftwareSourceCode",
     "name": "pk-auth",
-    "description": "Passkey-first WebAuthn authentication library for the JVM, with framework-neutral core and adapters for Spring Boot 4, Dropwizard 5, and Micronaut 4.",
+    "description": "Passkey-first WebAuthn authentication library for the JVM, with a framework-neutral core and adapters for Spring Boot 4, Dropwizard 5, and Micronaut 4.",
     "programmingLanguage": "Java",
     "license": "https://opensource.org/licenses/MIT",
     "codeRepository": "https://github.com/codeheadsystems/pk-auth",
@@ -68,7 +68,7 @@
       font-display: swap; src: url("fonts/jetbrains-mono-normal.woff2") format("woff2");
     }
 
-    /* ============== PALETTE — LIGHT (warm parchment specimen) ============== */
+    /* ============== PALETTE: LIGHT (warm parchment specimen) ============== */
     :root {
       --paper: #F1E7CE;
       --paper-light: #F8F1DD;
@@ -126,7 +126,7 @@
       --s6: 36px; --s7: 56px; --s8: 88px; --s9: 128px;
     }
 
-    /* ============== PALETTE — DARK (lamplit study) ============== */
+    /* ============== PALETTE: DARK (lamplit study) ============== */
     :root[data-theme="dark"] {
       --paper: #221A12;
       --paper-light: #2B2118;
@@ -579,7 +579,7 @@
     .btn:hover .arrow { transform: translateX(3px); }
     .btn--down:hover .arrow { transform: translateY(3px); }
 
-    /* hero specimen seal — background watermark in the right gutter */
+    /* hero specimen seal: background watermark in the right gutter */
     .hero-seal {
       position: absolute;
       right: -40px; top: 64px;
@@ -1042,9 +1042,9 @@
       </a>
       <div class="nav-wrap">
         <nav class="primary" aria-label="Primary">
-          <a href="#why">Why</a>
+          <a href="#why">Rationale</a>
           <a href="#scope">Scope</a>
-          <a href="#try">Try it</a>
+          <a href="#try">Demo</a>
           <a href="#quickstart">Quickstart</a>
           <a href="#modules">Modules</a>
           <a href="#wire">Wire</a>
@@ -1063,9 +1063,9 @@
         <details class="nav-mobile">
           <summary aria-label="Menu">Menu</summary>
           <div class="nav-mobile-panel">
-            <a href="#why">Why</a>
+            <a href="#why">Rationale</a>
             <a href="#scope">Scope</a>
-            <a href="#try">Try it</a>
+            <a href="#try">Demo</a>
             <a href="#quickstart">Quickstart</a>
             <a href="#modules">Modules</a>
             <a href="#wire">Wire</a>
@@ -1105,13 +1105,14 @@
             </div>
             <h1>
               <span class="rule" aria-hidden="true"></span>Passkey-first<br>
-              authentication,<br>
-              <span class="accent">on the JVM.</span>
+              authentication<br>
+              <span class="accent">for the JVM</span>
             </h1>
             <p class="lede">
-              A drop-in WebAuthn credential layer &mdash; <em>not</em> a hosted IdP &mdash; that mounts the same
-              <code>/auth/**</code> ceremony &amp; admin contract on Spring Boot 4, Dropwizard 5, or Micronaut 4,
-              keeps your user table yours via one SPI, and hands back a signed JWT.
+              A WebAuthn credential layer, not a hosted IdP, that mounts the same
+              <code>/auth/**</code> ceremony and admin contract on Spring Boot 4, Dropwizard 5, or Micronaut 4.
+              The host application keeps its user table behind one SPI, and each successful
+              authentication returns a signed JWT.
             </p>
             <div class="framework-chips">
               <span><i aria-hidden="true"></i>Spring Boot 4</span>
@@ -1162,28 +1163,28 @@
     <!-- ============== WHY ============== -->
     <section id="why" class="tint">
       <div class="container">
-        <div class="section-marker"><span class="num">&sect; 001</span><span>why this</span></div>
-        <h2>Passkeys, <em>without</em> outsourcing your users.</h2>
+        <div class="section-marker"><span class="num">&sect; 001</span><span>rationale</span></div>
+        <h2>Passkeys <em>without outsourced identity</em></h2>
         <p class="lede">
-          Most paths to passkeys mean either months wiring WebAuthn4J by hand, or shipping your
-          identity to a SaaS. pk-auth is the third option: a library you compile in, that does the
-          cryptographic heavy lifting and gets out of your way.
+          Passkey support otherwise means months of wiring WebAuthn4J by hand, or moving user identity
+          to a SaaS provider. pk-auth is a library compiled into the host application. It performs the
+          cryptographic work and leaves user data with the host.
         </p>
         <div class="card-grid">
           <div class="card">
             <div class="idx">01 &middot; portable</div>
-            <h3>One contract, three frameworks.</h3>
-            <p>The same SPIs and the same <code>/auth/**</code> JSON run on Spring Boot 4, Dropwizard 5, and Micronaut 4 &mdash; proven by three runnable demos that share a single browser UI. Switch frameworks without rewriting your auth.</p>
+            <h3>One contract across three frameworks</h3>
+            <p>The same SPIs and the same <code>/auth/**</code> JSON run on Spring Boot 4, Dropwizard 5, and Micronaut 4. Three runnable demos share a single browser UI. Switching frameworks leaves the authentication code unchanged.</p>
           </div>
           <div class="card">
             <div class="idx">02 &middot; yours</div>
-            <h3>You keep your user table.</h3>
-            <p>pk-auth owns zero PII. You implement <code>UserLookup</code>, returning an opaque <code>UserHandle</code> &mdash; the library stores only public keys and signing counters that point back at handles you mint.</p>
+            <h3>Host-owned user table</h3>
+            <p>pk-auth owns zero PII. The host implements <code>UserLookup</code>, which returns an opaque <code>UserHandle</code>. The library stores only public keys and signing counters that point back at handles the host mints.</p>
           </div>
           <div class="card">
             <div class="idx">03 &middot; incremental</div>
-            <h3>Boot in minutes, harden over time.</h3>
-            <p>The in-memory testkit runs the whole stack with no database. Swap in JDBI&nbsp;+&nbsp;Postgres or DynamoDB when you are ready. Security defaults <em>refuse</em>, they do not warn.</p>
+            <h3>Incremental hardening</h3>
+            <p>The whole stack boots in minutes on the in-memory testkit, with no database. JDBI&nbsp;+&nbsp;Postgres or DynamoDB replaces the testkit when the host is ready. Security defaults refuse; they do not warn.</p>
           </div>
         </div>
       </div>
@@ -1193,50 +1194,50 @@
     <section id="scope">
       <div class="container">
         <div class="section-marker"><span class="num">&sect; 002</span><span>scope</span></div>
-        <h2>A credential layer<br><em>&mdash; not</em> an identity provider.</h2>
+        <h2>The credential layer<br><em>boundary</em></h2>
         <p class="lede">
-          pk-auth handles the cryptographic parts of WebAuthn and hands you a JWT.
-          It does not own users, replicate your auth model, or impose a schema on
-          your application. The boundary is sharp, and it is documented.
+          pk-auth handles the cryptographic parts of WebAuthn and returns a JWT.
+          It does not own users, replicate the host's authentication model, or impose a schema on
+          the host application.
         </p>
 
         <div class="boundary-grid">
           <div class="boundary-col boundary-col--is">
-            <h4><span class="glyph">+</span>What pk-auth is</h4>
+            <h4><span class="glyph">+</span>In scope</h4>
             <ul>
-              <li data-idx="01"><b>A passkey credential layer.</b> Ceremony engine, persistence SPIs, and JWT issuance &mdash; all framework-neutral inside <code>pk-auth-core</code>.</li>
+              <li data-idx="01"><b>A passkey credential layer.</b> Ceremony engine, persistence SPIs, and JWT issuance, all framework-neutral inside <code>pk-auth-core</code>.</li>
               <li data-idx="02"><b>Three adapters, one wire contract.</b> Spring Boot 4, Dropwizard 5, and Micronaut 4 mount the same JSON endpoints under <code>/auth/**</code>.</li>
-              <li data-idx="03"><b>A set of SPIs.</b> You implement <code>UserLookup</code> against your existing user table; pk-auth never touches names, emails, or roles directly.</li>
-              <li data-idx="04"><b>Signed JWT out.</b> Authentication returns a short-lived HS256 or ES256 token with configurable issuer / audience / TTL &mdash; or a stateful, revocable access token.</li>
-              <li data-idx="05"><b>Three persistence paths.</b> Testkit (in-memory), JDBI + Postgres + Flyway, or DynamoDB single-table &mdash; same SPIs, your choice.</li>
+              <li data-idx="03"><b>A set of SPIs.</b> The host implements <code>UserLookup</code> against its existing user table; pk-auth never touches names, emails, or roles directly.</li>
+              <li data-idx="04"><b>Signed JWT out.</b> Authentication returns a short-lived HS256 or ES256 token with configurable issuer, audience, and TTL, or a stateful, revocable access token.</li>
+              <li data-idx="05"><b>Three persistence paths.</b> Testkit (in-memory), JDBI + Postgres + Flyway, or DynamoDB single-table. The SPIs are the same across all three, and the host selects one.</li>
             </ul>
           </div>
           <div class="boundary-col boundary-col--isnt">
-            <h4><span class="glyph">&minus;</span>What pk-auth is not</h4>
+            <h4><span class="glyph">&minus;</span>Out of scope</h4>
             <ul>
-              <li data-idx="01"><b>An identity provider.</b> <i class="gloss">No OIDC discovery, no SAML, no admin console &mdash; you keep your users table.</i></li>
-              <li data-idx="02"><b>A SaaS.</b> <i class="gloss">It is a JAR you compile into your app. Nothing leaves your servers; no external billing or callout.</i></li>
-              <li data-idx="03"><b>A user database.</b> <i class="gloss">You bring the users table. The library stores public keys and counters that point at handles you mint.</i></li>
+              <li data-idx="01"><b>An identity provider.</b> <i class="gloss">No OIDC discovery, no SAML, no admin console. The host keeps its users table.</i></li>
+              <li data-idx="02"><b>A SaaS.</b> <i class="gloss">It is a JAR compiled into the host application. Nothing leaves the host's servers, and there is no external billing or callout.</i></li>
+              <li data-idx="03"><b>A user database.</b> <i class="gloss">The host supplies the users table. The library stores public keys and counters that point at handles the host mints.</i></li>
               <li data-idx="04"><b>Spring-only.</b> <i class="gloss">The core has no Spring, Dropwizard, Micronaut, JDBC, or servlet dependency. Adapters are interchangeable.</i></li>
-              <li data-idx="05"><b>An attestation-policy engine.</b> <i class="gloss">Attestation conveyance defaults to <code>none</code>; there is no bundled MDS3 fetcher. Opt into strict verification if you need it.</i></li>
+              <li data-idx="05"><b>An attestation-policy engine.</b> <i class="gloss">Attestation conveyance defaults to <code>none</code>; there is no bundled MDS3 fetcher. Strict verification is opt-in.</i></li>
             </ul>
           </div>
         </div>
-        <p class="boundary-foot">The boundary is documented &middot; <a href="https://github.com/codeheadsystems/pk-auth/blob/main/DESIGN.md">DESIGN.md &sect; 1</a></p>
+        <p class="boundary-foot">Boundary reference &middot; <a href="https://github.com/codeheadsystems/pk-auth/blob/main/DESIGN.md">DESIGN.md &sect; 1</a></p>
       </div>
     </section>
 
     <!-- ============== TRY IT ============== -->
     <section id="try" class="tint">
       <div class="container">
-        <div class="section-marker"><span class="num">&sect; 003</span><span>try it</span></div>
+        <div class="section-marker"><span class="num">&sect; 003</span><span>demo</span></div>
         <div class="try-grid">
           <div>
-            <h2>One command. <em>Real WebAuthn.</em></h2>
+            <h2>Runnable demos <em>with real WebAuthn</em></h2>
             <p class="lede">
-              Clone the repo and run a demo. Each adapter ships the same single-page UI that
-              exercises every flow against a real WebAuthn4J verifier &mdash; no external services,
-              no database to provision.
+              Each adapter ships the same single-page UI, which exercises every flow against a real
+              WebAuthn4J verifier. The demos need no external services and no database. A demo runs
+              from a clone of the repository.
             </p>
 
             <div class="code" data-filename="shell" style="margin-bottom:16px">
@@ -1274,21 +1275,22 @@ cd pk-auth</pre>
             </div>
 
             <p class="try-caption">
-              Open <strong>http://localhost:8080</strong> in a passkey-capable browser (Chrome, Edge,
-              Safari, Firefox&nbsp;130+). Run one at a time &mdash; all three bind to port 8080.
-              Magic-link tokens and OTP codes print to the <strong>server console</strong>
-              (<code>LoggingEmailSender</code> / <code>LoggingSmsSender</code>); copy them back into the form.
+              Each demo serves <code>http://localhost:8080</code> to a passkey-capable browser (Chrome,
+              Edge, Safari, or Firefox&nbsp;130+). Only one demo runs at a time, because all three bind
+              to port 8080. Magic-link tokens and OTP codes print to the server console
+              (<code>LoggingEmailSender</code> and <code>LoggingSmsSender</code>) and are copied back
+              into the form.
             </p>
           </div>
 
           <div>
-            <h4>What the demo exercises</h4>
+            <h4>Demo coverage</h4>
             <ul class="try-list">
-              <li>Register an account &mdash; multi-passkey enrolment, Touch ID / Windows Hello / security key.</li>
-              <li>Sign in and decode the issued JWT claims on-page.</li>
-              <li>List / rename / delete passkeys, with the last-credential guard.</li>
-              <li>Regenerate view-once backup codes and check the remaining count.</li>
-              <li>Verify email via magic link and phone via OTP.</li>
+              <li>Account registration with multi-passkey enrolment, using Touch ID, Windows Hello, or a security key.</li>
+              <li>Sign-in, with the issued JWT claims decoded on the page.</li>
+              <li>Listing, renaming, and deleting passkeys, with the last-credential guard.</li>
+              <li>Regenerating view-once backup codes and checking the remaining count.</li>
+              <li>Email verification through a magic link and phone verification through an OTP.</li>
             </ul>
             <div class="cta-row">
               <a href="https://github.com/codeheadsystems/pk-auth/tree/main/examples" class="btn">
@@ -1303,14 +1305,14 @@ cd pk-auth</pre>
     <!-- ============== QUICKSTART ============== -->
     <section id="quickstart">
       <div class="container">
-        <div class="section-marker"><span class="num">&sect; 004</span><span>quickstart &mdash; spring boot 4</span></div>
+        <div class="section-marker"><span class="num">&sect; 004</span><span>quickstart: spring boot 4</span></div>
         <div class="quickstart-intro">
-          <h2>Three files, <em>one bean</em>.</h2>
+          <h2>Minimal <em>Spring Boot wiring</em></h2>
           <p class="lede">
-            The minimum-viable wire-up: declare the dependencies, set three required
-            config values, and implement <code>UserLookup</code> against your user table.
-            The starter auto-configures the controllers, JWT filter, and bean defaults;
-            the testkit fills in storage until you add a real backend.
+            The minimum wiring declares the dependencies, sets three required configuration
+            values, and implements <code>UserLookup</code> against the host's user table.
+            The starter auto-configures the controllers, JWT filter, and bean defaults,
+            and the testkit supplies storage until a real backend is added.
           </p>
         </div>
 
@@ -1319,7 +1321,7 @@ cd pk-auth</pre>
           <div class="step">
             <div class="step-num"><b>01</b>Dependencies</div>
             <div class="step-body">
-              <h3>Add the adapter, persistence, and admin API.</h3>
+              <h3>Library dependencies</h3>
               <p>Three Maven Central artifacts. Alt-flow modules (backup codes, magic link, OTP, refresh tokens) are independent and additive.</p>
 
               <div class="tabs" role="group" aria-label="Build tool">
@@ -1355,8 +1357,8 @@ cd pk-auth</pre>
           <div class="step">
             <div class="step-num"><b>02</b>Config</div>
             <div class="step-body">
-              <h3>Set the relying party and the JWT secret.</h3>
-              <p>Three required values: the relying-party ID (your registrable domain &mdash; it scopes which passkeys can be used; <code>example.com</code>, not <code>auth.example.com</code>), the allowed origins, and the signing key (32 bytes minimum, fail-fast on boot).</p>
+              <h3>Relying party and JWT secret</h3>
+              <p>Three values are required: the relying-party ID (the registrable domain, which scopes the passkeys that can be used; <code>example.com</code>, not <code>auth.example.com</code>), the allowed origins, and the signing key (32 bytes minimum, with a fail-fast check on boot).</p>
               <div class="code" data-filename="application.yml">
 <pre><span class="kw">pkauth</span><span class="pn">:</span>
   <span class="kw">relying-party</span><span class="pn">:</span>
@@ -1374,8 +1376,8 @@ cd pk-auth</pre>
           <div class="step">
             <div class="step-num"><b>03</b>UserLookup</div>
             <div class="step-body">
-              <h3>Bridge your existing user table.</h3>
-              <p>The one Spring bean you have to write. pk-auth calls it for &ldquo;does this username exist?&rdquo;, &ldquo;what view should I render?&rdquo;, and &ldquo;mint or fetch a handle for first-passkey registration&rdquo;. <code>UserHandle</code> is an opaque byte string &mdash; store it as a <code>BYTEA</code> on your users table with a unique index.</p>
+              <h3>User table bridge</h3>
+              <p>The one Spring bean the host writes. pk-auth calls it to answer &ldquo;does this username exist?&rdquo;, &ldquo;what view should be rendered?&rdquo;, and &ldquo;mint or fetch a handle for first-passkey registration&rdquo;. <code>UserHandle</code> is an opaque byte string, stored as a <code>BYTEA</code> on the users table with a unique index.</p>
               <div class="code" data-filename="UserLookupBean.java">
 <pre><span class="at">@Component</span>
 <span class="kw">class</span> <span class="ty">UserLookupBean</span> <span class="kw">implements</span> <span class="ty">UserLookup</span> <span class="pn">{</span>
@@ -1405,9 +1407,9 @@ cd pk-auth</pre>
         </div>
 
         <div class="quickstart-foot">
-          Not on Spring? The Dropwizard adapter wires through a <code>ConfiguredBundle</code> + Dagger&nbsp;2,
-          and Micronaut through an <code>@Factory</code> + controllers + JWT filter &mdash; same SPIs, same wire
-          contract. See <a href="https://github.com/codeheadsystems/pk-auth/blob/main/DESIGN.md">DESIGN.md &sect; 7</a> for the full per-framework wiring guide.
+          The Dropwizard adapter wires through a <code>ConfiguredBundle</code> and Dagger&nbsp;2,
+          and the Micronaut adapter through an <code>@Factory</code>, controllers, and a JWT filter, with the same
+          SPIs and the same wire contract. <a href="https://github.com/codeheadsystems/pk-auth/blob/main/DESIGN.md">DESIGN.md &sect; 7</a> holds the full per-framework wiring guide.
         </div>
       </div>
     </section>
@@ -1415,9 +1417,9 @@ cd pk-auth</pre>
     <!-- ============== MODULES ============== -->
     <section id="modules" class="tint">
       <div class="container">
-        <div class="section-marker"><span class="num">&sect; 005</span><span>modules &mdash; thirteen artifacts</span></div>
+        <div class="section-marker"><span class="num">&sect; 005</span><span>modules: thirteen artifacts</span></div>
         <div class="module-intro">
-          <h2>Compose <em>only</em> what you need.</h2>
+          <h2>Composable <em>modules</em></h2>
           <div class="module-key">
             <span class="req"><i></i>Required</span>
             <span class="pick"><i></i>Pick one</span>
@@ -1446,7 +1448,7 @@ cd pk-auth</pre>
                   <span class="module-card-name"><b>com.codeheadsystems:</b>pk-auth-jwt</span>
                   <span class="tag">Always</span>
                 </div>
-                <p>HS256 / ES256 mint &amp; validate via Nimbus JOSE+JWT, with ES256 verification-key rotation. Ships <code>RevocationCheck</code> (deny-list), <code>AccessTokenStore</code> (stateful, server-revocable access tokens), and <code>TokenTtlPolicy</code> (per-audience TTLs).</p>
+                <p>HS256 and ES256 minting and validation via Nimbus JOSE+JWT, with ES256 verification-key rotation. Ships <code>RevocationCheck</code> (deny-list), <code>AccessTokenStore</code> (stateful, server-revocable access tokens), and <code>TokenTtlPolicy</code> (per-audience TTLs).</p>
               </div>
             </div>
           </div>
@@ -1463,7 +1465,7 @@ cd pk-auth</pre>
                   <span class="module-card-name"><b>com.codeheadsystems:</b>pk-auth-spring-boot-starter</span>
                   <span class="tag">Spring 4</span>
                 </div>
-                <p>Auto-configures controllers, JWT filter, and bean defaults for Spring Boot 4 &amp; Spring Security 7.</p>
+                <p>Auto-configures controllers, JWT filter, and bean defaults for Spring Boot 4 and Spring Security 7.</p>
               </div>
               <div class="module-card">
                 <div class="module-card-top">
@@ -1477,7 +1479,7 @@ cd pk-auth</pre>
                   <span class="module-card-name"><b>com.codeheadsystems:</b>pk-auth-micronaut</span>
                   <span class="tag">Micronaut 4</span>
                 </div>
-                <p>An <code>@Factory</code> plus controllers and a plain <code>@Filter</code> JWT validator &mdash; intentionally not Micronaut Security.</p>
+                <p>An <code>@Factory</code> plus controllers and a plain <code>@Filter</code> JWT validator. It does not use Micronaut Security.</p>
               </div>
             </div>
           </div>
@@ -1501,14 +1503,14 @@ cd pk-auth</pre>
                   <span class="module-card-name"><b>com.codeheadsystems:</b>pk-auth-persistence-jdbi</span>
                   <span class="tag">Postgres</span>
                 </div>
-                <p>JDBI 3 + Postgres + Flyway. Migrations run automatically. Atomic-claim via conditional <code>UPDATE ... WHERE consumed = FALSE</code>.</p>
+                <p>JDBI 3 + Postgres + Flyway. The host runs the shipped migrations; no adapter runs them. Atomic-claim via conditional <code>UPDATE ... WHERE consumed = FALSE</code>.</p>
               </div>
               <div class="module-card">
                 <div class="module-card-top">
                   <span class="module-card-name"><b>com.codeheadsystems:</b>pk-auth-persistence-dynamodb</span>
                   <span class="tag">DynamoDB</span>
                 </div>
-                <p>AWS SDK v2 Enhanced client, single physical table. Native <code>ttl</code> honored on challenges, OTPs, access tokens, and refresh tokens.</p>
+                <p>AWS SDK v2 Enhanced client, single physical table. Native <code>ttl</code> honoured on challenges, OTPs, access tokens, and refresh tokens.</p>
               </div>
             </div>
           </div>
@@ -1525,7 +1527,7 @@ cd pk-auth</pre>
                   <span class="module-card-name"><b>com.codeheadsystems:</b>pk-auth-refresh-tokens</span>
                   <span class="tag">Sessions</span>
                 </div>
-                <p>Rotating refresh tokens with family-based replay defense. Adds <code>POST /auth/refresh</code> (one ceremony / one row per rotation) and needs a <code>RefreshTokenRepository</code>. See ADR&nbsp;0013.</p>
+                <p>Rotating refresh tokens with family-based replay defence. Adds <code>POST /auth/refresh</code> (one ceremony, one row per rotation) and needs a <code>RefreshTokenRepository</code>. See ADR&nbsp;0013.</p>
               </div>
               <div class="module-card">
                 <div class="module-card-top">
@@ -1554,7 +1556,7 @@ cd pk-auth</pre>
           <div class="module-group g-opt">
             <div class="module-group-head">
               <span class="count">&sect; 005.E &middot; 1 artifact + 1 npm</span>
-              <h4>Admin &amp; SDK</h4>
+              <h4>Admin and SDK</h4>
               <span class="role opt">Optional</span>
             </div>
             <div class="module-list">
@@ -1563,14 +1565,14 @@ cd pk-auth</pre>
                   <span class="module-card-name"><b>com.codeheadsystems:</b>pk-auth-admin-api</span>
                   <span class="tag">/auth/admin/**</span>
                 </div>
-                <p>Framework-neutral admin service: account summary, credential rename / delete (with last-credential guard), backup-code regeneration, email &amp; phone verification.</p>
+                <p>Framework-neutral admin service: account summary, credential rename and delete (with last-credential guard), backup-code regeneration, and email and phone verification.</p>
               </div>
               <div class="module-card">
                 <div class="module-card-top">
                   <span class="module-card-name"><b>npm:</b><a href="https://www.npmjs.com/package/@pk-auth/passkeys-browser">@pk-auth/passkeys-browser</a></span>
                   <span class="tag">TypeScript</span>
                 </div>
-                <p>Zero-dependency ceremony + admin clients, on npm (<code>npm install @pk-auth/passkeys-browser</code>) &mdash; its version tracks the server release. ESM and CJS bundles. Handles all <code>ArrayBuffer</code> &harr; <code>base64url</code> wrangling around <code>navigator.credentials</code>. The refresh client returns a typed result sum &mdash; it never throws on 401.</p>
+                <p>Zero-dependency ceremony and admin clients, published on npm (<code>npm install @pk-auth/passkeys-browser</code>); the version tracks the server release. ESM and CJS bundles. Handles all <code>ArrayBuffer</code> &harr; <code>base64url</code> conversion around <code>navigator.credentials</code>. The refresh client returns a typed result sum and does not throw on 401.</p>
               </div>
             </div>
           </div>
@@ -1589,7 +1591,7 @@ cd pk-auth</pre>
     <section id="wire">
       <div class="container">
         <div class="section-marker"><span class="num">&sect; 006</span><span>wire contract</span></div>
-        <h2>Same JSON. <em>Three adapters.</em></h2>
+        <h2>One wire contract <em>across three adapters</em></h2>
         <p class="lede">
           Every adapter mounts the same paths under <code>/auth/**</code>
           and consumes the same JSON shapes. The TypeScript SDK is written against this
@@ -1603,7 +1605,7 @@ cd pk-auth</pre>
             <div class="endpoint">
               <span class="method post">POST</span>
               <span class="endpoint-path">/auth/passkeys/registration/start</span>
-              <span class="endpoint-note">returns <code>{challengeId, publicKey}</code> &mdash; WebAuthn <code>create()</code> options</span>
+              <span class="endpoint-note">returns <code>{challengeId, publicKey}</code>, the WebAuthn <code>create()</code> options</span>
             </div>
             <div class="endpoint">
               <span class="method post">POST</span>
@@ -1613,7 +1615,7 @@ cd pk-auth</pre>
             <div class="endpoint">
               <span class="method post">POST</span>
               <span class="endpoint-path">/auth/passkeys/authentication/start</span>
-              <span class="endpoint-note">returns <code>{challengeId, publicKey}</code> &mdash; WebAuthn <code>get()</code> options</span>
+              <span class="endpoint-note">returns <code>{challengeId, publicKey}</code>, the WebAuthn <code>get()</code> options</span>
             </div>
             <div class="endpoint">
               <span class="method post">POST</span>
@@ -1623,7 +1625,7 @@ cd pk-auth</pre>
             <div class="endpoint">
               <span class="method post">POST</span>
               <span class="endpoint-path">/auth/refresh</span>
-              <span class="endpoint-note">rotates the refresh token; returns <code>{refreshToken, accessToken, expiresAt}</code>, or <code>401 {detail, reason}</code> on replay. Mounted only with <code>pk-auth-refresh-tokens</code> + a bound <code>RefreshTokenRepository</code>.</span>
+              <span class="endpoint-note">rotates the refresh token; returns <code>{refreshToken, accessToken, expiresAt}</code>, or <code>401 {detail, reason}</code> on replay. Mounted only with <code>pk-auth-refresh-tokens</code> and a bound <code>RefreshTokenRepository</code>.</span>
             </div>
           </div>
 
@@ -1646,11 +1648,11 @@ cd pk-auth</pre>
         </div>
 
         <div class="wire-note">
-          <strong>Conventions.</strong> Bytes on the wire are <code>base64url</code> with no padding (RFC 4648 &sect;5).
-          Every non-success response carries <code>{"outcome": "&lt;snake_case_code&gt;"}</code> &mdash; e.g.
-          <code>origin_mismatch</code>, <code>challenge_expired</code>, <code>rate_limited</code> (HTTP 429) &mdash; plus an optional
-          context field such as <code>detail</code> or <code>reason</code>. The full per-variant table lives in
-          <a href="https://github.com/codeheadsystems/pk-auth/blob/main/DESIGN.md">DESIGN.md &sect; 4</a>.
+          Bytes on the wire are <code>base64url</code> with no padding (RFC 4648 &sect;5).
+          Every non-success response carries <code>{"outcome": "&lt;snake_case_code&gt;"}</code>, for example
+          <code>origin_mismatch</code>, <code>challenge_expired</code>, or <code>rate_limited</code> (HTTP 429), plus an optional
+          context field such as <code>detail</code> or <code>reason</code>.
+          <a href="https://github.com/codeheadsystems/pk-auth/blob/main/DESIGN.md">DESIGN.md &sect; 4</a> holds the full per-variant table.
         </div>
       </div>
     </section>
@@ -1658,15 +1660,15 @@ cd pk-auth</pre>
     <!-- ============== SECURITY ============== -->
     <section id="security" class="tint">
       <div class="container">
-        <div class="section-marker"><span class="num">&sect; 007</span><span>security &amp; maturity</span></div>
+        <div class="section-marker"><span class="num">&sect; 007</span><span>security and maturity</span></div>
         <div class="security-intro">
-          <h2>Defaults that <em>refuse</em>, not warn.</h2>
+          <h2>Strict <em>security defaults</em></h2>
           <p class="lede">
             Choices that change the security contract are explicit configuration.
-            Defaults are the strict path: rejection on origin mismatch, rejection on
-            counter regression, single-use challenges with a five-minute ceiling.
-            (The one deliberate exception is attestation, which defaults to <code>none</code> &mdash;
-            see the maturity note below.) The full STRIDE pass lives in the threat model.
+            Defaults take the strict path: rejection on origin mismatch, rejection on
+            counter regression, and single-use challenges with a five-minute ceiling.
+            Attestation is the exception, defaulting to <code>none</code>; the project maturity
+            note below describes it. The threat model holds the full STRIDE analysis.
           </p>
         </div>
 
@@ -1674,7 +1676,7 @@ cd pk-auth</pre>
           <div class="sec-card">
             <div class="idx">01 &middot; origin</div>
             <h4>Strict origin allow-list</h4>
-            <p>Every <code>finish</code> call validates the client-reported origin against the configured allow-list. Mismatches return <code>origin_mismatch</code> &mdash; there is no &ldquo;permit&rdquo; mode.</p>
+            <p>Every <code>finish</code> call validates the client-reported origin against the configured allow-list. Mismatches return <code>origin_mismatch</code>; there is no &ldquo;permit&rdquo; mode.</p>
             <a href="https://github.com/codeheadsystems/pk-auth/blob/main/docs/threat-model.md">Threat model &#8599;</a>
           </div>
           <div class="sec-card">
@@ -1695,32 +1697,32 @@ cd pk-auth</pre>
           <div class="sec-card">
             <div class="idx">05 &middot; lockout</div>
             <h4>Last-credential guard</h4>
-            <p>Deleting the last passkey when no backup codes remain returns <code>409 Conflict</code> (by default). Backup codes are the documented recovery path; encourage users to enroll a second passkey before removing the first.</p>
+            <p>Deleting the last passkey when no backup codes remain returns <code>409 Conflict</code> (by default). Backup codes are the documented recovery path. Enrolling a second passkey before removing the first avoids lockout.</p>
           </div>
           <div class="sec-card">
             <div class="idx">06 &middot; pii</div>
             <h4>No PII ownership</h4>
-            <p>pk-auth never stores names, emails, or display names of its own. The <code>UserLookup</code> SPI is the only channel to user data, and your implementation decides what crosses the boundary.</p>
+            <p>pk-auth never stores names, emails, or display names of its own. The <code>UserLookup</code> SPI is the only channel to user data, and the host's implementation decides what crosses the boundary.</p>
           </div>
           <div class="sec-card">
             <div class="idx">07 &middot; flood</div>
             <h4>Built-in rate limiter</h4>
-            <p>The <code>CeremonyRateLimiter</code> SPI throttles per-IP and per-username; an in-memory Caffeine default ships. Swap for a shared store across replicas. A WAF / API gateway upstream is still recommended for heavy floods.</p>
+            <p>The <code>CeremonyRateLimiter</code> SPI throttles per-IP and per-username; an in-memory Caffeine default ships. A shared store replaces the default across replicas. A WAF or API gateway upstream is still recommended for heavy floods.</p>
           </div>
           <div class="sec-card">
             <div class="idx">08 &middot; tokens</div>
-            <h4>Stateless by default, revocable when you need it</h4>
-            <p>Authentication returns a short-lived JWT (one-hour default). When you need true server-side revocation &mdash; logout-everywhere, admin-revoke, user-delete before <code>exp</code> &mdash; the <code>AccessTokenStore</code> SPI is the paved road; <code>RevocationCheck</code> is the lighter deny-list option.</p>
+            <h4>Stateless tokens with optional revocation</h4>
+            <p>Authentication returns a short-lived JWT (one-hour default). True server-side revocation (logout-everywhere, admin-revoke, user-delete before <code>exp</code>) uses the <code>AccessTokenStore</code> SPI; <code>RevocationCheck</code> is the lighter deny-list option.</p>
           </div>
           <div class="sec-card">
             <div class="idx">09 &middot; sessions</div>
-            <h4>Refresh-token replay defense</h4>
-            <p>Rotating refresh tokens are one row per rotation with atomic mark-and-insert. A detected replay scorches the entire token family, forcing re-authentication. See ADR&nbsp;0013.</p>
+            <h4>Refresh-token replay defence</h4>
+            <p>Rotating refresh tokens are one row per rotation with atomic mark-and-insert. A detected replay revokes the entire token family, forcing re-authentication. See ADR&nbsp;0013.</p>
           </div>
           <div class="sec-card">
             <div class="idx">10 &middot; audit</div>
-            <h4>Structured logs first</h4>
-            <p>Credential deletion emits <code>pkauth.credential.deleted</code>. Every ceremony logs <code>userHandle</code>, <code>credentialId</code>, origin, and counter; ship to an immutable store and alert on regressions.</p>
+            <h4>Structured logging</h4>
+            <p>Credential deletion emits <code>pkauth.credential.deleted</code>. Every ceremony logs <code>userHandle</code>, <code>credentialId</code>, origin, and counter. Shipping these logs to an immutable store and alerting on regressions is recommended.</p>
           </div>
         </div>
 
@@ -1728,16 +1730,17 @@ cd pk-auth</pre>
           <h4>Project maturity</h4>
           <p>
             pk-auth is MIT-licensed and AI-authored under human architectural direction. It ships a full
-            STRIDE threat model, an SPI stability policy, and a green CI / end-to-end suite &mdash; but it has
-            <strong>not yet undergone independent third-party security review.</strong> It is
-            production-<em>grade</em> in engineering rigor, but not yet security-audited &mdash; evaluate it
-            accordingly, pin a version, and read the changelog before upgrading.
+            STRIDE threat model, an SPI stability policy, and a CI and end-to-end suite. It has
+            not yet undergone independent third-party security review. Its engineering rigour is
+            production-grade, but it is not security-audited. Pinning a version and reading the
+            changelog before upgrading is recommended.
           </p>
           <p>
-            Note that attestation conveyance defaults to <code>none</code> (any authenticator is accepted); hosts that
+            Attestation conveyance defaults to <code>none</code>, so any authenticator is accepted; hosts that
             need attestation verification must opt into the strict WebAuthn4J manager.
-            Read the <a href="https://github.com/codeheadsystems/pk-auth/blob/main/docs/threat-model.md">STRIDE threat model</a>
-            and the <a href="https://github.com/codeheadsystems/pk-auth/blob/main/docs/stability.md">stability &amp; versioning policy</a>.
+            The <a href="https://github.com/codeheadsystems/pk-auth/blob/main/docs/threat-model.md">STRIDE threat model</a>
+            and the <a href="https://github.com/codeheadsystems/pk-auth/blob/main/docs/stability.md">stability and versioning policy</a>
+            are the reference documents for security and compatibility.
           </p>
         </div>
       </div>
@@ -1752,12 +1755,12 @@ cd pk-auth</pre>
           <h3>pk-auth</h3>
           <p>
             A passkey credential layer for the JVM. MIT-licensed.
-            Three adapters, one wire contract, your user table.
+            Three adapters, one wire contract, and the host's user table.
           </p>
           <p class="ver">v<span class="pkv">2.1.0</span> &middot; JDK 21 &middot; WebAuthn4J</p>
         </div>
         <div class="footer-col">
-          <h4>Read first</h4>
+          <h4>Introduction</h4>
           <ul>
             <li><a href="https://github.com/codeheadsystems/pk-auth/blob/main/GETTING_STARTED.md">Getting started</a></li>
             <li><a href="https://github.com/codeheadsystems/pk-auth/blob/main/DESIGN.md">Design</a></li>
@@ -1768,9 +1771,9 @@ cd pk-auth</pre>
         <div class="footer-col">
           <h4>References</h4>
           <ul>
-            <li><a href="https://github.com/codeheadsystems/pk-auth/blob/main/docs/stability.md">Stability &amp; versioning</a></li>
+            <li><a href="https://github.com/codeheadsystems/pk-auth/blob/main/docs/stability.md">Stability and versioning</a></li>
             <li><a href="https://github.com/codeheadsystems/pk-auth/blob/main/docs/transactional-semantics.md">Transactional semantics</a></li>
-            <li><a href="https://github.com/codeheadsystems/pk-auth/tree/main/docs/adr">ADRs (16)</a></li>
+            <li><a href="https://github.com/codeheadsystems/pk-auth/tree/main/docs/adr">ADRs</a></li>
             <li><a href="https://github.com/codeheadsystems/pk-auth/blob/main/CHANGELOG.md">Changelog</a></li>
           </ul>
         </div>

@@ -11,10 +11,10 @@ import org.jspecify.annotations.Nullable;
  *
  * @param user the user the link is being sent to. May be {@code null} only for the privacy-safe
  *     "user-not-found" branch of the login flow (in which case the service does not actually invoke
- *     the formatter — the parameter is nullable for completeness, not because real callers will
- *     observe null).
+ *     the formatter; the parameter is nullable for completeness, and real callers do not observe
+ *     null).
  * @param email the recipient address. Always non-null in practice.
- * @param magicLinkUrl the fully-formed URL the user is expected to click — already includes the
+ * @param magicLinkUrl the fully-formed URL the user is expected to click; it already includes the
  *     issued JWT as a query parameter and is safe to embed verbatim in the body.
  * @param purpose either {@link MagicLinkService#PURPOSE_EMAIL_VERIFY} or {@link
  *     MagicLinkService#PURPOSE_LOGIN}. Formatters typically branch on this value to choose subject

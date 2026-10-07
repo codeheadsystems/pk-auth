@@ -22,8 +22,8 @@ import org.junit.jupiter.api.Test;
 /**
  * Drives the shared {@link RefreshTokenScenarios} (so {@code RefreshTokenService} coverage is
  * attributed to this module and its JaCoCo gate is actually enforced) plus the service-level edge
- * cases the cross-backend parity scenarios don't reach: wire-format parsing, the deprecated default
- * {@code amr} overload, argument validation, revoked-vs-replayed disambiguation, and the
+ * cases the cross-backend parity scenarios do not reach: wire-format parsing, the deprecated
+ * default {@code amr} overload, argument validation, revoked-vs-replayed disambiguation, and the
  * deterministic-RNG constructor.
  */
 class RefreshTokenServiceTest {

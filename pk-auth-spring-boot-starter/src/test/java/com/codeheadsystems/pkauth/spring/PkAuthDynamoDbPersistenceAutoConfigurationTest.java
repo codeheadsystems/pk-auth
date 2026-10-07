@@ -11,14 +11,14 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 /**
  * The DynamoDB autoconfig is only meaningfully exercised by an integration test that wires the AWS
- * SDK against a DynamoDB Local container (deferred to the demo's tests in Phase 8.x). Here we
- * verify the negative path: without the host-supplied beans the autoconfig backs off cleanly and
- * leaves the in-memory testkit defaults from {@link
+ * SDK against a DynamoDB Local container (deferred to the demo's tests). The test verifies the
+ * negative path: without the host-supplied beans the autoconfig backs off cleanly and leaves the
+ * in-memory testkit defaults from {@link
  * com.codeheadsystems.pkauth.spring.autoconfigure.PkAuthAutoConfiguration} undisturbed.
  *
  * <p>Activating the autoconfig with mock clients would crash inside the DynamoDB SDK because the
  * persistence module's constructors immediately call {@code DynamoDbEnhancedClient.table(...)} to
- * compute schema metadata — the mock has no real table backing it. The demo app exercises the
+ * compute schema metadata; the mock has no real table backing it. The demo app exercises the
  * positive path with a real DDB Local container.
  */
 class PkAuthDynamoDbPersistenceAutoConfigurationTest {

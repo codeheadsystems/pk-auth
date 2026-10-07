@@ -15,20 +15,18 @@ import org.slf4j.LoggerFactory;
  * Adapter modules ({@code pk-auth-spring-boot-starter}, {@code pk-auth-dropwizard}, {@code
  * pk-auth-micronaut}) collect every listener bean and pass them in.
  *
- * <p><strong>Semantics — sequential, isolated, best-effort.</strong> Listeners are invoked in the
- * iteration order of the supplied collection, each in its own scope. A listener that throws is
- * logged via a structured {@code pkauth.user.deletion} event and the service proceeds with the next
- * listener. The returned {@link UserDeletionResult} reports successes and failures by name.
+ * <p>Semantics are sequential, isolated, and best-effort. Listeners are invoked in the iteration
+ * order of the supplied collection, each in its own scope. A listener that throws is logged via a
+ * structured {@code pkauth.user.deletion} event and the service proceeds with the next listener.
+ * The returned {@link UserDeletionResult} reports successes and failures by name.
  *
- * <p>This differs from motif's {@code OwnerLifecycleService}, which wraps every listener in a
- * single JDBI transaction with a shared {@code Handle}. pk-auth cannot adopt that model because its
- * persistence SPIs span multiple datasources (JDBC pool, DynamoDB client, in-memory collections)
- * with no shared transactional substrate. See ADR 0016.
+ * <p>Listeners do not share a transaction, because the persistence SPIs span multiple datasources
+ * (JDBC pool, DynamoDB client, in-memory collections) with no shared transactional substrate. See
+ * ADR 0016.
  *
- * <p><b>Operational guidance.</b> Failed listeners are non-fatal — the service does not throw —
- * because the caller (typically an admin endpoint) usually prefers a partial cleanup with audit
- * trail to a hard failure that leaves the user in an even worse half-state. Operators should watch
- * the structured log for non-zero {@code failed} counts and retry, since {@link
+ * <p>Failed listeners are non-fatal and the service does not throw. A partial cleanup with an audit
+ * trail is preferable to a hard failure that leaves the user in a worse half-state. Operators
+ * should watch the structured log for non-zero {@code failed} counts and retry, since {@link
  * UserDeletionListener} implementations are required to be idempotent.
  *
  * @since 1.1.0
@@ -41,8 +39,8 @@ public final class UserDeletionService {
 
   /**
    * Constructs the service with the supplied listeners. Iteration order of the collection is the
-   * order in which listeners run; pass a {@code List} (or other ordered collection) when order
-   * matters. The collection is copied defensively.
+   * order in which listeners run; callers pass a {@code List} (or other ordered collection) when
+   * order matters. The collection is copied defensively.
    */
   public UserDeletionService(Collection<UserDeletionListener> listeners) {
     Objects.requireNonNull(listeners, "listeners");

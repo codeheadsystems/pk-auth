@@ -28,12 +28,12 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Shared parity scenarios for {@link RefreshTokenRepository} implementations. Drive every method
- * from in-memory, JDBI, and DynamoDB test classes so all three backends honour the same contract —
+ * Shared parity scenarios for {@link RefreshTokenRepository} implementations. The in-memory, JDBI,
+ * and DynamoDB test classes drive every method so all three backends honour the same contract,
  * especially the load-bearing {@link #concurrentRotationExactlyOneSucceedsFamilyRevoked()} race
- * test, which is the non-negotiable acceptance criterion from the plan.
+ * test, which is the acceptance criterion from the plan.
  *
- * <p>Construct with a fresh empty repository and a controllable clock. Each scenario is
+ * <p>The constructor takes a fresh empty repository and a controllable clock. Each scenario is
  * self-contained and can run in isolation.
  *
  * @since 1.1.0
@@ -143,15 +143,15 @@ public final class RefreshTokenScenarios {
     }
   }
 
-  /** A wire token whose refreshId doesn't match any row returns Unknown. */
+  /** A wire token whose refreshId does not match any row returns Unknown. */
   public void unknownRefreshIdReturnsUnknown() {
     assertThat(service.rotate("nonExistentRefreshId.aaaa"))
         .isInstanceOf(RotateResult.Unknown.class);
   }
 
   /**
-   * Presenting the right refreshId with the wrong secret returns Unknown — and crucially does NOT
-   * mark the legitimate token used. This is the hash-before-mark-used invariant from ADR 0013.
+   * Presenting the right refreshId with the wrong secret returns Unknown, and does not mark the
+   * legitimate token used. This is the hash-before-mark-used invariant from ADR 0013.
    */
   public void wrongSecretReturnsUnknownAndDoesNotBurnLegitToken() {
     RefreshTokenPair root = service.issue(USER, AUDIENCE, Optional.empty(), AMR);
@@ -188,10 +188,10 @@ public final class RefreshTokenScenarios {
   }
 
   /**
-   * The non-negotiable concurrent rotation race test. Eight threads all rotate the same root token
-   * simultaneously: exactly one must win and the rest see {@link RotateResult.Replayed}. The entire
-   * family — both the root AND any successor inserted by the winner — must end up revoked. Modeled
-   * on motif's {@code concurrent_sameSecret_exactlyOneSucceeds_familyRevoked}.
+   * The concurrent rotation race test. Eight threads all rotate the same root token simultaneously:
+   * exactly one must win and the rest see {@link RotateResult.Replayed}. The entire family (both
+   * the root and any successor inserted by the winner) must end up revoked. Modelled on motif's
+   * {@code concurrent_sameSecret_exactlyOneSucceeds_familyRevoked}.
    */
   public void concurrentRotationExactlyOneSucceedsFamilyRevoked() throws Exception {
     RefreshTokenPair root = service.issue(USER, AUDIENCE, Optional.empty(), AMR);

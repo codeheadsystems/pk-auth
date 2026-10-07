@@ -23,10 +23,10 @@ import com.codeheadsystems.pkauth.spi.UserLookup;
  *
  * <p>Adapter modules (Spring auto-configuration, Dropwizard Dagger module, Micronaut factory) call
  * these static factories from their per-framework providers so the construction graph is named in
- * one place. The CeremonyConfig / JwtConfig merge-with-defaults policy is intentionally
- * <em>not</em> encoded here — each adapter binds those from its own configuration shape and is free
- * to apply its own conservative or permissive defaults; only the downstream "I have a {@code
- * CeremonyConfig}, give me a service" assembly is shared.
+ * one place. The CeremonyConfig / JwtConfig merge-with-defaults policy is not encoded here: each
+ * adapter binds those from its own configuration shape and is free to apply its own conservative or
+ * permissive defaults. Only the downstream assembly of a service from an existing {@code
+ * CeremonyConfig} is shared.
  *
  * @since 0.9.1
  */
@@ -67,7 +67,7 @@ public final class PkAuthComposition {
    * Wires the {@link PkAuthJwtIssuer} / {@link PkAuthJwtValidator} pair around the same {@link
    * JwtConfig}, {@link JwtKeyset}, and {@link ClockProvider}. Adapters that prefer to register each
    * as its own bean can call {@link #passkeyAuthenticationService} and then construct issuer /
-   * validator directly — both shapes are supported.
+   * validator directly; both shapes are supported.
    *
    * @since 0.9.1
    */
@@ -78,8 +78,7 @@ public final class PkAuthComposition {
   }
 
   /**
-   * Wires the ceremony orchestrator. Three trivial-looking lines that were duplicated in all three
-   * adapter modules — collapsed here.
+   * Wires the ceremony orchestrator.
    *
    * @since 0.9.1
    */

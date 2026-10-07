@@ -48,7 +48,7 @@ public final class DemoConfiguration extends Configuration implements HasPkAuthC
     this.pkAuth = pkAuth;
   }
 
-  /** 32-byte deterministic dev secret. Never use this in production. */
+  /** 32-byte deterministic dev secret, not for production use. */
   static byte[] defaultDevSecret() {
     byte[] secret = new byte[32];
     for (int i = 0; i < secret.length; i++) {
@@ -58,8 +58,8 @@ public final class DemoConfiguration extends Configuration implements HasPkAuthC
   }
 
   /**
-   * Deterministic dev OTP pepper. Production deploys must supply this via YAML / env-var and never
-   * commit a value to source.
+   * Deterministic dev OTP pepper. Production deployments must supply this via YAML or an
+   * environment variable; a value is never committed to source.
    */
   static byte[] defaultDevOtpPepper() {
     byte[] pepper = new byte[32];

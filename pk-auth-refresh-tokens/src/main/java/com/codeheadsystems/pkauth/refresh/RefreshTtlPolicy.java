@@ -9,15 +9,15 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * Per-audience TTL lookup used by {@link RefreshTokenService} when issuing refresh tokens.
- * Parallels {@link TokenTtlPolicy} on the access-token side — different client kinds typically want
+ * Parallels {@link TokenTtlPolicy} on the access-token side; different client kinds typically want
  * very different refresh lifetimes (web=14d, cli=90d, …).
  *
  * <p>Implementations are expected to be cheap and side-effect-free. Built-in factories cover the
  * common cases:
  *
  * <ul>
- *   <li>{@link #fixed(Duration, Map)} — static map of audience → TTL with a default fallback
- *   <li>{@link #single(Duration)} — same TTL for every audience
+ *   <li>{@link #fixed(Duration, Map)}: static map of audience → TTL with a default fallback
+ *   <li>{@link #single(Duration)}: same TTL for every audience
  * </ul>
  *
  * @since 1.1.0
@@ -31,7 +31,7 @@ public interface RefreshTtlPolicy {
 
   /**
    * Audiences this policy explicitly knows about. Empty means "validator falls back to the default
-   * audience set elsewhere" — analogous to {@link TokenTtlPolicy#knownAudiences()}.
+   * audience set elsewhere"; analogous to {@link TokenTtlPolicy#knownAudiences()}.
    */
   default Set<String> knownAudiences() {
     return Set.of();
@@ -40,7 +40,7 @@ public interface RefreshTtlPolicy {
   /**
    * Builds a policy from optional host configuration: {@link #single(Duration)} when {@code
    * overrides} is {@code null} or empty, otherwise {@link #fixed(Duration, Map)}. This is the
-   * single-vs-fixed dispatch every adapter performs; centralizing it keeps the JDBI/DynamoDB-backed
+   * single-vs-fixed dispatch every adapter performs; centralising it keeps the JDBI/DynamoDB-backed
    * hosts identical on the refresh-TTL decision.
    *
    * @param defaultTtl the fallback TTL for any audience not in {@code overrides}.

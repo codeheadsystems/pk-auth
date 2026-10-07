@@ -112,7 +112,7 @@ public final class BackupCodeItem {
     return item;
   }
 
-  /** Materializes the row as a {@link StoredBackupCode}. */
+  /** Materialises the row as a {@link StoredBackupCode}. */
   public StoredBackupCode toRecord() {
     return new StoredBackupCode(
         codeId,

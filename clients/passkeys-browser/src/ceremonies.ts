@@ -25,14 +25,14 @@ const PATHS = {
   finishAuth: "/auth/passkeys/authentication/finish",
 } as const;
 
-// All three adapters (Spring, Dropwizard, Micronaut) now mount ceremony endpoints at
-// /auth/passkeys/<phase>/<step>. The `paths` override remains an escape hatch for hosts that
-// remap the routes but is no longer needed for any pk-auth-provided adapter.
+// All three adapters (Spring, Dropwizard, Micronaut) mount ceremony endpoints at
+// /auth/passkeys/<phase>/<step>. The `paths` override is an escape hatch for hosts that
+// remap the routes; no pk-auth-provided adapter needs it.
 
 export interface CeremonyOptions {
-  /** Path overrides — kept as an escape hatch for hosts that remap pk-auth's default routes. */
+  /** Path overrides, an escape hatch for hosts that remap pk-auth's default routes. */
   paths?: Partial<typeof PATHS>;
-  /** Optional override for navigator.credentials (tests / non-browser callers). */
+  /** Replacement for `navigator.credentials`, for tests and non-browser callers. */
   credentials?: CredentialsContainer;
 }
 
@@ -86,7 +86,7 @@ export class PkAuthCeremonyClient {
 
   /**
    * Runs the full sign-in ceremony: server-start → `navigator.credentials.get` →
-   * server-finish. Returns the JWT (consumer is responsible for storage).
+   * server-finish. Returns the JWT; the caller stores it.
    */
   async authenticate(params: StartAuthenticationParams = {}): Promise<FinishAuthenticationResponse> {
     const start = await this.startAuthentication({

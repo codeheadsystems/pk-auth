@@ -18,10 +18,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Backend-agnostic acceptance scenarios for {@link BackupCodeRepository}, focused on the atomic
- * single-use ({@code consume}) contract. Run against the in-memory testkit repo and every real
- * backend (JDBI, DynamoDB) so the double-spend guarantee — a recovery code can be redeemed at most
- * once — cannot regress in one implementation while passing in another. Mirrors {@link
- * RefreshTokenScenarios}'s concurrent rotation race for the refresh-token path.
+ * single-use ({@code consume}) contract. The scenarios run against the in-memory testkit repo and
+ * every real backend (JDBI, DynamoDB) so the double-spend guarantee (a recovery code can be
+ * redeemed at most once) cannot regress in one implementation while passing in another. Mirrors
+ * {@link RefreshTokenScenarios}'s concurrent rotation race for the refresh-token path.
  *
  * @since 2.0.0
  */

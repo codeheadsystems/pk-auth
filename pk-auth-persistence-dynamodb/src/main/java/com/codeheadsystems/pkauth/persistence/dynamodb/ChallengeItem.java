@@ -116,7 +116,7 @@ public final class ChallengeItem {
     return item;
   }
 
-  /** Materializes the stored row back into a {@link ChallengeRecord}. */
+  /** Materialises the stored row back into a {@link ChallengeRecord}. */
   public ChallengeRecord toRecord() {
     return new ChallengeRecord(
         Base64Url.decode(challenge),

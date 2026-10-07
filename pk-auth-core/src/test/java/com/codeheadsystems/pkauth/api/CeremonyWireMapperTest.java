@@ -269,8 +269,7 @@ class CeremonyWireMapperTest {
   /**
    * Tripwire: if a new {@link RegistrationResult} variant is added, this fails until the variant is
    * both wired in {@link CeremonyWireMapper#forRegistration} and covered by a test above. The
-   * {@code switch} in the mapper is already compile-time exhaustive; this guards the *test*
-   * coverage.
+   * {@code switch} in the mapper is already compile-time exhaustive; this guards the test coverage.
    */
   @Test
   void everyRegistrationVariantIsCoveredByATest() {

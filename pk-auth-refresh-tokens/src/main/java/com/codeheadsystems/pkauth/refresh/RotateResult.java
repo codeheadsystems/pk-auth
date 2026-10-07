@@ -34,7 +34,7 @@ public sealed interface RotateResult {
   /**
    * A used-or-revoked token from a known family was presented. The entire family has been scorched
    * ({@link RevokeReason#ROTATION_REPLAY}); the bearer must re-authenticate. The legitimate user
-   * sees the next refresh fail and is redirected to the login page — that's the expected
+   * sees the next refresh fail and is redirected to the login page; that is the expected
    * operational signal.
    */
   record Replayed(String familyId, UserHandle userHandle) implements RotateResult {
@@ -48,7 +48,7 @@ public sealed interface RotateResult {
   record Expired() implements RotateResult {}
 
   /**
-   * The presented {@code refreshId} did not match any persisted row — either the token was never
+   * The presented {@code refreshId} did not match any persisted row: either the token was never
    * issued by this RP, was issued long enough ago that the row has been cleaned up, or the wire
    * format is malformed. No state changes.
    */

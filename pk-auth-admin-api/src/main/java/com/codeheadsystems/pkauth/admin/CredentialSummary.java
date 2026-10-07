@@ -18,7 +18,7 @@ import org.jspecify.annotations.Nullable;
  *
  * <p>The {@code credentialId} field is the type-safe {@link CredentialId} value class (was raw
  * {@code byte[]} prior to 0.9.1). Wire JSON is unchanged: {@link CredentialId} has a Jackson
- * (de)serializer registered in {@code PkAuthObjectMappers} that emits a base64url string, matching
+ * (de)serialiser registered in {@code PkAuthObjectMappers} that emits a base64url string, matching
  * the historical {@code byte[]} encoding.
  *
  * @since 0.9.1

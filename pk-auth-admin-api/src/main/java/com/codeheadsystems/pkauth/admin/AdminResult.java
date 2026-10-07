@@ -17,10 +17,10 @@ public sealed interface AdminResult<T> {
   /** Operation succeeded. */
   record Success<T>(T value) implements AdminResult<T> {}
 
-  /** The targeted resource (credential, user, …) doesn't exist. */
+  /** The targeted resource (credential, user, …) does not exist. */
   record NotFound<T>() implements AdminResult<T> {}
 
-  /** Authorizer denied the operation. */
+  /** The {@link AdminAuthorizer} denied the operation. */
   record Forbidden<T>() implements AdminResult<T> {}
 
   /** Request payload failed structural / semantic validation. */

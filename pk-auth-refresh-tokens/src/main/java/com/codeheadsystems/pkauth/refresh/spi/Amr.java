@@ -35,7 +35,7 @@ public final class Amr {
 
   /**
    * Decodes the stored comma-separated {@code amr} string back into a list. A {@code null} or blank
-   * value — a row written before the {@code amr} column/attribute existed — maps to the generic
+   * value (a row written before the {@code amr} column/attribute existed) maps to the generic
    * {@code ["user"]} so older tokens still satisfy the record's non-empty contract.
    *
    * @param stored the stored comma-separated value, possibly {@code null} or blank.

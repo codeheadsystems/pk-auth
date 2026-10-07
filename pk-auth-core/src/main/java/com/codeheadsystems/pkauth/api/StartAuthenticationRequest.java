@@ -16,11 +16,10 @@ public record StartAuthenticationRequest(
 
   /**
    * Rejects a username longer than {@link StartRegistrationRequest#MAX_USERNAME_LENGTH}. A {@code
-   * null} username is still valid — that is the usernameless / discoverable-credential flow. Blank
-   * is deliberately NOT rejected here (unlike the registration request): an unknown username
-   * already yields the same empty {@code allowCredentials} shape as a known one, so there is no
-   * enumeration signal to protect, and tightening it would change existing behaviour for no
-   * security gain.
+   * null} username is still valid; that is the usernameless / discoverable-credential flow. Blank
+   * is not rejected here (unlike the registration request): an unknown username already yields the
+   * same empty {@code allowCredentials} shape as a known one, so there is no enumeration signal to
+   * protect.
    *
    * @since 2.3.0
    */

@@ -119,7 +119,7 @@ public class PkAuthFactory {
   }
 
   /**
-   * Shared ceremony orchestrator — JWT mint + label lookup + wire mapping. Lives in {@code
+   * Shared ceremony orchestrator covering JWT mint, label lookup, and wire mapping. Lives in {@code
    * pk-auth-jwt} so every adapter holds a single dependency rather than three.
    *
    * @since 0.9.1
@@ -195,7 +195,7 @@ public class PkAuthFactory {
   }
 
   /**
-   * Default in-memory {@link CeremonyRateLimiter} — hosts running more than one replica MUST supply
+   * Default in-memory {@link CeremonyRateLimiter}; hosts running more than one replica must supply
    * a shared (Redis / DB-backed) bean to replace this. See {@link InMemoryCeremonyRateLimiter}
    * javadoc.
    *

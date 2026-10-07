@@ -21,10 +21,9 @@ import java.util.Optional;
 /**
  * Serves the demo's single-page HTML, the shared SDK ESM bundle, and the demo glue script from
  * {@code src/main/resources/public/}. The YAML {@code micronaut.router.static-resources} block is
- * the idiomatic Micronaut approach for this, but it didn't reliably pick up the classpath path in
- * this demo's runtime (a fresh project would not hit the same issue) — so we serve them via three
- * explicit handlers instead. Keeps the demo dependency-free of Micronaut features beyond
- * {@code @Controller}.
+ * the idiomatic Micronaut approach for this, but it does not reliably pick up the classpath path in
+ * this demo's runtime, so three explicit handlers serve them instead. This keeps the demo free of
+ * Micronaut features beyond {@code @Controller}.
  */
 @Controller("/")
 public final class StaticAssetsController {

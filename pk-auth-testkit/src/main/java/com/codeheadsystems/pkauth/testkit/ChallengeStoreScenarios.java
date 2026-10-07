@@ -20,12 +20,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Shared compliance scenarios for {@link ChallengeStore} implementations — the single-use contract
+ * Shared compliance scenarios for {@link ChallengeStore} implementations: the single-use contract
  * every backend (in-memory, JDBI, DynamoDB) must honour. {@link ChallengeStore#takeOnce} is the
- * load-bearing primitive behind WebAuthn replay defense: a challenge must be consumable exactly
+ * load-bearing primitive behind WebAuthn replay defence: a challenge must be consumable exactly
  * once, even under concurrent finish requests, or an assertion could be replayed.
  *
- * <p>Drive these from each backend's test class (passing a fresh, empty store) so the atomic
+ * <p>Each backend's test class drives these scenarios with a fresh, empty store so the atomic
  * read-and-remove contract is verified identically everywhere, not just asserted single-threaded.
  *
  * @since 1.3.0
@@ -50,9 +50,9 @@ public final class ChallengeStoreScenarios {
   }
 
   /**
-   * The non-negotiable atomicity test: N threads call {@link ChallengeStore#takeOnce} on the same
-   * id simultaneously and exactly one must receive the record. A non-atomic read-then-delete would
-   * let two threads both observe and "consume" the same challenge, enabling assertion replay.
+   * The atomicity test: N threads call {@link ChallengeStore#takeOnce} on the same id
+   * simultaneously and exactly one must receive the record. A non-atomic read-then-delete would let
+   * two threads both observe and "consume" the same challenge, enabling assertion replay.
    */
   public void concurrentTakeOnceYieldsExactlyOneWinner() throws Exception {
     ChallengeId id = new ChallengeId("tck-concurrent-take-once");

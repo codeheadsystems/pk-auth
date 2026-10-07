@@ -61,7 +61,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Happy-path registration ({@code persistRegistration}) and the {@code evaluateAttestation}
- * decision branches, which the main service test doesn't reach because it never returns a verified
+ * decision branches, which the main service test does not reach because it never returns a verified
  * {@link RegistrationData} from the mocked {@link WebAuthnManager}.
  */
 class DefaultPasskeyAuthenticationServiceRegistrationTest {

@@ -49,8 +49,8 @@ import tools.jackson.databind.json.JsonMapper;
  *
  * <p>State is kept per-instance: each registration creates a new credential whose private key is
  * remembered for subsequent assertions. The authenticator increments its sign counter on each
- * assertion; tests that want to exercise counter-regression behavior can set the counter explicitly
- * via {@link Builder#forceSignCount(long)}.
+ * assertion; tests that want to exercise counter-regression behaviour can set the counter
+ * explicitly via {@link Builder#forceSignCount(long)}.
  */
 public final class FakeAuthenticator {
 

@@ -19,9 +19,9 @@ import org.springframework.context.annotation.Primary;
 public class PkAuthTestApplication {
 
   /**
-   * Override the property-based default so the {@code FakeAuthenticator}'s {@code example.com}
+   * Overrides the property-based default so the {@code FakeAuthenticator}'s {@code example.com}
    * origin is on the allow-list. The starter's default uses {@code localhost:8080} which {@code
-   * FakeAuthenticator} doesn't sign for.
+   * FakeAuthenticator} does not sign for.
    */
   @Bean
   @Primary
@@ -30,7 +30,7 @@ public class PkAuthTestApplication {
   }
 
   /**
-   * Wire an in-memory refresh-token repository so the {@code /auth/refresh} endpoint and the
+   * Wires an in-memory refresh-token repository so the {@code /auth/refresh} endpoint and the
    * matching deletion-fan-out listener activate in tests. Production hosts bind a real backend
    * (JDBI or DynamoDB).
    *

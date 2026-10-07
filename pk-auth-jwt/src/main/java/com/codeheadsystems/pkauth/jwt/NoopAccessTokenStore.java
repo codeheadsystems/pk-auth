@@ -7,7 +7,7 @@ import java.util.Optional;
 
 /**
  * Default {@link AccessTokenStore} that persists nothing and accepts every jti. Hosts that wire a
- * real store override this binding. The class is package-private — clients reach it via {@link
+ * real store override this binding. The class is package-private; clients reach it via {@link
  * AccessTokenStore#noop()}.
  */
 final class NoopAccessTokenStore implements AccessTokenStore {

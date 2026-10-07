@@ -14,7 +14,7 @@ import jakarta.inject.Singleton;
 
 /**
  * Wires the optional admin surface. {@code pk-auth-admin-api} is a {@code compileOnly} dependency
- * of this adapter — the same opt-in contract the Spring Boot starter expresses with
+ * of this adapter, the same opt-in contract the Spring Boot starter expresses with
  * {@code @ConditionalOnClass} and the Dropwizard bundle with a runtime classpath check. Keeping the
  * {@link AdminService} bean in its own {@link Factory} (rather than on {@link PkAuthFactory}) means
  * the main factory class carries no reference to {@code pk-auth-admin-api}; a host that omits the

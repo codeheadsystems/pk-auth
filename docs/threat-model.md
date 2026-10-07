@@ -1,8 +1,7 @@
 # pk-auth Threat Model
 
-Scope: the pk-auth library, its three host adapters, and the wire contract its TS
-SDK consumes. This document is **not** a deployment review — host applications still
-own their TLS, network ingress, secrets-management, and authorization layers.
+Scope: the pk-auth library, its three host adapters, and the wire contract its TS SDK consumes.
+Host applications own their TLS, network ingress, secrets management, and authorisation layers.
 
 ## Trust boundaries
 
@@ -18,21 +17,20 @@ own their TLS, network ingress, secrets-management, and authorization layers.
                                             SIEM / metrics
 ```
 
-Boundaries cross-checked in this model:
-1. **Browser ↔ adapter** — untrusted client. WebAuthn assertions and admin calls.
-2. **Adapter ↔ persistence** — trusted; assumes operator runs Postgres/DynamoDB on
-   a private network.
-3. **Adapter ↔ secrets / KMS** — trusted; assumes the host injects credentials at
-   boot.
-4. **Source ↔ build/distribution pipeline** — semi-trusted. The artifacts pk-auth
-   ships (Maven Central jars, the npm SDK) are only as trustworthy as the
-   dependencies, build tools, and CI actions that produce them. See
-   [Supply chain](#supply-chain).
-5. **Human ↔ AI coding agent** — semi-trusted, and the most unusual boundary here.
-   Substantially all of this code was written by an AI agent (see the README
-   disclaimer). The agent is unaccountable, can be steered by the untrusted content
-   it reads, and produces code faster than it can be deeply reviewed. Its output is
-   gated only by human review. See [AI-authored code (provenance)](#ai-authored-code-provenance).
+The model covers five boundaries:
+
+1. Browser ↔ adapter: untrusted client. WebAuthn assertions and admin calls.
+2. Adapter ↔ persistence: trusted; assumes the operator runs Postgres or DynamoDB on a private
+   network.
+3. Adapter ↔ secrets / KMS: trusted; assumes the host injects credentials at boot.
+4. Source ↔ build/distribution pipeline: semi-trusted. The artefacts pk-auth ships (Maven Central
+   jars, the npm SDK) are only as trustworthy as the dependencies, build tools, and CI actions that
+   produce them. See [Supply chain](#supply-chain).
+5. Human ↔ AI coding agent: semi-trusted, and the most unusual boundary here. Substantially all of
+   this code was written by an AI agent (see the README disclaimer). The agent is unaccountable, can
+   be steered by the untrusted content it reads, and produces code faster than it can be deeply
+   reviewed. Its output is gated only by human review. See
+   [AI-authored code (provenance)](#ai-authored-code-provenance).
 
 ## STRIDE pass
 
@@ -40,11 +38,11 @@ Boundaries cross-checked in this model:
 
 | Threat | Mitigation |
 |---|---|
-| Attacker forges a WebAuthn assertion | EC P-256/RSA signature verified against the registered public key via WebAuthn4J. Attestation conveyance is `NONE` by default; the default manager validates client data, origin, RP-ID, and assertion signatures but does NOT verify attestation statements. Hosts requiring attestation verification must opt into the strict manager (open finding). Counter regression catches some clone scenarios. |
+| Attacker forges a WebAuthn assertion | EC P-256/RSA signature verified against the registered public key via WebAuthn4J. Attestation conveyance is `NONE` by default; the default manager validates client data, origin, RP-ID, and assertion signatures but does not verify attestation statements. Hosts requiring attestation verification must opt into the strict manager (open finding). Counter regression catches some clone scenarios. |
 | Attacker forges a JWT | HS256 signature with ≥ 32-byte secret. JWT verification enforces issuer, audience, expiry. |
-| Attacker spoofs the relying party | RP ID and origin are checked server-side on every `finish` call — config-driven allow-list (`pkauth.relying-party.origins`). Cross-origin attempts are rejected with `origin_mismatch`. |
+| Attacker spoofs the relying party | RP ID and origin are checked server-side on every `finish` call, using a config-driven allow-list (`pkauth.relying-party.origins`). Cross-origin attempts are rejected with `origin_mismatch`. |
 | Attacker reuses a backup code | Backup codes are Argon2id-hashed, single-use, and atomically claimed inside the SPI (`atomic claim or fail`). |
-| Attacker presents a passkey the legitimate user never consciously authorized (lost/borrowed device with a key already enrolled, or a key with no user-presence factor) | User Verification defaults to `REQUIRED` (`CeremonyConfig.defaults()`), so WebAuthn4J enforces the asserted `flagUV` on every ceremony — the authenticator must prove a per-ceremony biometric or PIN, making the passkey a genuine "something you have **and** something you are/know" factor. Relaxing UV to `PREFERRED` or `DISCOURAGED` removes that guarantee: a present-but-unverified authenticator (mere user-presence, no biometric/PIN) is accepted, so a passkey degrades to "something you have" alone. Do not relax UV unless a deployment specifically needs UV-incapable hardware security keys, and understand it weakens the factor for everyone. |
+| Attacker presents a passkey the legitimate user never consciously authorised (lost/borrowed device with a key already enrolled, or a key with no user-presence factor) | User Verification defaults to `REQUIRED` (`CeremonyConfig.defaults()`), so WebAuthn4J enforces the asserted `flagUV` on every ceremony. The authenticator must prove a per-ceremony biometric or PIN, making the passkey a genuine factor: something the user has plus something the user is or knows. Relaxing UV to `PREFERRED` or `DISCOURAGED` removes that guarantee: a present-but-unverified authenticator (mere user-presence, no biometric or PIN) is accepted, so a passkey degrades to something the user has alone. The relaxation fits only a deployment that specifically needs UV-incapable hardware security keys, and it weakens the factor for every user. |
 
 ### Tampering
 
@@ -66,245 +64,246 @@ Boundaries cross-checked in this model:
 | Threat | Mitigation |
 |---|---|
 | Disclose a credential's public key | Public keys are public. Their disclosure leaks no authentication material. |
-| Disclose backup codes | Backup codes are returned plaintext **exactly once** at regeneration time. The server only retains Argon2id hashes. |
-| Disclose magic-link tokens | A magic-link token is a signed single-use HS256 JWT (it carries a `pkauth.purpose` claim and is bound by the HS256 signature — not a random value stored hashed). It is never persisted: single-use is enforced by recording its JTI in a `ConsumedJtiStore` after redemption (JWT TTL 15m, consumed-JTI TTL 30m). The token only exists in the outbound email on the dispatcher path. Use a real email sender in production, and inject a shared `ConsumedJtiStore` for multi-replica deployments so a token can't be replayed across replicas. |
-| Disclose JWT secret via logs | The starter never logs `pkauth.jwt.secret`. Other secrets (Argon2 pepper, RP origins) are bound only via env vars; do not echo them in `--debug` traces. |
-| Enumerate usernames | `/auth/passkeys/registration/start` returns the same shape for any username (a fresh user handle is created); `/auth/passkeys/authentication/start` does not leak existence — it returns an `allowCredentials` list that an unknown user would receive empty. Avoid mounting routes that surface user existence (e.g. "/users/exists"). |
+| Disclose backup codes | Backup codes are returned plaintext exactly once, at regeneration time. The server only retains Argon2id hashes. |
+| Disclose magic-link tokens | A magic-link token is a signed single-use HS256 JWT (it carries a `pkauth.purpose` claim and is bound by the HS256 signature, and is not a random value stored hashed). It is never persisted: single-use is enforced by recording its JTI in a `ConsumedJtiStore` after redemption (JWT TTL 15m, consumed-JTI TTL 30m). The token only exists in the outbound email on the dispatcher path. Production uses a real email sender, and multi-replica deployments inject a shared `ConsumedJtiStore` so a token cannot be replayed across replicas. |
+| Disclose JWT secret via logs | The starter never logs `pkauth.jwt.secret`. Other secrets (Argon2 pepper, RP origins) are bound only via env vars and must not be echoed in `--debug` traces. |
+| Enumerate usernames | `/auth/passkeys/registration/start` returns the same shape for any username (a fresh user handle is created); `/auth/passkeys/authentication/start` does not leak existence, because it returns an `allowCredentials` list that an unknown user would receive empty. Routes that surface user existence (for example `/users/exists`) are not mounted. |
 
 ### Denial of Service
 
 | Threat | Mitigation |
 |---|---|
 | Flood challenges | Challenges expire in 5 minutes by default and are stored by `ChallengeId`. pk-auth ships a `CeremonyRateLimiter` SPI (with an in-memory Caffeine-backed default) keyed on client IP and username; the `start*` / `finish*` endpoints short-circuit with `429 Retry-After` when the limiter denies. For multi-replica deployments, replace the default with a shared-store implementation. Heavy floods should still be filtered at the host's WAF / API gateway upstream of the adapter. |
-| Hash-burn via repeated backup-code attempts | Backup codes are Argon2id-hashed (intentionally CPU-heavy), so a wrong code costs the attacker as much as a right one. The SPIs ship per-credential attempt counters; the magic-link and backup-code modules also ship per-user sliding-window rate limiters (in-memory defaults, override for multi-replica). |
-| Brute-force / flood of OTP attempts | OTP codes are hashed with cheap HMAC-SHA256, **not** a CPU-heavy KDF — the 10^6 code space makes hash cost pointless, so the hash burn argument does **not** apply here. The defence is instead the per-credential attempt cap (default 5 verifies per code, enforced atomically in the repository) plus the per-(user, phone) send rate limiter (default 3 codes per 15-minute window). A wrong code is cheap to check but exhausts the cap quickly, and the rate limiter bounds how many fresh codes an attacker can mint. |
-| Exhaust DB connections | Connection pooling is the host's responsibility. Recommend HikariCP for JDBI, the AWS SDK's default for DynamoDB. |
+| Hash-burn via repeated backup-code attempts | Backup codes are Argon2id-hashed (CPU-heavy), so a wrong code costs the attacker as much as a right one. The SPIs ship per-credential attempt counters; the magic-link and backup-code modules also ship per-user sliding-window rate limiters (in-memory defaults, override for multi-replica). |
+| Brute-force / flood of OTP attempts | OTP codes are hashed with cheap HMAC-SHA256, not a CPU-heavy KDF. The 10^6 code space makes hash cost pointless, so the hash-burn argument does not apply here. The defence is instead the per-credential attempt cap (default 5 verifies per code, enforced atomically in the repository) plus the per-(user, phone) send rate limiter (default 3 codes per 15-minute window). A wrong code is cheap to check but exhausts the cap quickly, and the rate limiter bounds how many fresh codes an attacker can mint. |
+| Exhaust DB connections | Connection pooling is the host's responsibility. HikariCP is recommended for JDBI, and the AWS SDK's default for DynamoDB. |
 
 ### Elevation of Privilege
 
 | Threat | Mitigation |
 |---|---|
-| Use a backup code to register a new passkey for someone else's account | Backup codes authenticate the holder; the admin API still requires a JWT for the *acting* user, and rename/delete enforce `actor == owner`. A backup code alone cannot register a passkey on a different account — only re-bootstrap the existing one. |
-| Use a stolen JWT to act as another user | JWTs are stateless and bearer; mitigation lives at the transport layer (HTTPS) and TTL (default 1 hour). Do not extend TTL without offsetting it with explicit revocation. Hosts requiring revocation (logout-all, account-disable) should implement the `RevocationCheck` SPI in `pk-auth-jwt`. |
-| Delete every passkey to lock yourself in / out | `AdminService.deleteCredential` enforces a "last-credential guard" returning 409 Conflict when a delete would leave zero credentials. Backup codes remain available as a recovery path. |
+| Use a backup code to register a new passkey for someone else's account | Backup codes authenticate the holder; the admin API still requires a JWT for the acting user, and rename/delete enforce `actor == owner`. A backup code alone cannot register a passkey on a different account; it can only re-bootstrap the existing one. |
+| Use a stolen JWT to act as another user | JWTs are stateless and bearer; mitigation lives at the transport layer (HTTPS) and TTL (default 1 hour). Extending the TTL requires offsetting it with explicit revocation. Hosts requiring revocation (logout-all, account-disable) should implement the `RevocationCheck` SPI in `pk-auth-jwt`. |
+| Delete every passkey to lock the user in or out | `AdminService.deleteCredential` enforces a "last-credential guard" returning 409 Conflict when a delete would leave zero credentials. Backup codes remain available as a recovery path. |
 | Cross-tenant access | The library is single-tenant. Multi-tenant deployments need an outer key (e.g. `tenantId`) routed at the host. pk-auth does not provide one. |
 
-## Known limitations (in scope but not solved)
+## Known limitations
 
-- **Attestation policy**: attestation conveyance is `NONE` by default. The default manager validates client data, origin, RP-ID, and assertion signatures but does NOT verify attestation statements. Hooks exist for MDS3 / metadata-service validation (`AttestationTrustPolicy`), but no MDS3 fetcher is bundled. Sites with FIDO attestation requirements must opt into the strict manager and implement their own MDS3 fetcher.
-- **Counter regression**: rejected by default. Configurable to `warn` for sites that primarily
-  expect counter-0 synced passkeys (Apple/Google ecosystems). Switching to `warn` weakens the
+- Attestation policy: attestation conveyance is `NONE` by default. The default manager validates
+  client data, origin, RP-ID, and assertion signatures but does not verify attestation statements.
+  Hooks exist for MDS3 / metadata-service validation (`AttestationTrustPolicy`), but no MDS3 fetcher
+  is bundled. Sites with FIDO attestation requirements must opt into the strict manager and
+  implement their own MDS3 fetcher.
+- Counter regression: rejected by default. Configurable to `warn` for sites that primarily expect
+  counter-0 synced passkeys (Apple/Google ecosystems). Switching to `warn` weakens the
   clone-detection signal.
-- **JWT revocation**: JWTs are valid until `exp` by default. The `RevocationCheck` SPI (added in `pk-auth-jwt`) allows hosts to implement revocation (logout-all, account-disable). Without it, accept the TTL bound on session length and prefer short TTLs.
-- **Passkey export / migration**: not the library's concern. The user's authenticator owns the
-  key material; pk-auth never sees it.
+- JWT revocation: JWTs are valid until `exp` by default. The `RevocationCheck` SPI (added in
+  `pk-auth-jwt`) allows hosts to implement revocation (logout-all, account-disable). Without it, the
+  TTL bounds session length, so short TTLs are preferred.
+- Passkey export and migration: not the library's concern. The user's authenticator owns the key
+  material, and pk-auth never sees it.
 
 ## Post-quantum readiness
 
-This section states the project's posture honestly: pk-auth is **post-quantum *aware* and
-crypto-agile where it can be**, but it cannot ship a post-quantum *passkey signature* today
-because none exists in the stack it sits on. The goal here is accurate framing plus the
-agility hooks that make a future migration a configuration change, not a rewrite.
+pk-auth is post-quantum aware and crypto-agile where it can be, but it cannot ship a post-quantum
+passkey signature today because none exists in the stack it sits on. The agility hooks make a future
+migration a configuration change, not a rewrite.
 
-### What is Shor-vulnerable, and why this library can't fix it yet
+### Shor-vulnerable algorithms
 
-The passkey signature algorithms — ES256 (ECDSA P-256), EdDSA (Ed25519), and RS256/RS384
-(RSA) — all rest on problems (discrete log, factoring) that a cryptographically-relevant
-quantum computer (CRQC) running Shor's algorithm would break. None exists today, and the
-timeline is uncertain, but the threat is real for long-lived public keys.
+The passkey signature algorithms, ES256 (ECDSA P-256), EdDSA (Ed25519), and RS256/RS384 (RSA), all
+rest on problems (discrete log, factoring) that a cryptographically relevant quantum computer (CRQC)
+running Shor's algorithm would break. No such computer exists today, and the timeline is uncertain,
+but the threat is real for long-lived public keys.
 
-The library **cannot** unilaterally fix this. The signature algorithm of a passkey is gated,
-end to end, by layers pk-auth does not own:
+The library cannot unilaterally fix this. The signature algorithm of a passkey is gated, end to end,
+by layers pk-auth does not own:
 
-- the **authenticator hardware / secure element** (what keypairs it can generate),
-- **CTAP2 / FIDO2** (what the authenticator and platform negotiate),
-- **WebAuthn / the COSE algorithm registry** (what `PublicKeyCredentialParameters.alg`
-  values are even defined), and
-- **WebAuthn4J** (what this library's verifier can actually validate).
+- the authenticator hardware or secure element (what keypairs it can generate),
+- CTAP2 / FIDO2 (what the authenticator and platform negotiate),
+- WebAuthn and the COSE algorithm registry (which `PublicKeyCredentialParameters.alg` values are
+  defined), and
+- WebAuthn4J (what this library's verifier can actually validate).
 
-No post-quantum signature scheme (e.g. an ML-DSA / FIPS 204 COSE binding) is standardized
-across that chain or implemented by WebAuthn4J as of this writing. pk-auth therefore does
-**not** invent COSE identifiers or advertise algorithms nothing in the ecosystem can produce
-or verify. When the ecosystem standardizes one, adding it is a single new constant in
-`CoseAlgorithm` plus its WebAuthn4J mapping — by design (see [crypto-agility hooks](#crypto-agility-hooks-present-today)).
+No post-quantum signature scheme (for example an ML-DSA / FIPS 204 COSE binding) is standardised
+across that chain or implemented by WebAuthn4J at present. pk-auth therefore does not invent COSE
+identifiers or advertise algorithms nothing in the ecosystem can produce or verify. When the
+ecosystem standardises one, adding it is a single new constant in `CoseAlgorithm` plus its
+WebAuthn4J mapping (see [crypto-agility hooks](#crypto-agility-hooks)).
 
-### Why the exposure is bounded
+### Bounded exposure
 
-WebAuthn is a **challenge–response** protocol, not encryption. An assertion proves possession
-of a private key *now*, against a fresh server-issued challenge; there is no long-lived
-ciphertext for an attacker to harvest and decrypt later. A CRQC does **not** retroactively
-break past authentications.
+WebAuthn is a challenge-response protocol, not encryption. An assertion proves possession of a
+private key at that moment, against a fresh server-issued challenge. No long-lived ciphertext exists
+for an attacker to harvest and decrypt later, and a CRQC does not retroactively break past
+authentications.
 
-The real long-term liability is the **stored public key**: once a CRQC exists, an attacker who
-has the public key (public by definition) could forge assertions for that credential. The
-mitigation is re-enrollment onto a post-quantum algorithm *before* a CRQC arrives — which is
-exactly what the per-credential algorithm visibility below is for. (The genuine
-harvest-now/decrypt-later risk in a deployment is recorded **TLS** sessions carrying bearer
-tokens, which is terminated outside this library — see the operator guide.)
+The real long-term liability is the stored public key. Once a CRQC exists, an attacker who has the
+public key (public by definition) could forge assertions for that credential. The mitigation is
+re-enrolment onto a post-quantum algorithm before a CRQC arrives, which is what the per-credential
+algorithm visibility below supports. The harvest-now, decrypt-later risk in a deployment is
+recorded TLS sessions carrying bearer tokens. TLS terminates outside this library; see the
+[operator guide](./operator-guide.md#8-transport-security-and-post-quantum-exposure).
 
-### Crypto-agility hooks present today
+### Crypto-agility hooks
 
-Concrete seams added so a migration is configuration, not surgery (ADR 0019):
+The following seams make a migration configuration rather than surgery (ADR 0019):
 
-- **Single injectable COSE algorithm list.** `CeremonyConfig.offeredAlgorithms` (advertised in
-  create-options) and `CeremonyConfig.acceptedAlgorithms` (enforced on verify) are the one
-  source of truth, expressed in the framework-neutral `CoseAlgorithm` enum. Both the
-  create-options ceremony and the WebAuthn4J verify path derive their lists from this config —
-  the two formerly-divergent hardcoded lists are gone. The accepted list is authoritative;
-  the offered list may be a narrower subset, and an operator can narrow *either* without code
-  changes. The default accepted set is the **union** of everything historically accepted
-  (ES256, EdDSA, RS256, ES384, RS384), so no already-registered credential can fail
-  verification.
-- **Per-credential algorithm visibility.** `CredentialAlgorithms.coseAlgorithm(record)` decodes
-  the COSE algorithm already stored on every credential (no schema change), and
-  `AdminService.listCredentialsByAlgorithm(actor, target, coseAlgorithm)` reports which of a
-  user's credentials use a given (e.g. quantum-vulnerable) algorithm — the read side a future
-  re-enrollment campaign drives off.
-- **A symmetric-resistant JWT path.** The HS256 post-ceremony token (with the enforced
-  ≥ 256-bit key) is HMAC-SHA256, which Shor does not break; see [Symmetric primitives](#symmetric-primitives-already-quantum-conservative).
+- Single injectable COSE algorithm list: `CeremonyConfig.offeredAlgorithms` (advertised in
+  create-options) and `CeremonyConfig.acceptedAlgorithms` (enforced on verify) are the one source of
+  truth, expressed in the framework-neutral `CoseAlgorithm` enum. Both the create-options ceremony
+  and the WebAuthn4J verify path derive their lists from this config, and the two formerly
+  divergent hardcoded lists are gone. The accepted list is authoritative, the offered list may be a
+  narrower subset, and an operator can narrow either without code changes. The default accepted set
+  is the union of everything historically accepted (ES256, EdDSA, RS256, ES384, RS384), so no
+  already-registered credential can fail verification.
+- Per-credential algorithm visibility: `CredentialAlgorithms.coseAlgorithm(record)` decodes the COSE
+  algorithm already stored on every credential (no schema change), and
+  `AdminService.listCredentialsByAlgorithm(actor, target, coseAlgorithm)` reports which of a user's
+  credentials use a given (for example quantum-vulnerable) algorithm. This is the read side a future
+  re-enrolment campaign drives off.
+- A symmetric-resistant JWT path: the HS256 post-ceremony token (with the enforced ≥ 256-bit key) is
+  HMAC-SHA256, which Shor does not break. See
+  [Quantum-conservative symmetric primitives](#quantum-conservative-symmetric-primitives).
 
-### Symmetric primitives already quantum-conservative
+### Quantum-conservative symmetric primitives
 
 The non-signature secrets pk-auth generates are all 256-bit random values, which only Grover's
-algorithm targets — and Grover merely halves the effective bit-strength, leaving ~128-bit
-security at 256 bits. No action needed:
+algorithm targets, and Grover merely halves the effective bit-strength, leaving about 128-bit
+security at 256 bits. No action is needed:
 
 | Secret | Size | Post-quantum status |
 |---|---|---|
-| JWT HS256 signing secret | ≥ 32 bytes (enforced) | HMAC-SHA256 — Shor N/A; ~128-bit under Grover |
+| JWT HS256 signing secret | ≥ 32 bytes (enforced) | HMAC-SHA256; Shor N/A; ~128-bit under Grover |
 | Refresh-token secret | 32 bytes | SHA-256 hashed at rest; ~128-bit under Grover |
 | OTP pepper | ≥ 16 bytes (32+ recommended) | HMAC-SHA256 keying; ~128-bit under Grover at 32 B |
 | Ceremony challenge | 32 bytes | Random nonce, single-use; not a long-term liability |
 | Backup codes | ~50 bits + Argon2id | Entropy + KDF + rate limit dominate; not a quantum issue |
 
-ES256 (asymmetric) JWTs, by contrast, **are** Shor-vulnerable — they exist for untrusted
-third-party verification, and their exposure is bounded by the short token TTL. For a
-single-issuer/single-verifier deployment, HS256 with a strong key is the quantum-conservative
-default (see the `pk-auth-jwt` package Javadoc and ADR 0019).
+ES256 (asymmetric) JWTs, by contrast, are Shor-vulnerable. They exist for untrusted third-party
+verification, and their exposure is bounded by the short token TTL. For a single-issuer,
+single-verifier deployment, HS256 with a strong key is the quantum-conservative default (see the
+`pk-auth-jwt` package Javadoc and ADR 0019).
 
 ## Supply chain
 
-pk-auth is a security library published to Maven Central and npm, so a compromise of
-its build or its dependencies propagates directly into every downstream application —
-a higher-leverage target than any single deployment. The dominant modern attack vector
-is not a typosquat but a **malicious release of an otherwise-legitimate dependency or
-CI action** (maintainer-account takeover, a poisoned transitive, or a retroactively
-repointed Git tag — cf. the `tj-actions/changed-files` tag poisoning, March 2025).
-The controls below are defense-in-depth; none alone is sufficient.
+pk-auth is a security library published to Maven Central and npm, so a compromise of its build or
+its dependencies propagates directly into every downstream application. That makes it a
+higher-leverage target than any single deployment. The dominant modern attack vector is not a
+typosquat but a malicious release of an otherwise-legitimate dependency or CI action
+(maintainer-account takeover, a poisoned transitive, or a retroactively repointed Git tag; compare
+the `tj-actions/changed-files` tag poisoning, March 2025). The controls below form a defence in
+depth, and none is sufficient alone.
 
 | Threat | Mitigation |
 |---|---|
-| A dependency or plugin is swapped for a malicious build (hijacked artifact, MITM of a repository) | Repositories are restricted to `mavenCentral()` + `gradlePluginPortal()` over HTTPS — no HTTP or untrusted mirrors — and Maven Central artifacts are immutable, so a published coordinate cannot be silently re-bytes'd. All versions are pinned in a single version catalog with no dynamic (`+` / `latest.release`) ranges. **Gradle dependency-verification checksums are intentionally *not* used:** with Dependabot auto-merging patch/minor bumps, the metadata would have to be regenerated automatically from whatever was just downloaded and approved unattended, which notarizes the artifact rather than vetting it — providing no protection against a malicious *release* (the actual threat) while breaking the build on every bump. The "is this version known-bad?" question is instead answered by `dependency-review-action` (next row). |
-| The Gradle distribution itself is tampered with | `gradle-wrapper.properties` carries `distributionSha256Sum`, so the wrapper refuses to run a distribution that doesn't match the published checksum. CI additionally runs `gradle/actions/wrapper-validation` to confirm `gradle-wrapper.jar` matches a known-good Gradle release. |
-| A CI action is repointed to malicious code via a mutable tag | Every GitHub Actions `uses:` is pinned to a full **commit SHA** (with the human-readable version in a trailing comment), not a floating `@vN` tag. This is most important for third-party actions that run in privileged jobs (e.g. `softprops/action-gh-release` in the release pipeline). |
-| A compromised dependency release is merged automatically | The Dependabot auto-merge workflow only auto-approves **patch and minor** bumps, and **never** auto-merges GitHub Actions updates (a privileged surface) — majors and action bumps require human review. A green CI run is not treated as evidence that a newly published version is trustworthy. |
+| A dependency or plugin is swapped for a malicious build (hijacked artefact, MITM of a repository) | Repositories are restricted to `mavenCentral()` + `gradlePluginPortal()` over HTTPS, with no HTTP or untrusted mirrors, and Maven Central artefacts are immutable, so a published coordinate cannot be silently replaced with different bytes. All versions are pinned in a single version catalog with no dynamic (`+` / `latest.release`) ranges. Gradle dependency-verification checksums are not used. With Dependabot auto-merging patch/minor bumps, the metadata would have to be regenerated automatically from whatever was just downloaded and approved unattended, which notarises the artefact rather than vetting it. The checksums would therefore give no protection against a malicious release (the actual threat) while breaking the build on every bump. The "is this version known-bad?" question is answered by `dependency-review-action` (next row). |
+| The Gradle distribution itself is tampered with | `gradle-wrapper.properties` carries `distributionSha256Sum`, so the wrapper refuses to run a distribution that does not match the published checksum. CI additionally runs `gradle/actions/wrapper-validation` to confirm `gradle-wrapper.jar` matches a known-good Gradle release. |
+| A CI action is repointed to malicious code via a mutable tag | Every GitHub Actions `uses:` is pinned to a full commit SHA (with the human-readable version in a trailing comment), not a floating `@vN` tag. Pinning matters most for third-party actions that run in privileged jobs (for example `softprops/action-gh-release` in the release pipeline). |
+| A compromised dependency release is merged automatically | The Dependabot auto-merge workflow auto-approves only patch and minor bumps, and never auto-merges GitHub Actions updates (a privileged surface). Majors and action bumps require human review. A green CI run is not treated as evidence that a newly published version is trustworthy. |
 | A known-vulnerable dependency is introduced | `actions/dependency-review-action` fails any PR that adds a dependency with a high-severity advisory before it can merge. Dependabot tracks the `gradle`, `npm`, and `github-actions` ecosystems (the npm SDK and each demo's Playwright e2e suite included) so fixes are surfaced promptly. |
-| A forged or unsigned release reaches consumers | Maven Central artifacts are GPG-signed in CI (`release.yml`); the signing key, passphrase, and Central Portal credentials are injected from GitHub secrets at publish time, scoped to the publish steps only and never exposed to the third-party release action. Releases are triggered exclusively by maintainer-pushed `vX.Y.Z` tags or manual dispatch, so untrusted PR code cannot trigger a publish. CI itself runs on `pull_request` with `contents: read`, so fork PRs execute without secret access. |
+| A forged or unsigned release reaches consumers | Maven Central artefacts are GPG-signed in CI (`release.yml`); the signing key, passphrase, and Central Portal credentials are injected from GitHub secrets at publish time, scoped to the publish steps only and never exposed to the third-party release action. Releases are triggered exclusively by maintainer-pushed `vX.Y.Z` tags or manual dispatch, so untrusted PR code cannot trigger a publish. CI itself runs on `pull_request` with `contents: read`, so fork PRs execute without secret access. |
 | Secrets leak through the repository | No secrets are committed (`.gitignore` covers `.env`); release credentials exist only as GitHub secrets and, on the ephemeral runner, in a `chmod 600` `~/.gradle/gradle.properties` written at publish time. |
 
-**Residual risk.** Without artifact-checksum pinning, the project trusts Maven
-Central's and the Gradle Plugin Portal's own integrity (immutability + TLS) for the
-bytes behind each pinned coordinate; a compromise of those registries themselves is
-out of scope. Auto-merged patch/minor dependency bumps are gated by CI and
-`dependency-review-action` but are not human-reviewed, so a malicious release that is
-not yet in the advisory database could land — keep the auto-merge window to patch/minor
-and rely on the advisory feed and post-merge Dependabot alerts. The npm SDK is published
-manually (see `RELEASE.md`) and is not yet covered by a provenance attestation
-(`npm publish --provenance`). Neither the Maven nor npm release is reproducible-build
-verified. These are accepted for now; revisit if the project adopts SLSA provenance.
+### Supply-chain residual risk
+
+Without artefact-checksum pinning, the project trusts Maven Central's and the Gradle Plugin Portal's
+own integrity (immutability plus TLS) for the bytes behind each pinned coordinate. A compromise of
+those registries themselves is out of scope. Auto-merged patch and minor dependency bumps are gated
+by CI and `dependency-review-action` but are not human-reviewed, so a malicious release that is not
+yet in the advisory database could land. The auto-merge window stays limited to patch and minor
+bumps, with the advisory feed and post-merge Dependabot alerts as the backstop. The npm SDK is
+published manually (see `RELEASE.md`) and is not yet covered by a provenance attestation
+(`npm publish --provenance`). Neither the Maven nor the npm release is verified as a reproducible
+build. These risks are accepted for now, and adopting SLSA provenance would revisit them.
 
 ## AI-authored code (provenance)
 
-Substantially all of pk-auth's code was written by an AI coding agent, with a human
-acting as product manager and architect (see the README's *DISCLAIMER from the human*
-and *Comments from the human*). That makes the **authoring step itself** a supply-chain
-surface, distinct from the dependency/build chain above — and a less well-understood
-one, since the security posture of AI coding agents is still nascent.
+Substantially all of pk-auth's code was written by an AI coding agent, with a human acting as
+product manager and architect (see the README's "DISCLAIMER from the human" and "Comments from the
+human"). That makes the authoring step itself a supply-chain surface, distinct from the
+dependency/build chain above, and a less well-understood one, since the security posture of AI
+coding agents is still nascent.
 
-Conventional software trust rests on accountable human authorship: identifiable people
-whose access is vetted and whose mistakes are bounded by skill and reviewable intent.
-An AI author breaks those assumptions. It is **unaccountable** (no identity, stake, or
-persistence), **manipulable** through the content it reads, **high-volume** (it emits
-confident, idiomatic-looking code faster than anyone can deeply review — which erodes
-the very review it depends on), and is **itself an opaque supply chain** (model weights,
-inference provider, agent harness, system prompt, and any connected tools). The right
-mental model is to treat AI-generated code like a contribution from an *unvetted external
-contributor with very high output and no accountability* — trustworthy only after
-independent human review, never by provenance. The dominant realistic risk is **not** a
-deliberately planted backdoor (low probability) but confident-but-subtly-wrong code,
-manipulation via injected instructions, and the human review process decaying under volume.
+Conventional software trust rests on accountable human authorship: identifiable people whose access
+is vetted and whose mistakes are bounded by skill and reviewable intent. An AI author breaks those
+assumptions. It is unaccountable (no identity, stake, or persistence), manipulable through the
+content it reads, high-volume (it emits confident, idiomatic-looking code faster than anyone can
+deeply review, which erodes the very review it depends on), and itself an opaque supply chain
+(model weights, inference provider, agent harness, system prompt, and any connected tools). The
+working assumption is that AI-generated code is a contribution from an unvetted external
+contributor with very high output and no accountability, trustworthy only after independent human
+review and never by provenance. The dominant realistic risk is confident-but-subtly-wrong code,
+manipulation via injected instructions, and the human review process decaying under volume. A
+deliberately planted backdoor is a low-probability risk.
 
-The table below describes the situation **as it actually stands today** — these are
-current realities and partial mitigations, not guarantees the project enforces.
+The table below records current realities and partial mitigations, not guarantees the project
+enforces.
 
 | Threat | Current reality / partial mitigation |
 |---|---|
-| Confident-but-subtly-wrong security code (auth bypass, weak defaults, timing leaks) that passes review *because* it looks idiomatic | The code has **not** had an independent security review; the README states this plainly. The human author reviews and merges every PR but is not acting as a dedicated security reviewer, and intends to seek a third-party review. The test suites, CI gate, and `dependency-review-action` catch some classes; defense-in-depth means no single AI-written check is the only control. The earlier in-repo security review was *itself* AI-produced and carries the same caveat. |
+| Confident-but-subtly-wrong security code (auth bypass, weak defaults, timing leaks) that passes review because it looks idiomatic | The code has not had an independent security review, and the README records this. The human author reviews and merges every PR but is not acting as a dedicated security reviewer, and intends to seek a third-party review. The test suites, CI gate, and `dependency-review-action` catch some classes; defence in depth means no single AI-written check is the only control. The earlier in-repo security review was also AI-produced and carries the same caveat. |
 | Hallucinated or typosquatted (“slopsquat”) dependency introduced by the agent | Dependencies are pinned in a single version catalog with no dynamic ranges; `dependency-review-action` runs on PRs; the human reviews each diff. No automated check specifically verifies that a newly added coordinate is the genuine, intended package. |
-| Indirect prompt injection — malicious instructions hidden in content the agent ingests (issue text, dependency changelogs/release notes, fetched web pages, repo files, tool / MCP output) steering it to insert a backdoor, weaken a check, or exfiltrate | The agent does read such content during development (e.g. dependency release notes, fetched checksums/SHAs, repo files). The mitigation in place is human review of the resulting diffs and the harness's per-action permission prompts. There is no automated detection of injected instructions; reviewing the *entire* diff (not just the described change) is the practical defense. |
-| Excessive agency — the agent can edit code and CI, push branches, open PRs, and invoke the network | Today the **human** triggers tagged releases, holds the GPG signing keys and Central Portal / npm credentials, and merges PRs; the agent holds none of those and operates under the harness's permission model. Releases are signed and maintainer-gated (see [Supply chain](#supply-chain)). |
-| Model / harness / provider compromise (poisoned weights, a malicious harness or MCP update) — a “trusting trust” problem one layer up | Trusted by necessity and out of scope to fully mitigate. Reliance is reduced only indirectly: independent test oracles, pinned build tooling, and human review of output. |
-| Review fatigue / automation bias — AI output outpacing genuine scrutiny | A real, unquantified limitation for a project of this size built this way. Acknowledged here rather than mitigated; the honest control is keeping unreviewed volume within what a human can actually understand and own. |
+| Indirect prompt injection: malicious instructions hidden in content the agent ingests (issue text, dependency changelogs/release notes, fetched web pages, repo files, tool / MCP output) steering it to insert a backdoor, weaken a check, or exfiltrate | The agent does read such content during development (for example dependency release notes, fetched checksums/SHAs, repo files). The mitigation in place is human review of the resulting diffs and the harness's per-action permission prompts. There is no automated detection of injected instructions; the practical defence is reviewing the whole diff, not just the described change. |
+| Excessive agency: the agent can edit code and CI, push branches, open PRs, and invoke the network | Today the human triggers tagged releases, holds the GPG signing keys and Central Portal / npm credentials, and merges PRs; the agent holds none of those and operates under the harness's permission model. Releases are signed and maintainer-gated (see [Supply chain](#supply-chain)). |
+| Model / harness / provider compromise (poisoned weights, a malicious harness or MCP update), a “trusting trust” problem one layer up | Trusted by necessity and out of scope to fully mitigate. Reliance is reduced only indirectly: independent test oracles, pinned build tooling, and human review of output. |
+| Review fatigue / automation bias: AI output outpacing genuine scrutiny | An unquantified limitation for a project of this size built this way. No mitigation exists beyond keeping unreviewed volume within what a human can actually understand and own. |
 
-**Residual risk.** This is the bluntest item in the model: pk-auth's code is AI-authored
-and, absent the third-party security review noted in the README, should be treated as
-**not production-trustworthy on provenance grounds** — evaluate it on its merits, with
-your own review, before relying on it. Note the self-referential limit: this section was
-itself written by the AI agent, so it cannot be relied upon *because* the agent produced
-it — a manipulated or mistaken agent would not faithfully document its own risks. A human
-must validate this analysis like any other AI-authored artifact in the repo.
+### Provenance residual risk
+
+pk-auth's code is AI-authored. Absent the third-party security review noted in the README, it is not
+production-trustworthy on provenance grounds, and a deployment relies on it only after its own
+review. The same limit applies to the repository's security analyses, which are AI-authored
+artefacts too: a manipulated or mistaken agent does not faithfully document its own risks, so a
+human validates those analyses like any other AI-authored artefact.
 
 ## Token revocation
 
 Two complementary primitives ship with pk-auth as of 1.1.0:
 
-1. **`AccessTokenStore` (ADR 0015)** — positive allow-list. Every issued JWT's JTI is
-   persisted server-side; the validator looks it up on every request. Deleting the row
-   (logout, admin revoke, password reset, user delete) immediately invalidates the
-   bearer, well before its `exp`. This is the paved-road for revocability.
-2. **`RevocationCheck` (1.0)** — negative deny-list. Lightweight in-process hook for hosts
-   that issue many millions of tokens per day and want to invalidate a small subset
-   proactively (e.g. a "session revoked" stream from a security event bus). Still
-   supported; orthogonal to `AccessTokenStore`.
+1. `AccessTokenStore` (ADR 0015) is a positive allow-list. Every issued JWT's JTI is persisted
+   server-side, and the validator looks it up on every request. Deleting the row (logout, admin
+   revoke, password reset, user delete) immediately invalidates the bearer, well before its `exp`.
+   This is the recommended path for revocability.
+2. `RevocationCheck` (1.0) is a negative deny-list. It is a lightweight in-process hook for hosts
+   that issue many millions of tokens per day and want to invalidate a small subset proactively (for
+   example a "session revoked" stream from a security event bus). It remains supported and is
+   orthogonal to `AccessTokenStore`.
 
-The default `AccessTokenStore.noop()` keeps the legacy stateless-JWT behaviour for hosts
-that prefer it — the call costs an always-true return. Choose the binding based on traffic
-shape, not as a feature toggle.
+The default `AccessTokenStore.noop()` keeps the legacy stateless-JWT behaviour for hosts that prefer
+it, and the call costs an always-true return. Hosts choose the binding by traffic shape, not as a
+feature toggle.
 
-For session-lifetime management (re-using a single login across days/weeks without
-re-authenticating), the rotating refresh-token primitive is the paved road — see
-"Refresh-token replay defense" below.
+For session-lifetime management (re-using a single login across days or weeks without
+re-authenticating), the rotating refresh-token primitive is the recommended path; see
+[Refresh-token replay defence](#refresh-token-replay-defence).
 
-## Refresh-token replay defense
+## Refresh-token replay defence
 
-Rotating refresh tokens with family-based replay detection are shipped via
-`pk-auth-refresh-tokens` (ADR 0013). The properties the design guarantees:
+Rotating refresh tokens with family-based replay detection are shipped via `pk-auth-refresh-tokens`
+(ADR 0013). The design guarantees these properties:
 
-- **Atomic mark-and-insert.** The SPI's `rotateAtomically` primitive marks the parent
-  used AND inserts the successor as a single atomic operation (JDBI transaction,
-  DynamoDB `TransactWriteItems`, or in-memory `compute` block). A non-atomic sequence
-  has a window where a concurrent rotator's family-scorch can miss the freshly-inserted
-  successor; the SPI contract forbids this and the concurrent-race test enforces it.
-- **Hash-before-mark-used.** The service hashes the presented secret and compares
-  against the stored row hash *before* invoking `rotateAtomically`. A presented
-  refresh-id with the wrong secret returns `Unknown`, never burns the legitimate
-  token's `used_at`. This is enforced by the
-  `wrongSecretReturnsUnknownAndDoesNotBurnLegitToken` parity test on every backend.
-- **Replay → family scorch.** Re-presenting a used or revoked refresh from a known
-  family triggers a `revokeFamily(familyId, ROTATION_REPLAY)` call that runs outside
-  the failed rotation. The result is that BOTH the attacker AND the legitimate client
-  lose the session — the legit user sees their next refresh fail and is redirected to
-  login. The cost is one ceremony; the alternative is a leaked session that survives
-  the legit client's rotation.
-- **Concurrent rotation: exactly one wins.** The non-negotiable race test launches 8
-  threads rotating the same token simultaneously. Exactly one thread returns
-  `RotateResult.Success`; the other 7 return `RotateResult.Replayed`; the entire
-  family (root + the winner's successor) is revoked. This test passes against
-  Postgres (JDBI transaction path) and DynamoDB Local (`TransactWriteItems` path) on
-  every CI run.
-- **Hash-at-rest.** The 32-byte secret is SHA-256-hashed before storage; the raw
-  secret is never persisted. The wire token (`{refreshId}.{secret}`, base64url on
-  both halves) must NEVER be logged.
+- Atomic mark-and-insert: the SPI's `rotateAtomically` primitive marks the parent used and inserts
+  the successor as a single atomic operation (JDBI transaction, DynamoDB `TransactWriteItems`, or
+  in-memory `compute` block). A non-atomic sequence has a window where a concurrent rotator's
+  family-scorch can miss the freshly inserted successor. The SPI contract forbids this, and the
+  concurrent-race test enforces it.
+- Hash before mark-used: the service hashes the presented secret and compares it against the stored
+  row hash before invoking `rotateAtomically`. A presented refresh-id with the wrong secret returns
+  `Unknown` and never burns the legitimate token's `used_at`. The
+  `wrongSecretReturnsUnknownAndDoesNotBurnLegitToken` parity test enforces this on every backend.
+- Replay triggers a family scorch: re-presenting a used or revoked refresh from a known family
+  triggers a `revokeFamily(familyId, ROTATION_REPLAY)` call that runs outside the failed rotation.
+  Both the attacker and the legitimate client lose the session, and the legitimate user sees the
+  next refresh fail and is redirected to login. The cost is one ceremony; the alternative is a
+  leaked session that survives the legitimate client's rotation.
+- Concurrent rotation has exactly one winner: the race test launches 8 threads rotating the same
+  token simultaneously. Exactly one thread returns `RotateResult.Success`, the other 7 return
+  `RotateResult.Replayed`, and the entire family (root plus the winner's successor) is revoked. This
+  test passes against Postgres (JDBI transaction path) and DynamoDB Local (`TransactWriteItems`
+  path) on every CI run.
+- Hash at rest: the 32-byte secret is SHA-256-hashed before storage, and the raw secret is never
+  persisted. The wire token (`{refreshId}.{secret}`, base64url on both halves) must never be logged.
 
 ## Data at rest
 
@@ -319,48 +318,45 @@ pk-auth stores the following PII in its persistence layers:
 
 ### DynamoDB
 
-DynamoDB enables SSE-S3 at rest by default. For higher assurance, enable
-**SSE-KMS with a customer-managed CMK** so that key rotation and access auditing are
-under the operator's control. Configure this in the table settings; pk-auth does not
-create the table at runtime.
+DynamoDB enables SSE-S3 at rest by default. For higher assurance, SSE-KMS with a customer-managed
+CMK puts key rotation and access auditing under the operator's control. The setting lives in the
+table configuration, because pk-auth does not create the table at runtime.
 
 ### Postgres (JDBI)
 
-Postgres does **not** enable column-level or filesystem encryption by default. The
-`phone_e164` and `email` columns are stored as plaintext. Operators should consider:
+Postgres does not enable column-level or filesystem encryption by default. The `phone_e164` and
+`email` columns are stored as plaintext. Operators should consider:
 
-- **(a) Filesystem / volume encryption** — encrypt the underlying block device or
-  filesystem (e.g. LUKS, AWS EBS encryption). Protects against physical media theft
-  but not SQL-level data exfiltration.
-- **(b) Column-level encryption with `pgcrypto`** — wrap `phone_e164` / `email` at
-  write time using `pgp_sym_encrypt` / `pgp_sym_decrypt`. The encryption key must be
-  injected from outside the database. pk-auth's Flyway schema does not do this today;
-  hosts with strict data-classification requirements should layer it in a custom
-  migration on top of the shipped baseline.
-- **(c) HMAC-keyed index columns** — if exact-match lookups on `email` or `phone_e164`
-  are required but storing plaintext is unacceptable, store an HMAC (SHA-256 with a
-  server-side key) in a separate indexed column and perform queries against that column.
-  The plaintext is then replaced with the encrypted ciphertext in the main column.
+- (a) Filesystem / volume encryption: encrypt the underlying block device or filesystem (for example
+  LUKS, AWS EBS encryption). This protects against physical media theft but not SQL-level data
+  exfiltration.
+- (b) Column-level encryption with `pgcrypto`: wrap `phone_e164` / `email` at write time using
+  `pgp_sym_encrypt` / `pgp_sym_decrypt`. The encryption key must be injected from outside the
+  database. pk-auth's Flyway schema does not do this today, and hosts with strict
+  data-classification requirements should layer it in a custom migration on top of the shipped
+  baseline.
+- (c) HMAC-keyed index columns: if exact-match lookups on `email` or `phone_e164` are required but
+  storing plaintext is unacceptable, store an HMAC (SHA-256 with a server-side key) in a separate
+  indexed column and perform queries against that column. The plaintext is then replaced with the
+  encrypted ciphertext in the main column.
 
 ## Operator self-test
 
-A deployment that survives the following spot checks is in reasonable shape:
+The following spot checks verify a deployment:
 
-1. Start the demo with the wrong `pkauth.relying-party.id`. Confirm Chrome rejects with
-   "relying party not registrable."
-2. Register a passkey, capture the assertion's signing counter, then replay an old assertion
-   with a lower counter. Confirm the server rejects with `counter_regression`.
+1. Start the demo with the wrong `pkauth.relying-party.id`. Confirm Chrome rejects with "relying
+   party not registrable."
+2. Register a passkey, capture the assertion's signing counter, then replay an old assertion with a
+   lower counter. Confirm the server rejects with `counter_regression`.
 3. Delete the only credential on a user via the admin API. Confirm a 409.
-4. Send the JWT in `Authorization: Bearer <token>` to a host-app endpoint that does not
-   call `PkAuthJwtValidator`. Confirm the host's own filter chain rejects it (proves pk-auth
-   isn't the only thing standing between the bearer and your code).
+4. Send the JWT in `Authorization: Bearer <token>` to a host-app endpoint that does not call
+   `PkAuthJwtValidator`. Confirm the host's own filter chain rejects it, which shows that pk-auth is
+   not the only thing standing between the bearer and the host code.
 5. Restart the app and confirm Flyway / DynamoDB schema reconciles without manual intervention.
 
----
+## Source verification
 
-## Document drift
-
-Documentation in this file trails code changes. For ground truth, `grep` the source:
+The source is the ground truth for the SPI surface. These commands locate it:
 
 ```sh
 # Find all SPI interfaces
@@ -369,5 +365,3 @@ grep -r "interface.*Repository\|interface.*Store\|interface.*Sender\|interface.*
 # Find challenge handling
 grep -r "takeOnce\|ChallengeStore" pk-auth-core/src
 ```
-
-If this document contradicts the code, the code wins.

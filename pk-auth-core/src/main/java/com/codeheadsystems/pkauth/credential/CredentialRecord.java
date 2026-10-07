@@ -52,9 +52,9 @@ public record CredentialRecord(
    * arbitrarily large blob out of storage and out of every UI that renders a credential list. It is
    * a nickname ("Work laptop", "MacBook Touch ID"), so 64 is generous.
    *
-   * <p>This is a length bound only — it is <em>not</em> an escaping mechanism. A label is untrusted
-   * text: renderers MUST escape it for their output context (see the demos' credential list, which
-   * builds DOM nodes with {@code textContent} rather than interpolating into {@code innerHTML}).
+   * <p>This is a length bound only, not an escaping mechanism. A label is untrusted text: renderers
+   * must escape it for their output context (see the demos' credential list, which builds DOM nodes
+   * with {@code textContent} rather than interpolating into {@code innerHTML}).
    *
    * @since 2.3.0
    */

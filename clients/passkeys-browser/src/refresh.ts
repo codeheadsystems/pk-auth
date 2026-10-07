@@ -3,7 +3,7 @@
 import { PkAuthHttpError, request } from "./http";
 import type { ClientOptions } from "./types";
 
-/** Typed success: a fresh refresh + access token pair to swap in. */
+/** Typed success: a fresh refresh and access token pair. */
 export interface RefreshSuccess {
   readonly kind: "success";
   readonly accessToken: string;
@@ -47,8 +47,8 @@ interface RawErrorResponse {
 
 /**
  * Client for the {@code POST /auth/refresh} endpoint shipped by every pk-auth adapter. Returns
- * a typed {@link RefreshResult} rather than throwing on 401 — the bearer's expected response to
- * an Unknown / Expired / Replayed / Revoked outcome is to redirect to login, not to handle an
+ * a typed {@link RefreshResult} rather than throwing on 401. The bearer's expected response to
+ * an unknown, expired, replayed, or revoked outcome is to redirect to login, not to handle an
  * exception.
  *
  * @since 1.1.0
@@ -89,7 +89,7 @@ export class PkAuthRefreshClient {
         ) {
           return { kind: "failure", reason: detail, revokeReason: data?.reason };
         }
-        // Server returned a 401 we don't recognise — surface it as the most conservative failure.
+        // A 401 the client does not recognise surfaces as the most conservative failure.
         return { kind: "failure", reason: "unknown" };
       }
       throw e;

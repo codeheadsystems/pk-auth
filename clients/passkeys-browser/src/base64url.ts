@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 
 /**
- * Base64url (RFC 4648 §5) without padding — matches pk-auth's wire format.
+ * Base64url (RFC 4648 §5) without padding, matching pk-auth's wire format.
  * The server's Jackson module emits unpadded base64url; browsers can mix
- * Uint8Array, ArrayBuffer, or already-base64url strings, so encode handles
+ * Uint8Array, ArrayBuffer, or already-base64url strings, so `encode` handles
  * all three.
  */
 
@@ -16,7 +16,7 @@ export function encode(input: ArrayBuffer | Uint8Array | ArrayBufferView): Base6
     s += String.fromCharCode(bytes[i]!);
   }
   // base64url per RFC 4648 §5: map +/ to -_ and strip padding. Using replaceAll with
-  // string literals (no regexes) keeps this linear — it avoids the ReDoS shape
+  // string literals (no regexes) keeps this linear; it avoids the ReDoS shape
   // SonarQube flags on `/=+$/`. `=` only ever appears as trailing base64 padding, so
   // removing all of it is equivalent to stripping the trailing run.
   return btoa(s).replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
@@ -43,9 +43,9 @@ export function decodeToArrayBuffer(input: Base64Url): ArrayBuffer {
 
 function toUint8Array(input: ArrayBuffer | Uint8Array | ArrayBufferView): Uint8Array {
   if (input instanceof Uint8Array) return input;
-  // Use toString-based check to handle cross-realm ArrayBuffers (e.g. from TextEncoder in jsdom)
+  // A toString-based check handles cross-realm ArrayBuffers (e.g. from TextEncoder in jsdom).
   // jsdom's TextEncoder creates an ArrayBuffer that is different from NodeJs ArrayBuffer so "instanceof"
-  // will not work. The string tag for the type will work.
+  // does not work. The string tag for the type does work.
   if (input instanceof ArrayBuffer || Object.prototype.toString.call(input) === "[object ArrayBuffer]") {
     return new Uint8Array(input as ArrayBuffer);
   }

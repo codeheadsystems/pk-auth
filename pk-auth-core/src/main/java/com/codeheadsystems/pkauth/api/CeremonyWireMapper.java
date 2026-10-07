@@ -13,8 +13,8 @@ import org.jspecify.annotations.Nullable;
  * Canonical wire contract for the four ceremony endpoints. Every adapter ({@code
  * pk-auth-spring-boot-starter}, {@code pk-auth-dropwizard}, {@code pk-auth-micronaut}) routes its
  * {@link RegistrationResult} / {@link AssertionResult} through this mapper so the resulting JSON
- * body and HTTP status code are byte-identical across adapters. That's what lets the {@code
- * @pk-auth/passkeys-browser} TypeScript SDK target one wire shape and Just Work everywhere.
+ * body and HTTP status code are byte-identical across adapters. This lets the {@code
+ * @pk-auth/passkeys-browser} TypeScript SDK target one wire shape across adapters.
  *
  * <p>Body shape: every non-success carries {@code {"outcome": "<snake_case_code>", ...}}. Success
  * carries {@code {"outcome": "success", ...}} plus result-specific fields.
@@ -58,19 +58,19 @@ public final class CeremonyWireMapper {
   }
 
   /**
-   * Carries a wire-format response: HTTP status code, a JSON-serializable body, and response
-   * headers. Adapters MUST copy {@link #headers()} onto the native HTTP response (e.g. {@code
+   * Carries a wire-format response: HTTP status code, a JSON-serialisable body, and response
+   * headers. Adapters must copy {@link #headers()} onto the native HTTP response (e.g. {@code
    * Retry-After} on a 429); a body-only adapter silently drops them.
    *
    * <p>The {@code headers} component was added in 2.1.0; the two-arg constructor preserves the
    * prior {@code (status, body)} call sites with no headers.
    *
    * <p>Both maps are copied into unmodifiable views that keep the caller's iteration order, so the
-   * ordered bodies this mapper builds serialize with {@code outcome} first (since 2.3.0; earlier
+   * ordered bodies this mapper builds serialise with {@code outcome} first (since 2.3.0; earlier
    * versions used {@code Map.copyOf}, which drops order). Null keys and values are still rejected.
    *
    * @param status the HTTP status code
-   * @param body the JSON-serializable response body
+   * @param body the JSON-serialisable response body
    * @param headers response headers to copy onto the native HTTP response (since 2.1.0)
    */
   public record CeremonyResponse(
@@ -91,7 +91,7 @@ public final class CeremonyWireMapper {
      * Convenience constructor for a response with no extra headers.
      *
      * @param status the HTTP status code
-     * @param body the JSON-serializable response body
+     * @param body the JSON-serialisable response body
      */
     public CeremonyResponse(int status, Map<String, Object> body) {
       this(status, body, Map.of());

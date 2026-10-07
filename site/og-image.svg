@@ -39,11 +39,11 @@
 
   <!-- headline -->
   <text x="80" y="240" font-family="Georgia, serif" font-size="78" fill="#211C14">Passkey-first</text>
-  <text x="80" y="328" font-family="Georgia, serif" font-size="78" fill="#211C14">authentication,</text>
-  <text x="80" y="416" font-family="Georgia, serif" font-size="78" font-style="italic" fill="#7A1F1F">on the JVM.</text>
+  <text x="80" y="328" font-family="Georgia, serif" font-size="78" fill="#211C14">authentication</text>
+  <text x="80" y="416" font-family="Georgia, serif" font-size="78" font-style="italic" fill="#7A1F1F">for the JVM</text>
 
   <!-- subline -->
-  <text x="80" y="486" font-family="Georgia, serif" font-size="28" fill="#3C332A">A drop-in WebAuthn credential layer &#8212; not a hosted IdP.</text>
+  <text x="80" y="486" font-family="Georgia, serif" font-size="28" fill="#3C332A">A WebAuthn credential layer, not a hosted IdP.</text>
 
   <!-- framework chips -->
   <g font-family="monospace" font-size="20" fill="#756449">

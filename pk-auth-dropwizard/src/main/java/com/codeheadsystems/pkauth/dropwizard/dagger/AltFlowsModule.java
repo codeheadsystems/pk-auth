@@ -64,7 +64,7 @@ public final class AltFlowsModule {
    * {@link IllegalStateException} is raised at module construction time when the bundle was
    * registered with alt-flow auto-wiring but the {@link PersistenceBindings} omitted them.
    *
-   * @param options host-supplied alt-flow knobs (senders, authorizer, dev-mode flag).
+   * @param options host-supplied alt-flow knobs (senders, authoriser, dev-mode flag).
    * @param backupCodeRepository backup-code SPI; required.
    * @param otpRepository OTP SPI; required.
    * @since 0.9.1
@@ -216,7 +216,7 @@ public final class AltFlowsModule {
     return new PkAuthAdminResource(adminService);
   }
 
-  /** User-deletion listener for backup codes — only present in the full component. */
+  /** User-deletion listener for backup codes; only present in the full component. */
   @Provides
   @Singleton
   @IntoSet
@@ -224,7 +224,7 @@ public final class AltFlowsModule {
     return new BackupCodeRepositoryDeletionListener(repo);
   }
 
-  /** User-deletion listener for OTPs — only present in the full component. */
+  /** User-deletion listener for OTPs; only present in the full component. */
   @Provides
   @Singleton
   @IntoSet
@@ -233,13 +233,13 @@ public final class AltFlowsModule {
   }
 
   /**
-   * Host-supplied tunables that do not live in {@link PkAuthConfig} (they're framework-level
+   * Host-supplied tunables that do not live in {@link PkAuthConfig} (they are framework-level
    * collaborators, not YAML-bindable values).
    *
    * @param emailSender concrete {@link EmailSender}; null + {@code devMode=true} unlocks {@link
    *     LoggingEmailSender}, null + {@code devMode=false} fails fast at startup.
    * @param smsSender concrete {@link SmsSender}; same fail-fast policy as {@code emailSender}.
-   * @param adminAuthorizer {@link DefaultAdminService} authorizer; null uses the library default
+   * @param adminAuthorizer {@link DefaultAdminService} authoriser; null uses the library default
    *     ({@link AdminAuthorizer#subjectScoped()}).
    * @param adminSafetyConfig {@link DefaultAdminService} safety config; null uses {@link
    *     AdminSafetyConfig#defaults()}.

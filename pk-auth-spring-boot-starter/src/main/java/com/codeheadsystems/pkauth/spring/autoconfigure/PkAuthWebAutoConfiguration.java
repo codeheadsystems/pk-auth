@@ -39,10 +39,10 @@ import tools.jackson.databind.module.SimpleModule;
  * <ul>
  *   <li>permits every {@code /auth/passkeys/**} request (the ceremony itself is the authentication;
  *       it cannot require authentication to start),
- *   <li>permits {@code /auth/admin/email/complete-verification} (brief §6.9 — unauthenticated
+ *   <li>permits {@code /auth/admin/email/complete-verification} (brief §6.9: unauthenticated
  *       because the magic-link token identifies the user),
  *   <li>requires authentication for all other {@code /auth/admin/**} requests,
- *   <li>disables CSRF (stateless JWT — see ADR 0005),
+ *   <li>disables CSRF (stateless JWT; see ADR 0005),
  *   <li>disables form login and HTTP basic.
  * </ul>
  *
@@ -59,10 +59,10 @@ public class PkAuthWebAutoConfiguration {
   private static final Logger LOG = LoggerFactory.getLogger(PkAuthWebAutoConfiguration.class);
 
   /**
-   * Register the pk-auth Jackson 3 module on Spring's autoconfigured {@code ObjectMapper}. Spring
-   * Boot 4 standardized on Jackson 3 ({@code tools.jackson.*}), the same namespace pk-auth-core's
+   * Registers the pk-auth Jackson 3 module on Spring's autoconfigured {@code ObjectMapper}. Spring
+   * Boot 4 standardised on Jackson 3 ({@code tools.jackson.*}), the same namespace pk-auth-core's
    * ObjectMapper uses (ADR 0009); the core's {@link PkAuthObjectMappers#pkAuthModule()} supplies
-   * the byte[] / UserHandle / ChallengeId (de)serializers, so Spring's mapper produces the same
+   * the byte[] / UserHandle / ChallengeId (de)serialisers, so Spring's mapper produces the same
    * base64url-no-padding wire format the testkit and core mapper use. Spring picks up every {@code
    * tools.jackson.databind.module.JacksonModule} bean automatically.
    */
@@ -78,12 +78,12 @@ public class PkAuthWebAutoConfiguration {
   }
 
   /**
-   * Keep the JWT filter out of the global servlet filter chain. Because {@link
+   * Keeps the JWT filter out of the global servlet filter chain. Because {@link
    * #pkAuthJwtAuthenticationFilter} is exposed as a top-level {@link
    * org.springframework.web.filter.OncePerRequestFilter} bean, Spring Boot would otherwise
-   * auto-register it with the servlet container so it runs on <em>every</em> request path — meaning
-   * a valid pk-auth JWT would populate the {@code SecurityContext} application-wide, even outside
-   * {@code /auth/**}. Disabling the registration confines the filter to where we wire it
+   * auto-register it with the servlet container so it runs on every request path, meaning a valid
+   * pk-auth JWT would populate the {@code SecurityContext} application-wide, even outside {@code
+   * /auth/**}. Disabling the registration confines the filter to where this configuration wires it
    * explicitly: inside {@link #pkAuthSecurityFilterChain} via {@code addFilterBefore}.
    *
    * @param filter the JWT authentication filter bean to suppress from global registration
@@ -101,13 +101,13 @@ public class PkAuthWebAutoConfiguration {
   }
 
   /**
-   * Pin the pk-auth {@code /auth/**} chain to an early order. Spring Security consults {@link
+   * Pins the pk-auth {@code /auth/**} chain to an early order. Spring Security consults {@link
    * SecurityFilterChain} beans in {@link Order} sequence and the first whose matcher matches wins
-   * exclusively. A host app that defines its own chain — especially a broad catch-all with no
-   * {@code securityMatcher}, which matches everything — at the default (lowest) precedence would
-   * otherwise swallow {@code /auth/**} before this chain is consulted, silently disabling pk-auth's
-   * rules on the public ceremony/refresh endpoints. Running near the highest precedence ensures our
-   * narrow {@code /auth/**} matcher is evaluated first.
+   * exclusively. A host app that defines its own chain (especially a broad catch-all with no {@code
+   * securityMatcher}, which matches everything) at the default (lowest) precedence would otherwise
+   * swallow {@code /auth/**} before this chain is consulted, silently disabling pk-auth's rules on
+   * the public ceremony/refresh endpoints. Running near the highest precedence ensures the narrow
+   * {@code /auth/**} matcher is evaluated first.
    */
   @Bean
   @Order(Ordered.HIGHEST_PRECEDENCE + 10)
@@ -158,10 +158,10 @@ public class PkAuthWebAutoConfiguration {
   }
 
   /**
-   * Ceremony controller. Spring component-scan doesn't run on starter packages, so the bean is
+   * Ceremony controller. Spring component-scan does not run on starter packages, so the bean is
    * registered here (Spring MVC maps any {@code @RestController} bean, however it was defined) and
-   * host apps don't need a {@code @ComponentScan}. A host-supplied {@link PkAuthCeremonyController}
-   * bean replaces this default.
+   * host apps do not need a {@code @ComponentScan}. A host-supplied {@link
+   * PkAuthCeremonyController} bean replaces this default.
    */
   @Bean
   @ConditionalOnMissingBean
@@ -170,7 +170,7 @@ public class PkAuthWebAutoConfiguration {
   }
 
   /**
-   * Refresh controller — only mounted when a {@link RefreshHandler} is present (which itself
+   * Refresh controller; only mounted when a {@link RefreshHandler} is present (which itself
    * requires a {@code RefreshTokenRepository} bean wired by the host).
    *
    * @since 1.1.0
@@ -184,8 +184,8 @@ public class PkAuthWebAutoConfiguration {
 
   /**
    * Maps SPI {@link com.codeheadsystems.pkauth.spi.PkAuthPersistenceException} to a stable {@code
-   * 503} JSON body — see the controller-advice class for the wire shape. Registered explicitly
-   * because Spring Boot starters don't run component-scan on the starter's own packages.
+   * 503} JSON body; see the controller-advice class for the wire shape. Registered explicitly
+   * because Spring Boot starters do not run component-scan on the starter's own packages.
    */
   @Bean
   @ConditionalOnMissingBean

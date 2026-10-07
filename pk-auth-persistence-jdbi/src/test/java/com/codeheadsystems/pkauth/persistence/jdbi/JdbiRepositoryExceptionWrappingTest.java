@@ -24,10 +24,10 @@ import org.junit.jupiter.api.Test;
 /**
  * Unit tests asserting that every JDBI repo wraps native {@code JdbiException}s in {@link
  * PkAuthPersistenceException}. The shared SPI contract requires this so adapters can map a DB
- * outage to a single 503 response. We exercise the wrap branch by pointing JDBI at an unreachable
- * JDBC URL: every operation fails at connection time with a {@code ConnectionException} (a {@code
- * JdbiException} subclass), which the {@code wrap} helper must surface as a typed persistence
- * exception.
+ * outage to a single 503 response. The test exercises the wrap branch by pointing JDBI at an
+ * unreachable JDBC URL: every operation fails at connection time with a {@code ConnectionException}
+ * (a {@code JdbiException} subclass), which the {@code wrap} helper must surface as a typed
+ * persistence exception.
  */
 class JdbiRepositoryExceptionWrappingTest {
 

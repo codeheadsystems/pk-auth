@@ -9,10 +9,10 @@ import java.util.Objects;
  * thrown across the adapter boundary.
  *
  * <ul>
- *   <li>{@link Started} — the limiter allowed the call; carries the {@link
+ *   <li>{@link Started}: the limiter allowed the call; carries the {@link
  *       StartAuthenticationResponse} envelope the browser consumes.
- *   <li>{@link RateLimited} — the configured {@code CeremonyRateLimiter} refused the call before
- *       any challenge was created; adapters map it to HTTP {@code 429}.
+ *   <li>{@link RateLimited}: the configured {@code CeremonyRateLimiter} refused the call before any
+ *       challenge was created; adapters map it to HTTP {@code 429}.
  * </ul>
  *
  * @since 2.0.0
@@ -47,7 +47,7 @@ public sealed interface StartAuthenticationResult
   /**
    * Convenience for embedded/test callers that do not configure a rate limiter and therefore never
    * expect a refusal. Returns the {@link StartAuthenticationResponse} on {@link Started}; throws on
-   * {@link RateLimited}. Adapter controllers must NOT use this — they pattern-match the sum so the
+   * {@link RateLimited}. Adapter controllers must not use this; they pattern-match the sum so the
    * {@code 429} path is handled explicitly.
    *
    * @return the start-authentication envelope.
