@@ -31,10 +31,10 @@ jobs:
       # Verify gradle-wrapper.jar matches a known-good Gradle release checksum before it
       # is executed — guards against a tampered wrapper jar (a classic build-time backdoor).
       - name: Validate Gradle wrapper
-        uses: gradle/actions/wrapper-validation@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6
+        uses: gradle/actions/wrapper-validation@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6
 
       - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6
+        uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6
 
       # The persistence integration suites self-skip when PKAUTH_SKIP_TESTCONTAINERS=1. The CI
       # gate must exercise them against real Postgres/DynamoDB Local, so fail loudly if that
@@ -87,7 +87,7 @@ jobs:
         # runs — skip in both cases so the scan doesn't hard-fail without a token. Manual
         # (workflow_dispatch) and push runs always have the secret available.
         if: github.actor != 'dependabot[bot]' && (github.event_name == 'workflow_dispatch' || github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository)
-        uses: sonarsource/sonarqube-scan-action@ba9859eae8dd6bd29e412f25ddbbef3d032000f4 # v8.2.2
+        uses: sonarsource/sonarqube-scan-action@d209202bc7d53ff1cc128f7f907dac145c9d6ae9 # v8.3.0
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
@@ -160,10 +160,10 @@ jobs:
       # The e2eTest task executes the wrapper jar (directly and again nested, when Playwright boots
       # the demo via the Gradle `run` task) — validate it for the same reason the build job does.
       - name: Validate Gradle wrapper
-        uses: gradle/actions/wrapper-validation@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6
+        uses: gradle/actions/wrapper-validation@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6
 
       - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6
+        uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6
 
       - name: Run ${{ matrix.demo }} e2e
         run: ./gradlew :examples:${{ matrix.demo }}:e2eTest --stacktrace
