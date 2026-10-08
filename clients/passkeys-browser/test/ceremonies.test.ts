@@ -9,9 +9,12 @@ import {
   encodeRegistrationResponse,
 } from "../src/ceremonies";
 import type {
+  FinishAuthenticationRequest, FinishAuthenticationResponse,
   FinishRegistrationRequest, FinishRegistrationResponse,
   PublicKeyCredentialCreationOptionsJson,
-  PublicKeyCredentialRequestOptionsJson, StartRegistrationRequest, StartRegistrationResponse,
+  PublicKeyCredentialRequestOptionsJson,
+  StartAuthenticationRequest, StartAuthenticationResponse,
+  StartRegistrationRequest, StartRegistrationResponse,
 } from "../src/types";
 import {
   decodeJson,
@@ -25,12 +28,6 @@ import {
 import * as http from "node:http";
 import {CeremonyService} from "./helpers/ceremony";
 import {FakeAuthenticator} from "./helpers/fakeAuthenticator";
-import {
-  FinishAuthenticationRequest,
-  FinishAuthenticationResponse,
-  StartAuthenticationRequest,
-  StartAuthenticationResponse
-} from "../dist/src";
 
 const CREATE_OPTIONS_JSON: PublicKeyCredentialCreationOptionsJson = {
   rp: { id: "example.com", name: "Example" },

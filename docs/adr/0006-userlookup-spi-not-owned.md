@@ -1,4 +1,4 @@
-# 6. `UserLookup` is an SPI, not an owned table
+# 6. `UserLookup` as a host-implemented SPI
 
 Date: 2026-05-15
 

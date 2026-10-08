@@ -1,4 +1,4 @@
-# 8. DynamoDB single-table design for auth items, separate users table
+# 8. DynamoDB single-table design with a separate users table
 
 Date: 2026-05-14
 

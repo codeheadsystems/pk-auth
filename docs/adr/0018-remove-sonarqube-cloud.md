@@ -1,4 +1,4 @@
-# 18. Remove SonarQube Cloud; enforce coverage with native JaCoCo line + branch gates
+# 18. Native JaCoCo coverage gates replacing SonarQube Cloud
 
 Date: 2026-06-11
 

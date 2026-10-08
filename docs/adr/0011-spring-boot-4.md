@@ -1,4 +1,4 @@
-# 11. Spring Boot 4 / Spring Security 7 for the Spring starter
+# 11. Spring Boot 4 and Spring Security 7
 
 Date: 2026-05-16
 

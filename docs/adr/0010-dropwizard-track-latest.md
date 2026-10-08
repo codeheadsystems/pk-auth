@@ -1,4 +1,4 @@
-# 10. Track latest Dropwizard rather than pin to 4.x
+# 10. Latest Dropwizard release line over a 4.x pin
 
 Date: 2026-05-15
 

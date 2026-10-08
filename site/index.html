@@ -328,8 +328,8 @@
     .wordmark .mark .dot { fill: var(--accent); }
     .wordmark .mark .ring { stroke: var(--accent); }
     .wordmark .mark { width: 26px; height: 26px; display: inline-block; }
-    .wordmark strong { font-weight: 600; font-variant: small-caps; letter-spacing: 0.16em; }
-    .wordmark em { font-style: italic; color: var(--ink-muted); font-size: 13px; letter-spacing: 0.06em; }
+    .wordmark .wordmark-name { font-weight: 600; font-variant: small-caps; letter-spacing: 0.16em; }
+    .wordmark .wordmark-tag { color: var(--ink-muted); font-size: 13px; letter-spacing: 0.06em; }
 
     .nav-wrap { display: flex; align-items: center; gap: 22px; }
     nav.primary { display: flex; gap: 26px; align-items: center; }
@@ -478,7 +478,6 @@
       font-optical-sizing: auto;
     }
     h2 { font-size: clamp(34px, 4.2vw, 54px); margin-bottom: var(--s5); max-width: 18ch; }
-    h2 em { font-style: italic; color: var(--accent-text); }
     h3 { font-size: 23px; margin-bottom: var(--s4); letter-spacing: -0.01em; }
     h4 {
       font-size: 16px; font-variant: small-caps; letter-spacing: 0.14em;
@@ -545,7 +544,7 @@
       animation: rise .9s .4s ease-out backwards;
     }
     .framework-chips span { display: inline-flex; align-items: center; gap: 8px; }
-    .framework-chips i {
+    .framework-chips .marker {
       width: 6px; height: 6px; background: var(--brass);
       display: inline-block; transform: rotate(45deg);
     }
@@ -654,9 +653,9 @@
       font-family: var(--mono); font-size: 12px; color: var(--ink-muted);
       content: attr(data-idx); letter-spacing: 0.1em;
     }
-    .boundary-col li b { display: block; font-weight: 600; color: var(--ink); margin-bottom: 2px; }
-    .boundary-col li i.gloss { color: var(--ink-muted); font-style: italic; font-weight: 400; }
-    .boundary-col--isnt li b {
+    .boundary-col li .item-label { display: block; font-weight: 600; color: var(--ink); margin-bottom: 2px; }
+    .boundary-col li .gloss { color: var(--ink-muted); font-weight: 400; }
+    .boundary-col--isnt li .item-label {
       color: var(--accent-text); text-decoration: line-through;
       text-decoration-color: color-mix(in srgb, var(--accent) 45%, transparent);
       text-decoration-thickness: 1px;
@@ -773,9 +772,9 @@
       text-align: right; border-right: 1px solid var(--rule); padding-right: 16px;
       white-space: nowrap;
     }
-    .step-num b {
+    .step-num .step-index {
       display: block; font-family: var(--serif); font-size: 42px; color: var(--accent-text);
-      font-style: italic; font-weight: 400; letter-spacing: 0; margin-bottom: 8px;
+      font-weight: 400; letter-spacing: 0; margin-bottom: 8px;
       font-variant-numeric: lining-nums;
     }
     .step-body h3 { margin-bottom: 8px; }
@@ -803,7 +802,6 @@
       margin-top: var(--s5); font-size: 14.5px; color: var(--ink-muted);
       line-height: 1.6; max-width: 60ch;
     }
-    .try-caption strong { color: var(--ink); font-weight: 600; }
 
     /* ============== MODULES ============== */
     .module-intro {
@@ -816,10 +814,10 @@
       display: flex; gap: 22px; flex-wrap: wrap; align-self: end; padding-bottom: 6px;
     }
     .module-key span { display: inline-flex; align-items: center; gap: 8px; }
-    .module-key i { width: 10px; height: 10px; display: inline-block; transform: rotate(45deg); }
-    .module-key .req i { background: var(--accent); }
-    .module-key .pick i { background: var(--brass); }
-    .module-key .opt i { background: var(--patina); }
+    .module-key .marker { width: 10px; height: 10px; display: inline-block; transform: rotate(45deg); }
+    .module-key .req .marker { background: var(--accent); }
+    .module-key .pick .marker { background: var(--brass); }
+    .module-key .opt .marker { background: var(--patina); }
 
     .module-groups { display: grid; gap: 0; }
     .module-group {
@@ -859,7 +857,7 @@
     .module-group.g-opt .module-card { border-left-color: var(--patina); }
     .module-card-top { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; }
     .module-card-name { font-family: var(--mono); font-size: 13.5px; color: var(--ink); letter-spacing: -0.01em; }
-    .module-card-name b { color: var(--accent-text); font-weight: 500; }
+    .module-card-name .group-id { color: var(--accent-text); font-weight: 500; }
     .module-card .tag {
       font-family: var(--mono); font-size: 10px; letter-spacing: 0.16em;
       text-transform: uppercase; color: var(--ink-muted); white-space: nowrap; flex-shrink: 0;
@@ -913,7 +911,6 @@
       font-family: var(--serif); font-size: 15px; color: var(--ink-soft); line-height: 1.6;
     }
     .wire-note + .wire-note { margin-top: 14px; border-left-color: var(--patina); }
-    .wire-note strong { color: var(--accent-text); font-weight: 600; }
     .wire-note code { font-size: 12.5px; }
 
     /* ============== SECURITY ============== */
@@ -955,7 +952,6 @@
     }
     .maturity p { font-size: 15.5px; color: var(--ink-soft); line-height: 1.6; max-width: 78ch; }
     .maturity p + p { margin-top: 12px; }
-    .maturity strong { color: var(--accent-text); font-weight: 600; }
 
     /* ============== FOOTER ============== */
     footer.site {
@@ -1011,7 +1007,7 @@
         text-align: left; border-right: 0; padding-right: 0; padding-bottom: 4px;
         border-bottom: 1px solid var(--rule); padding-top: 0;
       }
-      .step-num b { display: inline; margin-right: 14px; font-size: 34px; }
+      .step-num .step-index { display: inline; margin-right: 14px; font-size: 34px; }
       .footer-grid { grid-template-columns: 1fr; }
       .code { font-size: 12px; padding: 22px 18px; }
       .hero h1 .rule { display: none; }
@@ -1037,8 +1033,8 @@
             <circle class="ring" cx="13" cy="13" r="6.2" stroke-width="0.8" fill="none" opacity="0.6"/>
           </svg>
         </span>
-        <strong>pk-auth</strong>
-        <em>WebAuthn on the JVM</em>
+        <span class="wordmark-name">pk-auth</span>
+        <span class="wordmark-tag">WebAuthn on the JVM</span>
       </a>
       <div class="nav-wrap">
         <nav class="primary" aria-label="Primary">
@@ -1115,9 +1111,9 @@
               authentication returns a signed JWT.
             </p>
             <div class="framework-chips">
-              <span><i aria-hidden="true"></i>Spring Boot 4</span>
-              <span><i aria-hidden="true"></i>Dropwizard 5</span>
-              <span><i aria-hidden="true"></i>Micronaut 4</span>
+              <span><span class="marker" aria-hidden="true"></span>Spring Boot 4</span>
+              <span><span class="marker" aria-hidden="true"></span>Dropwizard 5</span>
+              <span><span class="marker" aria-hidden="true"></span>Micronaut 4</span>
             </div>
             <div class="cta-row">
               <a href="#try" class="btn btn--primary btn--down">
@@ -1164,7 +1160,7 @@
     <section id="why" class="tint">
       <div class="container">
         <div class="section-marker"><span class="num">&sect; 001</span><span>rationale</span></div>
-        <h2>Passkeys <em>without outsourced identity</em></h2>
+        <h2>Passkeys without outsourced identity</h2>
         <p class="lede">
           Passkey support otherwise means months of wiring WebAuthn4J by hand, or moving user identity
           to a SaaS provider. pk-auth is a library compiled into the host application. It performs the
@@ -1194,7 +1190,7 @@
     <section id="scope">
       <div class="container">
         <div class="section-marker"><span class="num">&sect; 002</span><span>scope</span></div>
-        <h2>The credential layer<br><em>boundary</em></h2>
+        <h2>The credential layer boundary</h2>
         <p class="lede">
           pk-auth handles the cryptographic parts of WebAuthn and returns a JWT.
           It does not own users, replicate the host's authentication model, or impose a schema on
@@ -1205,21 +1201,21 @@
           <div class="boundary-col boundary-col--is">
             <h4><span class="glyph">+</span>In scope</h4>
             <ul>
-              <li data-idx="01"><b>A passkey credential layer.</b> Ceremony engine, persistence SPIs, and JWT issuance, all framework-neutral inside <code>pk-auth-core</code>.</li>
-              <li data-idx="02"><b>Three adapters, one wire contract.</b> Spring Boot 4, Dropwizard 5, and Micronaut 4 mount the same JSON endpoints under <code>/auth/**</code>.</li>
-              <li data-idx="03"><b>A set of SPIs.</b> The host implements <code>UserLookup</code> against its existing user table; pk-auth never touches names, emails, or roles directly.</li>
-              <li data-idx="04"><b>Signed JWT out.</b> Authentication returns a short-lived HS256 or ES256 token with configurable issuer, audience, and TTL, or a stateful, revocable access token.</li>
-              <li data-idx="05"><b>Three persistence paths.</b> Testkit (in-memory), JDBI + Postgres + Flyway, or DynamoDB single-table. The SPIs are the same across all three, and the host selects one.</li>
+              <li data-idx="01"><span class="item-label">A passkey credential layer.</span> Ceremony engine, persistence SPIs, and JWT issuance, all framework-neutral inside <code>pk-auth-core</code>.</li>
+              <li data-idx="02"><span class="item-label">Three adapters, one wire contract.</span> Spring Boot 4, Dropwizard 5, and Micronaut 4 mount the same JSON endpoints under <code>/auth/**</code>.</li>
+              <li data-idx="03"><span class="item-label">A set of SPIs.</span> The host implements <code>UserLookup</code> against its existing user table; pk-auth never touches names, emails, or roles directly.</li>
+              <li data-idx="04"><span class="item-label">Signed JWT out.</span> Authentication returns a short-lived HS256 or ES256 token with configurable issuer, audience, and TTL, or a stateful, revocable access token.</li>
+              <li data-idx="05"><span class="item-label">Three persistence paths.</span> Testkit (in-memory), JDBI + Postgres + Flyway, or DynamoDB single-table. The SPIs are the same across all three, and the host selects one.</li>
             </ul>
           </div>
           <div class="boundary-col boundary-col--isnt">
             <h4><span class="glyph">&minus;</span>Out of scope</h4>
             <ul>
-              <li data-idx="01"><b>An identity provider.</b> <i class="gloss">No OIDC discovery, no SAML, no admin console. The host keeps its users table.</i></li>
-              <li data-idx="02"><b>A SaaS.</b> <i class="gloss">It is a JAR compiled into the host application. Nothing leaves the host's servers, and there is no external billing or callout.</i></li>
-              <li data-idx="03"><b>A user database.</b> <i class="gloss">The host supplies the users table. The library stores public keys and counters that point at handles the host mints.</i></li>
-              <li data-idx="04"><b>Spring-only.</b> <i class="gloss">The core has no Spring, Dropwizard, Micronaut, JDBC, or servlet dependency. Adapters are interchangeable.</i></li>
-              <li data-idx="05"><b>An attestation-policy engine.</b> <i class="gloss">Attestation conveyance defaults to <code>none</code>; there is no bundled MDS3 fetcher. Strict verification is opt-in.</i></li>
+              <li data-idx="01"><span class="item-label">An identity provider.</span> <span class="gloss">No OIDC discovery, no SAML, no admin console. The host keeps its users table.</span></li>
+              <li data-idx="02"><span class="item-label">A SaaS.</span> <span class="gloss">It is a JAR compiled into the host application. Nothing leaves the host's servers, and there is no external billing or callout.</span></li>
+              <li data-idx="03"><span class="item-label">A user database.</span> <span class="gloss">The host supplies the users table. The library stores public keys and counters that point at handles the host mints.</span></li>
+              <li data-idx="04"><span class="item-label">Spring-only.</span> <span class="gloss">The core has no Spring, Dropwizard, Micronaut, JDBC, or servlet dependency. Adapters are interchangeable.</span></li>
+              <li data-idx="05"><span class="item-label">An attestation-policy engine.</span> <span class="gloss">Attestation conveyance defaults to <code>none</code>; there is no bundled MDS3 fetcher. Strict verification is opt-in.</span></li>
             </ul>
           </div>
         </div>
@@ -1233,7 +1229,7 @@
         <div class="section-marker"><span class="num">&sect; 003</span><span>demo</span></div>
         <div class="try-grid">
           <div>
-            <h2>Runnable demos <em>with real WebAuthn</em></h2>
+            <h2>Runnable demos with real WebAuthn</h2>
             <p class="lede">
               Each adapter ships the same single-page UI, which exercises every flow against a real
               WebAuthn4J verifier. The demos need no external services and no database. A demo runs
@@ -1307,7 +1303,7 @@ cd pk-auth</pre>
       <div class="container">
         <div class="section-marker"><span class="num">&sect; 004</span><span>quickstart: spring boot 4</span></div>
         <div class="quickstart-intro">
-          <h2>Minimal <em>Spring Boot wiring</em></h2>
+          <h2>Minimal Spring Boot wiring</h2>
           <p class="lede">
             The minimum wiring declares the dependencies, sets three required configuration
             values, and implements <code>UserLookup</code> against the host's user table.
@@ -1319,7 +1315,7 @@ cd pk-auth</pre>
         <div class="quickstart-steps">
 
           <div class="step">
-            <div class="step-num"><b>01</b>Dependencies</div>
+            <div class="step-num"><span class="step-index">01</span>Dependencies</div>
             <div class="step-body">
               <h3>Library dependencies</h3>
               <p>Three Maven Central artifacts. Alt-flow modules (backup codes, magic link, OTP, refresh tokens) are independent and additive.</p>
@@ -1355,7 +1351,7 @@ cd pk-auth</pre>
           </div>
 
           <div class="step">
-            <div class="step-num"><b>02</b>Config</div>
+            <div class="step-num"><span class="step-index">02</span>Config</div>
             <div class="step-body">
               <h3>Relying party and JWT secret</h3>
               <p>Three values are required: the relying-party ID (the registrable domain, which scopes the passkeys that can be used; <code>example.com</code>, not <code>auth.example.com</code>), the allowed origins, and the signing key (32 bytes minimum, with a fail-fast check on boot).</p>
@@ -1374,7 +1370,7 @@ cd pk-auth</pre>
           </div>
 
           <div class="step">
-            <div class="step-num"><b>03</b>UserLookup</div>
+            <div class="step-num"><span class="step-index">03</span>UserLookup</div>
             <div class="step-body">
               <h3>User table bridge</h3>
               <p>The one Spring bean the host writes. pk-auth calls it to answer &ldquo;does this username exist?&rdquo;, &ldquo;what view should be rendered?&rdquo;, and &ldquo;mint or fetch a handle for first-passkey registration&rdquo;. <code>UserHandle</code> is an opaque byte string, stored as a <code>BYTEA</code> on the users table with a unique index.</p>
@@ -1419,11 +1415,11 @@ cd pk-auth</pre>
       <div class="container">
         <div class="section-marker"><span class="num">&sect; 005</span><span>modules: thirteen artifacts</span></div>
         <div class="module-intro">
-          <h2>Composable <em>modules</em></h2>
+          <h2>Composable modules</h2>
           <div class="module-key">
-            <span class="req"><i></i>Required</span>
-            <span class="pick"><i></i>Pick one</span>
-            <span class="opt"><i></i>Optional</span>
+            <span class="req"><span class="marker" aria-hidden="true"></span>Required</span>
+            <span class="pick"><span class="marker" aria-hidden="true"></span>Pick one</span>
+            <span class="opt"><span class="marker" aria-hidden="true"></span>Optional</span>
           </div>
         </div>
 
@@ -1438,14 +1434,14 @@ cd pk-auth</pre>
             <div class="module-list">
               <div class="module-card">
                 <div class="module-card-top">
-                  <span class="module-card-name"><b>com.codeheadsystems:</b>pk-auth-core</span>
+                  <span class="module-card-name"><span class="group-id">com.codeheadsystems:</span>pk-auth-core</span>
                   <span class="tag">Always</span>
                 </div>
                 <p>Framework-neutral ceremony engine, all SPIs, sealed-sum result types, and the WebAuthn4J wiring. Every other module depends on this one.</p>
               </div>
               <div class="module-card">
                 <div class="module-card-top">
-                  <span class="module-card-name"><b>com.codeheadsystems:</b>pk-auth-jwt</span>
+                  <span class="module-card-name"><span class="group-id">com.codeheadsystems:</span>pk-auth-jwt</span>
                   <span class="tag">Always</span>
                 </div>
                 <p>HS256 and ES256 minting and validation via Nimbus JOSE+JWT, with ES256 verification-key rotation. Ships <code>RevocationCheck</code> (deny-list), <code>AccessTokenStore</code> (stateful, server-revocable access tokens), and <code>TokenTtlPolicy</code> (per-audience TTLs).</p>
@@ -1462,21 +1458,21 @@ cd pk-auth</pre>
             <div class="module-list">
               <div class="module-card">
                 <div class="module-card-top">
-                  <span class="module-card-name"><b>com.codeheadsystems:</b>pk-auth-spring-boot-starter</span>
+                  <span class="module-card-name"><span class="group-id">com.codeheadsystems:</span>pk-auth-spring-boot-starter</span>
                   <span class="tag">Spring 4</span>
                 </div>
                 <p>Auto-configures controllers, JWT filter, and bean defaults for Spring Boot 4 and Spring Security 7.</p>
               </div>
               <div class="module-card">
                 <div class="module-card-top">
-                  <span class="module-card-name"><b>com.codeheadsystems:</b>pk-auth-dropwizard</span>
+                  <span class="module-card-name"><span class="group-id">com.codeheadsystems:</span>pk-auth-dropwizard</span>
                   <span class="tag">Dropwizard 5</span>
                 </div>
                 <p>A <code>ConfiguredBundle</code> wired via Dagger 2; mounts Jersey resources for <code>/auth/**</code>.</p>
               </div>
               <div class="module-card">
                 <div class="module-card-top">
-                  <span class="module-card-name"><b>com.codeheadsystems:</b>pk-auth-micronaut</span>
+                  <span class="module-card-name"><span class="group-id">com.codeheadsystems:</span>pk-auth-micronaut</span>
                   <span class="tag">Micronaut 4</span>
                 </div>
                 <p>An <code>@Factory</code> plus controllers and a plain <code>@Filter</code> JWT validator. It does not use Micronaut Security.</p>
@@ -1493,21 +1489,21 @@ cd pk-auth</pre>
             <div class="module-list">
               <div class="module-card">
                 <div class="module-card-top">
-                  <span class="module-card-name"><b>com.codeheadsystems:</b>pk-auth-testkit</span>
+                  <span class="module-card-name"><span class="group-id">com.codeheadsystems:</span>pk-auth-testkit</span>
                   <span class="tag">In-memory</span>
                 </div>
                 <p>In-memory SPI implementations plus a <code>FakeAuthenticator</code> for driving WebAuthn ceremonies from unit tests. Always on the test classpath.</p>
               </div>
               <div class="module-card">
                 <div class="module-card-top">
-                  <span class="module-card-name"><b>com.codeheadsystems:</b>pk-auth-persistence-jdbi</span>
+                  <span class="module-card-name"><span class="group-id">com.codeheadsystems:</span>pk-auth-persistence-jdbi</span>
                   <span class="tag">Postgres</span>
                 </div>
                 <p>JDBI 3 + Postgres + Flyway. The host runs the shipped migrations; no adapter runs them. Atomic-claim via conditional <code>UPDATE ... WHERE consumed = FALSE</code>.</p>
               </div>
               <div class="module-card">
                 <div class="module-card-top">
-                  <span class="module-card-name"><b>com.codeheadsystems:</b>pk-auth-persistence-dynamodb</span>
+                  <span class="module-card-name"><span class="group-id">com.codeheadsystems:</span>pk-auth-persistence-dynamodb</span>
                   <span class="tag">DynamoDB</span>
                 </div>
                 <p>AWS SDK v2 Enhanced client, single physical table. Native <code>ttl</code> honoured on challenges, OTPs, access tokens, and refresh tokens.</p>
@@ -1524,28 +1520,28 @@ cd pk-auth</pre>
             <div class="module-list">
               <div class="module-card">
                 <div class="module-card-top">
-                  <span class="module-card-name"><b>com.codeheadsystems:</b>pk-auth-refresh-tokens</span>
+                  <span class="module-card-name"><span class="group-id">com.codeheadsystems:</span>pk-auth-refresh-tokens</span>
                   <span class="tag">Sessions</span>
                 </div>
                 <p>Rotating refresh tokens with family-based replay defence. Adds <code>POST /auth/refresh</code> (one ceremony, one row per rotation) and needs a <code>RefreshTokenRepository</code>. See ADR&nbsp;0013.</p>
               </div>
               <div class="module-card">
                 <div class="module-card-top">
-                  <span class="module-card-name"><b>com.codeheadsystems:</b>pk-auth-backup-codes</span>
+                  <span class="module-card-name"><span class="group-id">com.codeheadsystems:</span>pk-auth-backup-codes</span>
                   <span class="tag">Recovery</span>
                 </div>
                 <p>View-once Argon2id-hashed codes. Single-use atomic claim; per-user sliding-window rate limit.</p>
               </div>
               <div class="module-card">
                 <div class="module-card-top">
-                  <span class="module-card-name"><b>com.codeheadsystems:</b>pk-auth-magic-link</span>
+                  <span class="module-card-name"><span class="group-id">com.codeheadsystems:</span>pk-auth-magic-link</span>
                   <span class="tag">Email</span>
                 </div>
                 <p>Stateless JWT-on-the-wire magic links. Consumed-JTI tracking via a swappable <code>ConsumedJtiStore</code> SPI.</p>
               </div>
               <div class="module-card">
                 <div class="module-card-top">
-                  <span class="module-card-name"><b>com.codeheadsystems:</b>pk-auth-otp</span>
+                  <span class="module-card-name"><span class="group-id">com.codeheadsystems:</span>pk-auth-otp</span>
                   <span class="tag">SMS</span>
                 </div>
                 <p>6-digit phone OTP with attempt caps; Argon2id-hashed storage and a deployment pepper resolved at boot.</p>
@@ -1562,14 +1558,14 @@ cd pk-auth</pre>
             <div class="module-list">
               <div class="module-card">
                 <div class="module-card-top">
-                  <span class="module-card-name"><b>com.codeheadsystems:</b>pk-auth-admin-api</span>
+                  <span class="module-card-name"><span class="group-id">com.codeheadsystems:</span>pk-auth-admin-api</span>
                   <span class="tag">/auth/admin/**</span>
                 </div>
                 <p>Framework-neutral admin service: account summary, credential rename and delete (with last-credential guard), backup-code regeneration, and email and phone verification.</p>
               </div>
               <div class="module-card">
                 <div class="module-card-top">
-                  <span class="module-card-name"><b>npm:</b><a href="https://www.npmjs.com/package/@pk-auth/passkeys-browser">@pk-auth/passkeys-browser</a></span>
+                  <span class="module-card-name"><span class="group-id">npm:</span><a href="https://www.npmjs.com/package/@pk-auth/passkeys-browser">@pk-auth/passkeys-browser</a></span>
                   <span class="tag">TypeScript</span>
                 </div>
                 <p>Zero-dependency ceremony and admin clients, published on npm (<code>npm install @pk-auth/passkeys-browser</code>); the version tracks the server release. ESM and CJS bundles. Handles all <code>ArrayBuffer</code> &harr; <code>base64url</code> conversion around <code>navigator.credentials</code>. The refresh client returns a typed result sum and does not throw on 401.</p>
@@ -1591,7 +1587,7 @@ cd pk-auth</pre>
     <section id="wire">
       <div class="container">
         <div class="section-marker"><span class="num">&sect; 006</span><span>wire contract</span></div>
-        <h2>One wire contract <em>across three adapters</em></h2>
+        <h2>One wire contract across three adapters</h2>
         <p class="lede">
           Every adapter mounts the same paths under <code>/auth/**</code>
           and consumes the same JSON shapes. The TypeScript SDK is written against this
@@ -1662,7 +1658,7 @@ cd pk-auth</pre>
       <div class="container">
         <div class="section-marker"><span class="num">&sect; 007</span><span>security and maturity</span></div>
         <div class="security-intro">
-          <h2>Strict <em>security defaults</em></h2>
+          <h2>Strict security defaults</h2>
           <p class="lede">
             Choices that change the security contract are explicit configuration.
             Defaults take the strict path: rejection on origin mismatch, rejection on

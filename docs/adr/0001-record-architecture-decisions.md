@@ -1,4 +1,4 @@
-# 1. Record architecture decisions
+# 1. Architecture decision records
 
 Date: 2026-05-12
 

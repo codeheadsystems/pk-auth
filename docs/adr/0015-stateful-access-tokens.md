@@ -93,10 +93,9 @@ Adapter wiring:
 - Con: the store holds one row per issued token. Hosts that issue at high volume (millions per day)
   and do not need fast revocation should stay with `RevocationCheck` and a small deny-list. The
   library does not auto-detect this, and the operator picks the binding.
-- Con: the `ttl` field on `JwtClaims` is not yet a first-class device-id channel. When stateful,
-  `record(...)` always passes `Optional.empty()` for `deviceId`. A future ADR (when refresh tokens
-  land) extends this surface to bind issued JWTs to a refresh family or device for "log out this
-  device" granularity.
+- Con: `JwtClaims` carries no device identifier, so `PkAuthJwtIssuer` always passes
+  `Optional.empty()` for `deviceId` to `record(...)`. Binding issued JWTs to a refresh family or
+  device, for "log out this device" granularity, is left to a future ADR.
 - Con: the validator's hot path now includes a store lookup. For the noop case this is a
   hash-lookup-then-return, and for JDBI it is one indexed query per validate. Adopters needing the
   absolute lowest validation latency (for example CDN-near edge validation) should benchmark before
