@@ -1,4 +1,4 @@
-# 4. Use Dagger 2 for the Dropwizard adapter's DI
+# 4. Dagger 2 for Dropwizard adapter wiring
 
 Date: 2026-05-14
 

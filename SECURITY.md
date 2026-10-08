@@ -4,14 +4,15 @@ pk-auth is an authentication library, so security reports are handled with prior
 
 ## Supported versions
 
-Fixes land on the latest published `1.x` line. Maven Central and npm releases are immutable, so a
+Fixes land on the latest published `2.x` line. Maven Central and npm releases are immutable, so a
 security fix ships as a new patch (or minor) release rather than a re-publish of an affected
 version. Upgrading to the latest release picks up the fix.
 
 | Version              | Supported                     |
 | -------------------- | ----------------------------- |
-| Latest `1.x` release | :white_check_mark:            |
-| Older `1.x` releases | Fix only via the next release |
+| Latest `2.x` release | :white_check_mark:            |
+| Older `2.x` releases | Fix only via the next release |
+| `1.x`                | :x: (upgrade to `2.x`)        |
 | `0.x` (pre-stable)   | :x:                           |
 
 The browser SDK (`@pk-auth/passkeys-browser`) shares the same version line as the JVM artifacts and

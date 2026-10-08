@@ -1,4 +1,4 @@
-# 16. User deletion fan-out is sequential and best-effort
+# 16. Sequential best-effort user deletion fan-out
 
 Date: 2026-05-16
 
