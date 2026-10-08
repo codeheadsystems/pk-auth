@@ -11,12 +11,18 @@ the source.
 
 ## [Unreleased]
 
-A security release driven by a full-project audit. Every entry below closes a
-finding from that review.
+## [2.3.0] - 2026-10-08
 
-JDBI hosts pick up one new Flyway migration (V12), which changes username
-uniqueness semantics. The entry on JDBI username uniqueness below carries the
-upgrade note.
+A security and maintainability release. The Security entries close findings
+from a full-project audit. The remaining entries come from an architecture
+review of the ceremony engine and the three adapters, a documentation style
+pass, and dependency updates.
+
+Two upgrade notes apply. JDBI hosts pick up one new Flyway migration (V12),
+which changes username uniqueness semantics; the entry on JDBI username
+uniqueness below carries the details. Magic-link hosts that read
+`SendResult.Sent.tokenJti` move to the renamed `jti` component; the first
+Security entry carries the details.
 
 ### Security
 
@@ -82,6 +88,68 @@ upgrade note.
   `AdminResult.ValidationFailed`, a clean `400`, never a thrown exception across the sealed
   result boundary. The bound is checked before the challenge preflight, so a
   rejected label does not burn the single-use challenge.
+- Browser SDK development dependencies are updated to patched versions:
+  `source-map-js` 1.2.2 (GHSA-68fv-2mgg-jv7q, high), `fast-uri` 3.1.8
+  (GHSA-hrr3-gc8f-f4qj), and `qs` 6.16.0 (GHSA-x5fp-wj9c-mxmx,
+  GHSA-4mjr-xmp4-gh2g). All three are transitive build and test tooling; the
+  published SDK has no runtime dependencies.
+
+### Added
+
+- `pk-auth-core` exports `com.codeheadsystems.pkauth.ratelimit`, and
+  `pk-auth-jwt` exports `com.codeheadsystems.pkauth.composition`. Both packages
+  were already public and used by other published modules (`InMemoryWindowCounter`
+  by backup-codes and magic-link, `PkAuthComposition` by all three adapters); the
+  exports make them reachable on the module path.
+- Dropwizard: `PkAuthCeremonyGraph`, a shared parent interface of
+  `PkAuthComponent` and `PkAuthFullComponent` that holds their common provision
+  methods. Existing callers of either component are unaffected.
+- `docs/style.md`, the documentation style guide that every Markdown file,
+  Javadoc comment, and the site follow.
+
+### Changed
+
+- `DefaultPasskeyAuthenticationService` is restructured internally: exhaustive
+  switches over the sealed challenge-validation result replace a hand-written
+  visitor, one metrics emitter replaces three copies, exception mapping for
+  registration and authentication share one shape, private sealed types replace
+  nullable sentinels, and challenge issuance is shared by both start methods.
+  Metric names, tag values, and result mappings are unchanged.
+- `InMemoryCeremonyRateLimiter` delegates to two `InMemoryWindowCounter`
+  instances instead of duplicating their logic, and `RefreshTtlPolicy` delegates
+  to `TokenTtlPolicy`. Behaviour is unchanged.
+- Dropwizard builds a single `RefreshTokenService` instance shared by the
+  refresh endpoint and the user-deletion listener (previously two), and every
+  adapter subpackage is `@NullMarked`. `PkAuthBundle.jwtIssuer()` and
+  `jwtValidator()` called before `run()` still throw `IllegalStateException`,
+  now with the message "PkAuthBundle.run has not been invoked yet".
+- Documentation: DESIGN.md, the operator guide, GETTING_STARTED, and
+  `docs/stability.md` are corrected where they had drifted from the code (JWT
+  claims, `JwtVerificationResult` variants, the DynamoDB `ttl` attribute,
+  coverage gates, host-run migrations, the Dropwizard wiring example). All
+  documentation, Javadoc, and the site follow the new style guide; ADR titles
+  are rewritten as noun phrases; and the original build brief moves to
+  `docs/history/`.
+- `SECURITY.md` names `2.x` as the supported line; `1.x` is no longer
+  supported.
+
+### Fixed
+
+- A registration that loses a race on `CredentialRepository.save` returns
+  `RegistrationResult.DuplicateCredential` (`409`). Previously the repository's
+  `DuplicateCredentialException` escaped the sealed-result boundary and adapters
+  answered `503 persistence_failure`.
+- Malformed extension CBOR in assertion authenticator data returns
+  `AssertionResult.InvalidChallenge` (`400`) instead of an uncaught exception
+  (`500`). A corrupt stored COSE key still propagates as a server fault.
+- `CeremonyWireMapper.CeremonyResponse` preserves body and header insertion
+  order. `Map.copyOf` had discarded it, so ceremony JSON field order varied
+  between JVM runs.
+- Spring: a host-supplied `PkAuthCeremonyController` bean replaces the default.
+  An unconditional `@Import` had registered the default alongside it, which
+  produced duplicate request mappings.
+- Browser SDK: `npm run typecheck`, and therefore `prepublishOnly`, failed on a
+  test import from a nonexistent `../dist/src` path.
 
 ## [2.2.0] - 2026-06-27
 
@@ -560,7 +628,8 @@ Security-review follow-ups (hardening; no known exploit in the items below).
 First stable release. Captures the surface produced by the 0.x development
 series; see `git log` for the full history.
 
-[Unreleased]: https://github.com/codeheadsystems/pk-auth/compare/v2.2.0...HEAD
+[Unreleased]: https://github.com/codeheadsystems/pk-auth/compare/v2.3.0...HEAD
+[2.3.0]: https://github.com/codeheadsystems/pk-auth/compare/v2.2.0...v2.3.0
 [2.2.0]: https://github.com/codeheadsystems/pk-auth/compare/v2.1.0...v2.2.0
 [2.1.0]: https://github.com/codeheadsystems/pk-auth/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/codeheadsystems/pk-auth/compare/v1.3.1...v2.0.0
