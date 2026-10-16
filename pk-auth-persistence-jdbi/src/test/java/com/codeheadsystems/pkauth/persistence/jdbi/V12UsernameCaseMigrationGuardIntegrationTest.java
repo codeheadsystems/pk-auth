@@ -115,7 +115,7 @@ class V12UsernameCaseMigrationGuardIntegrationTest {
   private static void migrateTo(HikariDataSource ds, String target) {
     Flyway.configure()
         .dataSource(ds)
-        .locations("classpath:db/migration")
+        .locations(PkAuthJdbiSchema.MIGRATION_LOCATION)
         .target(target)
         .load()
         .migrate();

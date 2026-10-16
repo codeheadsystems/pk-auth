@@ -66,20 +66,81 @@ available to select yet; see the "Post-quantum readiness" section of `docs/threa
 
 ### JDBI / Postgres
 
-- Flyway resources live in `pk-auth-persistence-jdbi/src/main/resources/db/migration`.
-- No adapter runs these migrations. The host runs them by adding `classpath:db/migration` from this
-  artefact to its own Flyway locations, targeting `PkAuthJdbiSchema.CURRENT_SCHEMA_VERSION`.
-  `PkAuthJdbiSchema.migrateForDevelopment(DataSource)` exists for demos and integration tests only.
-- The shipped baseline is split across `V1__credentials.sql`, `V2__challenges.sql`,
-  `V3__backup_codes.sql`, `V4__otp_codes.sql`, and `V5__example_users.sql`: five tables
-  (`credentials`, `challenges`, `backup_codes`, `otp_codes`, `users`) with no `pkauth_` prefix.
-  `V6__audit_soft_delete.sql` adds the append-only `pkauth_audit_events` table.
+- No adapter runs these migrations. The host runs them with its own Flyway setup.
+  `PkAuthJdbiSchema.migrateForDevelopment(DataSource)` and
+  `PkAuthJdbiSchema.migrateCoreForDevelopment(DataSource)` exist for demos and integration tests
+  only.
+- The migrations ship in two classpath locations that share one version sequence. Version numbers
+  never collide across the two, so either set can be applied alone or both together.
+
+| Location | Constant | Contents | Required |
+|---|---|---|---|
+| `classpath:db/migration/core` | `CORE_MIGRATION_LOCATION` | Every table pk-auth owns. | Always. |
+| `classpath:db/migration/example-users` | `EXAMPLE_USERS_MIGRATION_LOCATION` | The example `users` table (`V5`, `V12`). | Only with `JdbiUserLookup`. |
+| `classpath:db/migration` | `MIGRATION_LOCATION` | Both of the above. | Alternative to listing both. |
+
+- The example `users` table is host-app data that pk-auth does not own (see
+  [ADR 0006](./adr/0006-userlookup-spi-not-owned.md)). It exists for the reference
+  `JdbiUserLookup`, the demos, and the tests. A host with its own identity model and its own
+  `UserLookup` applies only the core location, and needs no knowledge of the example set.
+- Flyway scans a location recursively, so `classpath:db/migration` resolves both subdirectories.
+  It is the location documented before 2.3.1, and hosts that already list it keep working
+  unchanged. Listing a subdirectory alongside its parent is harmless: Flyway resolves each
+  migration once.
+- Spring Boot's default `spring.flyway.locations` is `classpath:db/migration`. Because classpath
+  scanning spans every jar, that default picks up both pk-auth sets from this artefact. A Spring
+  Boot host with its own identity model sets `spring.flyway.locations` explicitly, to its own
+  location plus `classpath:db/migration/core`, and keeps its own migrations out of
+  `db/migration` itself.
+- The Flyway `target` depends on the locations applied. `PkAuthJdbiSchema.CURRENT_SCHEMA_VERSION` is
+  the highest version across both sets, and `PkAuthJdbiSchema.CORE_SCHEMA_VERSION` is the highest
+  core version. Flyway refuses a `target` that no configured location resolves, so a core-only host
+  targets `CORE_SCHEMA_VERSION`.
+- See [ADR 0021](./adr/0021-split-example-users-migrations.md) for the split.
+
+#### Flyway configuration with `JdbiUserLookup`
+
+```java
+Flyway.configure()
+    .dataSource(dataSource)
+    .locations(
+        "classpath:db/migration/host", // the host's own migrations, if any
+        PkAuthJdbiSchema.CORE_MIGRATION_LOCATION,
+        PkAuthJdbiSchema.EXAMPLE_USERS_MIGRATION_LOCATION)
+    .target(PkAuthJdbiSchema.CURRENT_SCHEMA_VERSION)
+    .load()
+    .migrate();
+```
+
+#### Flyway configuration with a host-owned users table
+
+```java
+Flyway.configure()
+    .dataSource(dataSource)
+    .locations("classpath:db/migration/host", PkAuthJdbiSchema.CORE_MIGRATION_LOCATION)
+    .target(PkAuthJdbiSchema.CORE_SCHEMA_VERSION)
+    .load()
+    .migrate();
+```
+
+A host whose own migrations share pk-auth's version sequence (one `flyway_schema_history` table)
+does not pin `target` to a pk-auth constant; it orders its own versions around pk-auth's instead.
+
+#### Shipped migrations
+
+- Core: `V1__credentials.sql`, `V2__challenges.sql`, `V3__backup_codes.sql`, and
+  `V4__otp_codes.sql` create `credentials`, `challenges`, `backup_codes`, and `otp_codes`, with no
+  `pkauth_` prefix. `V6__audit_soft_delete.sql` adds the append-only `pkauth_audit_events` table.
   `V7__credentials_hard_delete.sql` drops the `revoked_at` / `revoked_reason` columns on
   `credentials`: credential delete is a hard delete, with the audit record captured as a structured
   log event (`pkauth.credential.deleted`). `V8__create_access_tokens.sql` and
   `V9__create_refresh_tokens.sql` add the 1.1.0 `access_tokens` and `refresh_tokens` tables;
   `V10__refresh_tokens_amr.sql` adds the `amr` (RFC 8176 authentication-method-reference) column to
-  `refresh_tokens`. `V11` and `V12` follow; the migration directory lists the current set.
+  `refresh_tokens`. `V11__challenges_user_verification.sql` follows; the `core` directory lists the
+  current set.
+- Example users: `V5__example_users.sql` creates `users`, and
+  `V12__users_username_case_insensitive.sql` adds the case-insensitive unique index
+  `users_username_lower_key`.
 - Magic-link tokens are not persisted: the JWT is the credential, and the consumed-JTI store is
   in-memory by default (see the `ConsumedJtiStore` SPI for a multi-replica override).
 - The unique key on credential ID is byte-array shaped. Introducing a string-encoded column for it
