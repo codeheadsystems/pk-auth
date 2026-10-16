@@ -94,9 +94,13 @@ account/credential/backup-code/email/phone admin operations mounted by all three
   uses conditional `UPDATE ... WHERE consumed_at IS NULL`. DynamoDB uses `ConditionExpression` (a
   failed condition raises `ConditionalCheckFailedException`, mapped to `Conflict` / `Expired`).
 - DynamoDB is single-table (`DynamoDbTable<T>` per item type; refresh tokens write 3 items per
-  token for the jti/user/family indexes). JDBI uses Flyway migrations at
-  `pk-auth-persistence-jdbi/src/main/resources/db/migration/`, and adding one requires bumping
-  `PkAuthJdbiSchema.CURRENT_SCHEMA_VERSION`.
+  token for the jti/user/family indexes). JDBI uses Flyway migrations under
+  `pk-auth-persistence-jdbi/src/main/resources/db/migration/`, split into `core/` (pk-auth's
+  tables) and `example-users/` (the example `users` table; opt-in for hosts). Both share one version
+  sequence. A `core/` migration bumps `PkAuthJdbiSchema.CORE_SCHEMA_VERSION` and
+  `CURRENT_SCHEMA_VERSION`; an `example-users/` one bumps only `CURRENT_SCHEMA_VERSION`. No `core/`
+  migration may reference `users`, and released scripts are never edited or renamed (Flyway
+  checksums). See ADR 0021.
 
 ## Enforced conventions
 

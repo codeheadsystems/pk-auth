@@ -111,7 +111,7 @@ host.
 | `pk-auth-otp` | Alt flow: 6-digit OTPs over the host's SMS dispatcher; hashed with HMAC-SHA256 (server-side pepper) and atomic-claim. |
 | `pk-auth-refresh-tokens` | Rotating refresh tokens with family-based replay defence. `RefreshTokenService` + `RefreshTokenRepository` SPI; `RefreshHandler` is the framework-neutral `POST /auth/refresh` composer ([ADR 0013](./docs/adr/0013-refresh-tokens-family-rotation.md)). |
 | `pk-auth-admin-api` | `AdminService` exposes account/credential/backup-code/email/phone operations. Result-typed (`AdminResult<T>` sealed sum). |
-| `pk-auth-persistence-jdbi` | SPI impls on JDBI + Postgres + Flyway. Migrations at `src/main/resources/db/migration/`. |
+| `pk-auth-persistence-jdbi` | SPI impls on JDBI + Postgres + Flyway. Migrations at `src/main/resources/db/migration/{core,example-users}/`. |
 | `pk-auth-persistence-dynamodb` | SPI impls on AWS SDK v2 DynamoDB Enhanced. Single table, schema per item-type ([ADR 0008](./docs/adr/0008-dynamodb-single-table-design.md)). |
 | `pk-auth-testkit` | `FakeAuthenticator` for ceremony-driving tests + `InMemoryX` for every SPI. |
 | `pk-auth-spring-boot-starter` | Spring Boot 4 / Spring Security 7 autoconfigure + controller. |
@@ -299,8 +299,13 @@ Two real-backend modules ship in-tree, both implementing the same SPIs.
 
 - Migrations live under `pk-auth-persistence-jdbi/src/main/resources/db/migration/` (Flyway). The
   schema is hand-tuned for the SPI access patterns; there is no JPA / Hibernate.
-- Tables: `users`, `credentials`, `challenges`, `backup_codes`, `otp_codes` (V1–V5, no `pkauth_`
-  prefix), plus the append-only `pkauth_audit_events` table from V6.
+- The migrations are split across two classpath locations sharing one version sequence
+  ([ADR 0021](./docs/adr/0021-split-example-users-migrations.md)). `db/migration/core` holds the
+  tables pk-auth owns and is always applied. `db/migration/example-users` holds the example `users`
+  table (V5, V12) read by `JdbiUserLookup`; a host with its own identity model leaves it out. The
+  parent `db/migration` resolves both.
+- Tables: `credentials`, `challenges`, `backup_codes`, `otp_codes` (V1–V4, no `pkauth_` prefix),
+  the example `users` table (V5), plus the append-only `pkauth_audit_events` table from V6.
 - `V8__create_access_tokens.sql` and `V9__create_refresh_tokens.sql` add the stateful-access-token
   and refresh-token tables for the 1.1.0 SPIs. `V10__refresh_tokens_amr.sql` adds the `amr` (RFC
   8176 authentication-method-reference) column to `refresh_tokens`.
@@ -308,7 +313,8 @@ Two real-backend modules ship in-tree, both implementing the same SPIs.
   requirement. `V12__users_username_case_insensitive.sql` makes username uniqueness
   case-insensitive (unique index on `lower(username)`) so the JDBI and DynamoDB backends share one
   identity model. It refuses to run, naming the offending rows, if the database already holds
-  usernames differing only by case. `PkAuthJdbiSchema.CURRENT_SCHEMA_VERSION` is `"12"`.
+  usernames differing only by case. `PkAuthJdbiSchema.CURRENT_SCHEMA_VERSION` is `"12"`, and
+  `PkAuthJdbiSchema.CORE_SCHEMA_VERSION` (the highest core migration) is `"11"`.
 - Magic-link tokens are not persisted: the JWT itself is the credential. Consumed JTIs live in a
   `ConsumedJtiStore` (in-memory by default; a shared backend replaces it for multi-replica
   deployments).

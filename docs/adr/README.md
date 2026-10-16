@@ -28,3 +28,4 @@ ADR is added and the prior one is marked `Superseded by NNNN`. See
 | [0018](./0018-remove-sonarqube-cloud.md) | Accepted | 2026-06-11 | Native JaCoCo coverage gates replacing SonarQube Cloud |
 | [0019](./0019-crypto-agility-post-quantum-readiness.md) | Accepted | 2026-06-17 | Crypto-agility and post-quantum readiness for passkey algorithms |
 | [0020](./0020-browser-sdk-testing-strategy.md) | Accepted | 2026-06-18 | Browser SDK testing strategy |
+| [0021](./0021-split-example-users-migrations.md) | Accepted | 2026-10-16 | Separate classpath locations for core and example-users migrations |

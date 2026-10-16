@@ -11,6 +11,55 @@ the source.
 
 ## [Unreleased]
 
+Targets the 2.3.1 patch release. It fixes a JDBI upgrade failure introduced in
+2.3.0 for hosts that supply their own users table. Hosts using the documented
+`classpath:db/migration` location need no change; the upgrade note below covers
+the other configurations.
+
+### Fixed
+
+- JDBI hosts with their own identity model can apply pk-auth's migrations
+  without the example `users` table. Up to 2.3.0 every migration lived flat in
+  `db/migration`, so a host that excluded the example `V5__example_users.sql`
+  failed on 2.3.0's `V12__users_username_case_insensitive.sql` with
+  `relation "users" does not exist`. The migrations are now split into two
+  classpath locations sharing one version sequence: `db/migration/core` (the
+  tables pk-auth owns, always required) and `db/migration/example-users` (`V5`
+  and `V12`, needed only with `JdbiUserLookup`). Every script keeps its file
+  name and its bytes, so Flyway checksums are unchanged, and `V12` itself is
+  not modified. `PkAuthJdbiSchema` gains `CORE_MIGRATION_LOCATION`,
+  `EXAMPLE_USERS_MIGRATION_LOCATION`, `MIGRATION_LOCATION`,
+  `CORE_SCHEMA_VERSION` (`11`), and `migrateCoreForDevelopment(DataSource)`.
+  See [ADR 0021](./docs/adr/0021-split-example-users-migrations.md) and the
+  [operator guide](./docs/operator-guide.md#jdbi--postgres).
+
+  Upgrade note, by host configuration:
+
+  - Flyway location `classpath:db/migration`, with `JdbiUserLookup` or the
+    example table: no change. Flyway scans the location recursively and resolves
+    the same twelve migrations with the same checksums, so an existing database
+    validates and nothing new runs.
+  - Own identity model, new database (or one that never applied `V5`): list
+    `classpath:db/migration/core` and target
+    `PkAuthJdbiSchema.CORE_SCHEMA_VERSION`. Flyway refuses a `target` that no
+    configured location resolves, so `CURRENT_SCHEMA_VERSION` (`12`) fails
+    against the core location alone.
+  - Own identity model, scripts copied out of the jar by pattern with `V5`
+    excluded: change the pattern from `db/migration/V*.sql` to
+    `db/migration/core/V*.sql` and drop the `V5` exclusion. Neither `V5` nor
+    `V12` needs excluding any more. The old pattern matches nothing in 2.3.1,
+    and Flyway validation then fails on the applied migrations it can no longer
+    resolve. A database left by the failed 2.3.0 upgrade sits at `V11` (Postgres
+    rolled the failed `V12` back) and validates against the core set without
+    further action.
+  - Spring Boot with the default `spring.flyway.locations`
+    (`classpath:db/migration`): unchanged, and the default still applies both
+    sets from the jar. A new host that wants only the core set sets the property
+    explicitly to its own location plus `classpath:db/migration/core`.
+  - A database that applied `V5` and `V12` must keep the example location
+    configured. Dropping it fails Flyway validation, because the applied example
+    migrations no longer resolve.
+
 ## [2.3.0] - 2026-10-08
 
 A security and maintainability release. The Security entries close findings

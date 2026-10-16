@@ -13,7 +13,9 @@ import org.jdbi.v3.core.mapper.RowMapper;
 /**
  * {@link UserLookup} backed by the demo {@code users} table (see {@code V5__example_users.sql}).
  * The brief notes that the users table is host-app data; this implementation is the reference
- * provided alongside the demo schema.
+ * provided alongside the demo schema. The table's migrations live in {@link
+ * PkAuthJdbiSchema#EXAMPLE_USERS_MIGRATION_LOCATION}, which a host using this class applies
+ * alongside {@link PkAuthJdbiSchema#CORE_MIGRATION_LOCATION}.
  */
 public final class JdbiUserLookup implements UserLookup {
 

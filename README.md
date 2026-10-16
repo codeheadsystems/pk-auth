@@ -46,7 +46,10 @@ All modules share one version and the `com.codeheadsystems` group id.
 - A framework-neutral admin service that every adapter mounts at the same paths, so the same
   TypeScript SDK drives all three.
 - Persistence options: in-memory (testkit), JDBI + Postgres with Flyway migrations, or DynamoDB
-  single-table.
+  single-table. The JDBI migrations ship as a required core set (`classpath:db/migration/core`)
+  and an opt-in example `users` set (`classpath:db/migration/example-users`) used only with
+  `JdbiUserLookup`; the [operator guide](./docs/operator-guide.md#jdbi--postgres) gives the Flyway
+  configuration for each.
 - A zero-dependency browser SDK (`@pk-auth/passkeys-browser`) covering both ceremony and admin
   operations, published on npm (`npm install @pk-auth/passkeys-browser`). Its version tracks the
   pk-auth server release it speaks to.
