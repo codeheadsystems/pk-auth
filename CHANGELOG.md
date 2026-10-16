@@ -11,8 +11,10 @@ the source.
 
 ## [Unreleased]
 
-Targets the 2.3.1 patch release. It fixes a JDBI upgrade failure introduced in
-2.3.0 for hosts that supply their own users table. Hosts using the documented
+## [2.3.1] - 2026-10-16
+
+A patch release. It fixes a JDBI upgrade failure introduced in 2.3.0 for hosts
+that supply their own users table. Hosts using the documented
 `classpath:db/migration` location need no change; the upgrade note below covers
 the other configurations.
 
@@ -59,6 +61,15 @@ the other configurations.
   - A database that applied `V5` and `V12` must keep the example location
     configured. Dropping it fails Flyway validation, because the applied example
     migrations no longer resolve.
+
+### Dependencies
+
+- Runtime: Flyway 13.9.0 → 13.10.0, PostgreSQL JDBC 42.7.13 → 42.7.14, AWS SDK
+  2.55.11 → 2.55.14, and Micronaut 4.10.30 → 4.10.31.
+- Build and test: Gradle 9.8.0 → 9.8.1, Spotless 8.10.3 → 8.10.4,
+  google-java-format 1.25.2 → 1.36.1 (JDK 25 support), Playwright 1.63 → 1.64
+  for the demo end-to-end suites, browser SDK dev dependencies, and GitHub
+  Actions.
 
 ## [2.3.0] - 2026-10-08
 
@@ -677,7 +688,8 @@ Security-review follow-ups (hardening; no known exploit in the items below).
 First stable release. Captures the surface produced by the 0.x development
 series; see `git log` for the full history.
 
-[Unreleased]: https://github.com/codeheadsystems/pk-auth/compare/v2.3.0...HEAD
+[Unreleased]: https://github.com/codeheadsystems/pk-auth/compare/v2.3.1...HEAD
+[2.3.1]: https://github.com/codeheadsystems/pk-auth/compare/v2.3.0...v2.3.1
 [2.3.0]: https://github.com/codeheadsystems/pk-auth/compare/v2.2.0...v2.3.0
 [2.2.0]: https://github.com/codeheadsystems/pk-auth/compare/v2.1.0...v2.2.0
 [2.1.0]: https://github.com/codeheadsystems/pk-auth/compare/v2.0.0...v2.1.0
