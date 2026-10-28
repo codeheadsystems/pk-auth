@@ -17,17 +17,17 @@ java = "21"
 # on 8.x. The earlier 7.x pin (and its dependabot ignore) has been retired.
 spotless = "8.10.4"
 errorprone-plugin = "5.1.1"
-errorprone-core = "2.50.0"
+errorprone-core = "2.51.0"
 google-java-format = "1.36.1"
 jspecify = "1.0.1"
 
 # Runtime — pk-auth-core
 webauthn4j = "0.31.11.RELEASE"
 nimbus-jose-jwt = "10.10"
-jackson = "3.2.3"
+jackson = "3.2.4"
 jackson-annotations = "2.22"
 caffeine = "3.3.1"
-micrometer = "1.17.1"
+micrometer = "1.17.2"
 slf4j = "2.0.20"
 
 # Alt-flow modules
@@ -35,10 +35,10 @@ argon2-jvm = "2.12"
 
 # Persistence
 jdbi = "3.55.0"
-flyway = "13.10.3"
+flyway = "13.11.1"
 postgresql = "42.7.14"
 hikaricp = "7.1.0"
-aws-sdk = "2.56.0"
+aws-sdk = "2.57.3"
 testcontainers = "1.21.4"
 
 # Spring Boot adapter (Phase 8). Spring Boot 4 / Spring Security 7. Spring Boot 4 standardized
@@ -46,8 +46,8 @@ testcontainers = "1.21.4"
 # previous Jackson 2 bridge module is gone, replaced by direct registration of the core's
 # `PkAuthObjectMappers.pkAuthModule()` as a Spring bean. Brief §6.10 originally specified
 # 3.5.x / 6.5.x; the upgrade landed as a deliberate framework refresh.
-spring-boot = "4.1.1"
-spring-security = "7.1.1"
+spring-boot = "4.1.2"
+spring-security = "7.1.2"
 # H2 in the demo so reviewers can run the spring-boot-demo without an external Postgres.
 # Confined to the demo's runtime; the starter does not pull it in.
 h2 = "2.5.252"
@@ -58,7 +58,7 @@ h2 = "2.5.252"
 # `@Filter` validating the JWT against pk-auth-jwt's PkAuthJwtValidator is sufficient.
 # Micronaut 5.x requires JVM 25; we target Java 21 (brief §3), so 5.x is pinned out via
 # .github/dependabot.yml until the project moves to a newer JDK baseline.
-micronaut = "4.10.32"
+micronaut = "4.10.34"
 
 # Dropwizard adapter (Phase 9). Brief §6.11 tracks the latest Dropwizard release. 5.x adds
 # Jetty 12 / Jersey 4 (EE 10); the adapter rides the parent's `dropwizard-jackson` which is still
