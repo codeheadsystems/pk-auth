@@ -15,17 +15,17 @@ java = "21"
 # intermittently fail class loading on Gradle 9 / JDK 21 under a *cached* build, which is why the
 # Gradle build cache stays disabled (see gradle.properties) — `./gradlew check` itself runs clean
 # on 8.x. The earlier 7.x pin (and its dependabot ignore) has been retired.
-spotless = "8.10.4"
+spotless = "8.11.0"
 errorprone-plugin = "5.2.0"
-errorprone-core = "2.51.0"
+errorprone-core = "2.52.0"
 google-java-format = "1.36.1"
 jspecify = "1.0.1"
 
 # Runtime — pk-auth-core
-webauthn4j = "0.31.11.RELEASE"
+webauthn4j = "0.32.0.RELEASE"
 nimbus-jose-jwt = "10.10"
-jackson = "3.2.4"
-jackson-annotations = "2.22"
+jackson = "3.3.0"
+jackson-annotations = "2.23"
 caffeine = "3.3.1"
 micrometer = "1.17.2"
 slf4j = "2.0.20"
@@ -35,10 +35,10 @@ argon2-jvm = "2.12"
 
 # Persistence
 jdbi = "3.55.0"
-flyway = "13.12.0"
+flyway = "13.12.1"
 postgresql = "42.7.14"
 hikaricp = "7.1.0"
-aws-sdk = "2.57.8"
+aws-sdk = "2.57.11"
 testcontainers = "1.21.4"
 
 # Spring Boot adapter (Phase 8). Spring Boot 4 / Spring Security 7. Spring Boot 4 standardized
@@ -58,7 +58,7 @@ h2 = "2.5.252"
 # `@Filter` validating the JWT against pk-auth-jwt's PkAuthJwtValidator is sufficient.
 # Micronaut 5.x requires JVM 25; we target Java 21 (brief §3), so 5.x is pinned out via
 # .github/dependabot.yml until the project moves to a newer JDK baseline.
-micronaut = "4.10.35"
+micronaut = "4.10.36"
 
 # Dropwizard adapter (Phase 9). Brief §6.11 tracks the latest Dropwizard release. 5.x adds
 # Jetty 12 / Jersey 4 (EE 10); the adapter rides the parent's `dropwizard-jackson` which is still
