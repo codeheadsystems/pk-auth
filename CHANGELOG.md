@@ -11,6 +11,51 @@ the source.
 
 ## [Unreleased]
 
+## [2.3.2] - 2026-11-19
+
+A security patch release. It contains no source changes; it moves the runtime
+dependencies that pk-auth publishes in its POMs past versions with open security
+advisories. No host configuration changes are needed.
+
+### Security
+
+- Micronaut 4.10.31 → 4.10.37. Micronaut 4.10.33 and 4.10.37 together close 41
+  GitHub Security Advisories in the HTTP server, router, clients, WebSockets,
+  and static resource handling. Three of them concern path-scoped server
+  filters, the mechanism `PkAuthJwtAuthenticationFilter` uses to guard
+  `/auth/admin/**`: filters matched a different path representation than the
+  router (GHSA-wcgp-mmwm-x2x2), skipped routes they were scoped to
+  (GHSA-p72j-v3qh-v5mm), and missed prefix-colliding routes under a context
+  path (GHSA-gj4v-r6x3-66jp). On 2.3.1 a request shaped to bypass the filter
+  reaches `PkAuthAdminController`, whose authenticated endpoints refuse it with
+  `401` because no actor is present, so no authenticated admin operation was
+  reachable without a token (`/auth/admin/email/complete-verification` is
+  unauthenticated by design in every adapter). The release restores the filter
+  as the first line of defence. The
+  adapter declares `micronaut-http-server-netty` as an `api` dependency, so
+  hosts that do not manage the Micronaut version themselves previously resolved
+  the vulnerable release from pk-auth's POM.
+- Jackson 3.2.3 → 3.3.0 (annotations 2.22 → 2.23). Jackson 3.2.3 is affected by
+  GHSA-m8xf-2cr7-77ph (CVE-2026-110879, critical), a `PolymorphicTypeValidator`
+  bypass in jackson-databind that permits arbitrary class instantiation when
+  polymorphic typing is enabled, and by GHSA-vvjm-vc27-799r (low), a
+  `maxNumberLength` bypass in the jackson-core async parser. pk-auth enables no
+  polymorphic typing on its object mappers, so the critical advisory is not
+  reachable through pk-auth's wire contract; the upgrade removes the affected
+  version from hosts' resolved classpaths.
+
+### Dependencies
+
+- Runtime: WebAuthn4J 0.31.11 → 0.32.0, Spring Boot 4.1.1 → 4.1.2, Spring
+  Security 7.1.1 → 7.1.2, Flyway 13.10.0 → 13.12.2, AWS SDK 2.55.14 → 2.59.1,
+  Caffeine 3.3.0 → 3.3.1, and Micrometer 1.17.1 → 1.17.2. WebAuthn4J 0.32.0
+  adds ML-DSA signature support; pk-auth does not yet offer it, and
+  `CoseAlgorithm` is unchanged.
+- Build and test: Gradle 9.8.1 → 9.9.1, Spotless 8.10.4 → 8.11.0, Error Prone
+  2.50.0 → 2.52.0 (plugin 5.1.1 → 5.2.0), Playwright 1.64 → 1.65 for the demo
+  end-to-end suites, browser SDK dev dependencies (tsup 8 → 9, jsdom 30 → 31),
+  and GitHub Actions.
+
 ## [2.3.1] - 2026-10-16
 
 A patch release. It fixes a JDBI upgrade failure introduced in 2.3.0 for hosts
@@ -688,7 +733,8 @@ Security-review follow-ups (hardening; no known exploit in the items below).
 First stable release. Captures the surface produced by the 0.x development
 series; see `git log` for the full history.
 
-[Unreleased]: https://github.com/codeheadsystems/pk-auth/compare/v2.3.1...HEAD
+[Unreleased]: https://github.com/codeheadsystems/pk-auth/compare/v2.3.2...HEAD
+[2.3.2]: https://github.com/codeheadsystems/pk-auth/compare/v2.3.1...v2.3.2
 [2.3.1]: https://github.com/codeheadsystems/pk-auth/compare/v2.3.0...v2.3.1
 [2.3.0]: https://github.com/codeheadsystems/pk-auth/compare/v2.2.0...v2.3.0
 [2.2.0]: https://github.com/codeheadsystems/pk-auth/compare/v2.1.0...v2.2.0
